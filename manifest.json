@@ -1,0 +1,17 @@
+{
+  "name": "Zeste — Tâches & Courses",
+  "short_name": "Zeste",
+  "description": "Tes tâches et ta liste de courses, en couleurs et ultra simple.",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff9ec",
+  "theme_color": "#ffd23f",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
