@@ -1125,7 +1125,7 @@ document.getElementById('notifBtn').onclick = ()=>{
   if(!notifSupported){ toast('Ton navigateur ne gère pas les notifs 🙈'); return; }
   Notification.requestPermission().then(p=>{
     updateNotifBanner();
-    if(p==='granted'){ toast('Notifications activées 🔔'); try{ new Notification('Zeste 🍋',{body:'Super, tu recevras tes rappels ici !'}); }catch(e){} }
+    if(p==='granted'){ toast('Notifications activées 🔔'); try{ new Notification('Zeste 🍋',{body:'Super, tu recevras tes rappels ici !'}); }catch(e){} if(typeof subscribePush==='function') subscribePush(); }
   });
 };
 
@@ -1176,7 +1176,37 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkDue
 /* ============ SYNCHRO CLOUD (partage foyer) ============ */
 const SB_URL = 'https://lrslisyydbiejqzpsoxc.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyc2xpc3l5ZGJpZWpxenBzb3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTAyNDgsImV4cCI6MjA5ODY2NjI0OH0.dzAYncOUM-VZKncf0NCoxF4MEAgr3yfaH2O_GTuglX8';
+const VAPID_PUBLIC = 'BJV34z5DAKOGtYAftRSySl_bVeDfTLpZRkUjoJ3bEAem1RFhllbSMRcFY3ysk7yjGs4TYXTAWsDSQMd-9obuo1E';
 const cloud = { sb:null, on:false, id:null, chan:null, applying:false };
+
+function urlB64ToUint8(b64){
+  const pad='='.repeat((4-b64.length%4)%4);
+  const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(s); const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+// abonne cet appareil aux notifications push (nécessite PWA installée + notifs autorisées)
+async function subscribePush(){
+  if(!cloud.on || !cloud.sb) return;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){ sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlB64ToUint8(VAPID_PUBLIC) }); }
+    const json = sub.toJSON ? sub.toJSON() : sub;
+    await cloud.sb.rpc('zeste_save_sub', { p_household: cloud.id, p_sub: json });
+  }catch(e){ console.warn('push subscribe', e); }
+}
+// pousse la liste des rappels à venir vers le serveur (pour l'envoi appli fermée)
+async function syncReminders(){
+  if(!cloud.on || !cloud.sb) return;
+  const items = S.todos.filter(t=>t.due && !t.done)
+    .map(t=>({ todo_id:t.id, due_ms:t.due, txt:t.txt, emoji:t.emo }));
+  try{ await cloud.sb.rpc('zeste_sync_reminders', { p_household: cloud.id, p_items: items }); }
+  catch(e){ console.warn('sync reminders', e); }
+}
 
 function flashSync(){ const p=document.getElementById('syncPill'); p.classList.add('show'); setTimeout(()=>p.classList.remove('show'),1100); }
 
@@ -1186,7 +1216,7 @@ function initCloud(){
   if(cloud.sb && cloud.id){ goOnline(); }
   updateShareUI();
 }
-async function goOnline(){ cloud.on=true; subscribeChan(); await cloudPull(); updateShareUI(); }
+async function goOnline(){ cloud.on=true; subscribeChan(); await cloudPull(); updateShareUI(); subscribePush(); syncReminders(); }
 function subscribeChan(){
   if(!cloud.sb || !cloud.id) return;
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
@@ -1215,6 +1245,7 @@ async function cloudPush(){
     const {error} = await cloud.sb.rpc('zeste_save',{p_id:cloud.id, p_data:S});
     if(error){ console.warn('save',error); return; }
     if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:S}});
+    syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
   }catch(e){ console.warn(e); }
 }
 function ensureShape(){
