@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#ffd23f" />
 <title>Zeste — Tâches & Courses</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
@@ -421,6 +422,23 @@
     </div>
   </div>
 
+  <!-- Google Agenda -->
+  <div class="share-box" id="gcalBox" style="margin-top:14px;background:#eef4ff;border-color:#d6e4ff">
+    <div class="share-h">📅 Google Agenda</div>
+    <div id="gcalOff">
+      <p class="set-hint" style="margin-top:2px">Connecte ton agenda pour que les tâches datées y soient ajoutées automatiquement.</p>
+      <button class="share-btn primary" id="gcalConnect" style="background:linear-gradient(135deg,#4da8ff,#2b7fff)">🔗 Connecter Google Agenda</button>
+    </div>
+    <div id="gcalOn" style="display:none">
+      <p class="set-hint" style="margin-top:2px" id="gcalStatus">✅ Google Agenda connecté.</p>
+      <div class="rec-toggle" style="margin-top:6px">
+        <div class="switch" id="gcalAutoSw"></div>
+        <div>Ajouter <b>automatiquement</b> les tâches datées</div>
+      </div>
+      <button class="share-btn danger" id="gcalDisconnect">Déconnecter</button>
+    </div>
+  </div>
+
   <div class="share-h" style="margin-top:22px">🗂️ Mes catégories</div>
   <div class="seg" id="setSeg">
     <button class="on" data-seg="shop">🛒 Courses</button>
@@ -651,7 +669,11 @@ function gcalUrl(t){
   if(rr) u+='&recur='+encodeURIComponent('RRULE:'+rr);
   return u;
 }
-function openGcal(t){ if(!t.due) return; window.open(gcalUrl(t),'_blank'); toast('📅 Ouverture de Google Agenda…'); }
+function openGcal(t){
+  if(!t.due) return;
+  if(GOOGLE_CLIENT_ID && localStorage.getItem('zeste_gcal_connected')==='1'){ gcalInsert(t); return; }
+  window.open(gcalUrl(t),'_blank'); toast('📅 Ouverture de Google Agenda…');
+}
 
 /* ============ RENDER ============ */
 let tab = 'todo';
@@ -1034,7 +1056,8 @@ function add(){
   if(tab==='todo'){
     const nt = {id:id(),txt:v,emo:guessTodo(v),cat:form.tcat,prio:form.prio,rec:form.rec,done:false,due:form.due||null,repeat:form.repeat||'none',notified:false};
     S.todos.unshift(nt);
-    if(form.gcal && nt.due) setTimeout(()=>openGcal(nt),150);
+    const autoG = gcal.auto && gcalConnected();
+    if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
   }else{
     const [e] = guessShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,rec:form.rec,done:false});
@@ -1308,6 +1331,73 @@ document.getElementById('copyCode').onclick = ()=>{
 /* rafraîchit depuis le cloud quand on rouvre l'appli */
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && cloud.on) cloudPull(); });
 
+/* ============ GOOGLE AGENDA (OAuth côté client) ============ */
+const GOOGLE_CLIENT_ID = ''; // ← à remplir avec ton Client ID (voir GOOGLE-SETUP.md)
+const gcal = { token:null, exp:0, tokenClient:null, auto: localStorage.getItem('zeste_gcal_auto')==='1', _pending:null };
+function gcalReady(){ return !!GOOGLE_CLIENT_ID && window.google && google.accounts && google.accounts.oauth2; }
+function gcalConnected(){ return localStorage.getItem('zeste_gcal_connected')==='1'; }
+function ensureTokenClient(){
+  if(gcal.tokenClient) return true;
+  if(!gcalReady()) return false;
+  gcal.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: (resp)=>{
+      if(resp && resp.access_token){
+        gcal.token = resp.access_token;
+        gcal.exp = Date.now() + ((resp.expires_in?resp.expires_in:3600)*1000) - 60000;
+        localStorage.setItem('zeste_gcal_connected','1');
+        updateGcalUI();
+        const p=gcal._pending; gcal._pending=null; if(p) p();
+      }
+    },
+  });
+  return true;
+}
+function gcalConnect(){
+  if(!GOOGLE_CLIENT_ID){ toast('Google Agenda pas encore configuré'); return; }
+  if(!ensureTokenClient()){ toast('⏳ Google se charge, réessaie'); return; }
+  gcal.tokenClient.requestAccessToken({ prompt: gcalConnected()?'':'consent' });
+}
+function withToken(cb){
+  if(gcal.token && Date.now()<gcal.exp){ cb(); return; }
+  if(!ensureTokenClient()){ toast('Google non configuré'); return; }
+  gcal._pending = cb;
+  gcal.tokenClient.requestAccessToken({ prompt:'' });
+}
+function gcalInsert(t){
+  if(!t.due) return;
+  withToken(async ()=>{
+    try{
+      const start=new Date(t.due), end=new Date(t.due+30*60000);
+      const body={ summary:(t.emo?t.emo+' ':'')+t.txt, description:'Créé depuis Zeste 🍋',
+        start:{dateTime:start.toISOString()}, end:{dateTime:end.toISOString()} };
+      const rr={day:'RRULE:FREQ=DAILY',week:'RRULE:FREQ=WEEKLY',month:'RRULE:FREQ=MONTHLY'}[t.repeat];
+      if(rr) body.recurrence=[rr];
+      const r=await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+        method:'POST', headers:{Authorization:'Bearer '+gcal.token,'Content-Type':'application/json'}, body:JSON.stringify(body) });
+      if(r.ok) toast('📅 Ajouté à Google Agenda ✓');
+      else { toast('❌ Agenda ('+r.status+')'); console.warn(await r.text()); }
+    }catch(e){ console.warn(e); toast('❌ Erreur agenda'); }
+  });
+}
+function updateGcalUI(){
+  const box=document.getElementById('gcalBox'); if(!box) return;
+  const off=document.getElementById('gcalOff'), on=document.getElementById('gcalOn');
+  box.style.opacity = GOOGLE_CLIENT_ID ? '1' : '.55';
+  if(gcalConnected()){ off.style.display='none'; on.style.display='block'; document.getElementById('gcalAutoSw').classList.toggle('on', gcal.auto); }
+  else { off.style.display='block'; on.style.display='none'; }
+}
+document.getElementById('gcalConnect').onclick = gcalConnect;
+document.getElementById('gcalDisconnect').onclick = ()=>{
+  if(gcal.token && window.google && google.accounts){ try{ google.accounts.oauth2.revoke(gcal.token); }catch(e){} }
+  gcal.token=null; gcal.exp=0; localStorage.removeItem('zeste_gcal_connected'); updateGcalUI(); toast('Google Agenda déconnecté');
+};
+document.getElementById('gcalAutoSw').onclick = function(){
+  this.classList.toggle('on'); gcal.auto=this.classList.contains('on');
+  localStorage.setItem('zeste_gcal_auto', gcal.auto?'1':'0');
+};
+
 /* greeting */
 (function(){
   const h = new Date().getHours();
@@ -1319,6 +1409,7 @@ render();
 updateNotifBanner();
 setTimeout(checkDue, 800);
 initCloud();
+updateGcalUI();
 
 /* Service worker (hors-ligne + installable) — actif uniquement en ligne (https) */
 if('serviceWorker' in navigator){
