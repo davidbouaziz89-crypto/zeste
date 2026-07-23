@@ -1332,7 +1332,7 @@ document.getElementById('copyCode').onclick = ()=>{
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && cloud.on) cloudPull(); });
 
 /* ============ GOOGLE AGENDA (OAuth côté client) ============ */
-const GOOGLE_CLIENT_ID = ''; // ← à remplir avec ton Client ID (voir GOOGLE-SETUP.md)
+const GOOGLE_CLIENT_ID = '62505946092-2mt9cq6jojupbgr9rspl52e1p51flmau.apps.googleusercontent.com';
 const gcal = { token:null, exp:0, tokenClient:null, auto: localStorage.getItem('zeste_gcal_auto')==='1', _pending:null };
 function gcalReady(){ return !!GOOGLE_CLIENT_ID && window.google && google.accounts && google.accounts.oauth2; }
 function gcalConnected(){ return localStorage.getItem('zeste_gcal_connected')==='1'; }
