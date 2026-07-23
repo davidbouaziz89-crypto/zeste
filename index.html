@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Zeste" />
 <meta name="theme-color" content="#ffd23f" />
 <title>Zeste — Tâches & Courses</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
@@ -271,6 +272,25 @@
   .reset-cat{width:100%;margin-top:10px;padding:13px;border-radius:16px;border:none;
     background:none;color:var(--muted);font-weight:700;font-size:13.5px;cursor:pointer}
 
+  /* partage foyer */
+  .share-box{background:#f7f3ff;border:2px solid #e7ddff;border-radius:18px;padding:14px;margin-bottom:6px}
+  .share-h{font-weight:800;font-size:16px}
+  .share-btn{width:100%;margin-top:10px;padding:14px;border-radius:14px;border:2px solid var(--line);
+    background:#fff;color:var(--ink);font-weight:800;font-size:15px;cursor:pointer}
+  .share-btn.primary{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border:none;
+    box-shadow:0 6px 16px rgba(155,107,255,.3)}
+  .share-btn.danger{color:var(--red);border-color:#ffd6d6;background:#fff}
+  .share-btn:active{transform:scale(.98)}
+  .code-row{display:flex;gap:8px;margin-top:8px}
+  .code-inp{flex:1;min-width:0;border:2px solid var(--line);border-radius:12px;padding:11px 12px;
+    font-size:13px;font-family:ui-monospace,Menlo,monospace;font-weight:700;color:var(--purple);background:#fff;outline:none}
+  .code-copy{flex:none;border:none;background:var(--purple);color:#fff;font-weight:800;padding:0 16px;border-radius:12px;cursor:pointer}
+  .code-copy:active{background:var(--pink)}
+  .sync-pill{position:fixed;top:calc(var(--safe-t) + 14px);left:50%;transform:translateX(-50%);
+    background:var(--green);color:#fff;font-size:12px;font-weight:800;padding:5px 12px;border-radius:20px;
+    z-index:45;opacity:0;transition:.3s;pointer-events:none;box-shadow:var(--shadow-s)}
+  .sync-pill.show{opacity:1}
+
   /* confetti */
   .pop{position:fixed;pointer-events:none;font-size:22px;z-index:60;animation:pop .8s ease forwards}
   @keyframes pop{0%{transform:translate(0,0) scale(.5);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1.2);opacity:0}}
@@ -370,7 +390,28 @@
 <div class="sheet-bg" id="setBg"></div>
 <div class="sheet set-sheet" id="setSheet">
   <div class="grab"></div>
-  <h3>⚙️ Mes catégories</h3>
+  <h3>⚙️ Réglages</h3>
+
+  <!-- Partage / Foyer -->
+  <div class="share-box" id="shareBox">
+    <div class="share-h">👨‍👩‍👧 Partage du foyer</div>
+    <div id="shareOff">
+      <p class="set-hint" style="margin-top:2px">Partage ta liste en temps réel (ta femme voit la même chose, instantanément).</p>
+      <button class="share-btn primary" id="createSpace">✨ Créer un foyer partagé</button>
+      <button class="share-btn" id="joinSpace">🔗 Rejoindre avec un code</button>
+    </div>
+    <div id="shareOn" style="display:none">
+      <p class="set-hint" style="margin-top:2px" id="shareStatus">✅ Foyer partagé actif.</p>
+      <div class="code-row">
+        <input class="code-inp" id="spaceCode" readonly />
+        <button class="code-copy" id="copyCode">Copier</button>
+      </div>
+      <p class="set-hint">Donne ce code à la personne avec qui tu partages (sur son appli : Rejoindre avec un code).</p>
+      <button class="share-btn danger" id="leaveSpace">Quitter le partage</button>
+    </div>
+  </div>
+
+  <div class="share-h" style="margin-top:22px">🗂️ Mes catégories</div>
   <div class="seg" id="setSeg">
     <button class="on" data-seg="shop">🛒 Courses</button>
     <button data-seg="todo">✅ Tâches</button>
@@ -382,6 +423,7 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="sync-pill" id="syncPill">🔄 Synchronisé</div>
 
 <script>
 /* ============ DATA ============ */
@@ -575,7 +617,12 @@ function load(){
     ],
   };
 }
-function save(){ localStorage.setItem('zeste', JSON.stringify(S)); }
+function saveLocal(){ localStorage.setItem('zeste', JSON.stringify(S)); }
+let cloudTimer=null;
+function save(){
+  saveLocal();
+  if(cloud.on && !cloud.applying){ clearTimeout(cloudTimer); cloudTimer=setTimeout(cloudPush,400); }
+}
 function id(){ return Math.random().toString(36).slice(2,9); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
 // si la catégorie d'un item n'existe plus (supprimée), on le range dans la 1re catégorie
@@ -1038,6 +1085,110 @@ function checkDue(){
 setInterval(checkDue, 20000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkDue(); });
 
+/* ============ SYNCHRO CLOUD (partage foyer) ============ */
+const SB_URL = 'https://lrslisyydbiejqzpsoxc.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyc2xpc3l5ZGJpZWpxenBzb3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTAyNDgsImV4cCI6MjA5ODY2NjI0OH0.dzAYncOUM-VZKncf0NCoxF4MEAgr3yfaH2O_GTuglX8';
+const cloud = { sb:null, on:false, id:null, chan:null, applying:false };
+
+function flashSync(){ const p=document.getElementById('syncPill'); p.classList.add('show'); setTimeout(()=>p.classList.remove('show'),1100); }
+
+function initCloud(){
+  if(window.supabase){ try{ cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:false}}); }catch(e){ console.warn('supabase init',e); } }
+  cloud.id = localStorage.getItem('zeste_space') || null;
+  if(cloud.sb && cloud.id){ goOnline(); }
+  updateShareUI();
+}
+async function goOnline(){ cloud.on=true; subscribeChan(); await cloudPull(); updateShareUI(); }
+function subscribeChan(){
+  if(!cloud.sb || !cloud.id) return;
+  if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
+  cloud.chan = cloud.sb.channel('zeste-'+cloud.id, { config:{ broadcast:{ self:false } } });
+  cloud.chan.on('broadcast', {event:'sync'}, ({payload})=>{
+    if(payload && payload.data){ applyRemote(payload.data); }
+  });
+  cloud.chan.subscribe();
+}
+function applyRemote(data){
+  if(!data || !(data.todos||data.shop)) return;
+  cloud.applying=true; S=data; ensureShape(); saveLocal(); render(); cloud.applying=false; flashSync();
+}
+async function cloudPull(){
+  if(!cloud.sb || !cloud.id) return;
+  try{
+    const {data,error} = await cloud.sb.rpc('zeste_load',{p_id:cloud.id});
+    if(error){ console.warn('load',error); toast('⚠️ Synchro indisponible'); return; }
+    if(data && (data.todos||data.shop)) applyRemote(data);
+    else cloudPush(); // espace neuf → on y met notre contenu actuel
+  }catch(e){ console.warn(e); }
+}
+async function cloudPush(){
+  if(!cloud.on || !cloud.sb || !cloud.id) return;
+  try{
+    const {error} = await cloud.sb.rpc('zeste_save',{p_id:cloud.id, p_data:S});
+    if(error){ console.warn('save',error); return; }
+    if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:S}});
+  }catch(e){ console.warn(e); }
+}
+function ensureShape(){
+  if(!S.shopCats) S.shopCats = clone(DEFAULT_SHOP_CATS);
+  if(!S.todoCats) S.todoCats = clone(DEFAULT_TODO_CATS);
+  if(!Array.isArray(S.todos)) S.todos=[];
+  if(!Array.isArray(S.shop)) S.shop=[];
+}
+
+/* ----- UI Partage ----- */
+function updateShareUI(){
+  const off=document.getElementById('shareOff'), on=document.getElementById('shareOn');
+  if(cloud.on && cloud.id){
+    off.style.display='none'; on.style.display='block';
+    document.getElementById('spaceCode').value = cloud.id;
+    document.getElementById('shareStatus').textContent = '✅ Foyer partagé actif — tout se synchronise en direct.';
+  } else { off.style.display='block'; on.style.display='none'; }
+}
+document.getElementById('createSpace').onclick = async ()=>{
+  if(!cloud.sb){ toast('🌐 Connexion internet requise'); return; }
+  toast('Création du foyer…');
+  try{
+    const {data,error} = await cloud.sb.rpc('zeste_new_space');
+    if(error||!data){ toast('❌ Échec (base pas prête ?)'); console.warn(error); return; }
+    cloud.id = data; localStorage.setItem('zeste_space', data);
+    await goOnline();        // espace neuf → cloudPull poussera notre contenu local
+    toast('🎉 Foyer créé et partagé !');
+  }catch(e){ console.warn(e); toast('❌ Erreur'); }
+};
+document.getElementById('joinSpace').onclick = async ()=>{
+  if(!cloud.sb){ toast('🌐 Connexion internet requise'); return; }
+  const code = (prompt('Colle le code du foyer partagé :')||'').trim();
+  if(!code) return;
+  if(!/^[0-9a-fA-F-]{30,40}$/.test(code)){ toast('Code invalide 🤔'); return; }
+  if(!confirm('Rejoindre ce foyer va remplacer ta liste actuelle par celle du foyer. Continuer ?')) return;
+  cloud.id = code; localStorage.setItem('zeste_space', code);
+  cloud.on = true; subscribeChan();
+  try{
+    const {data,error} = await cloud.sb.rpc('zeste_load',{p_id:code});
+    if(error){ toast('❌ Foyer introuvable'); leaveSpaceInternal(); return; }
+    if(data && (data.todos||data.shop)){ applyRemote(data); toast('🔗 Foyer rejoint !'); }
+    else { cloudPush(); toast('🔗 Foyer rejoint (vide) !'); }
+    updateShareUI();
+  }catch(e){ console.warn(e); toast('❌ Erreur'); }
+};
+function leaveSpaceInternal(){
+  if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
+  cloud.on=false; cloud.id=null; localStorage.removeItem('zeste_space'); updateShareUI();
+}
+document.getElementById('leaveSpace').onclick = ()=>{
+  if(!confirm('Quitter le partage ? Ta liste restera sur ce téléphone (copie locale), mais ne sera plus synchronisée.')) return;
+  leaveSpaceInternal(); toast('Partage arrêté');
+};
+document.getElementById('copyCode').onclick = ()=>{
+  const v=document.getElementById('spaceCode').value;
+  if(navigator.clipboard){ navigator.clipboard.writeText(v).then(()=>toast('Code copié 📋')); }
+  else { document.getElementById('spaceCode').select(); document.execCommand('copy'); toast('Code copié 📋'); }
+};
+
+/* rafraîchit depuis le cloud quand on rouvre l'appli */
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && cloud.on) cloudPull(); });
+
 /* greeting */
 (function(){
   const h = new Date().getHours();
@@ -1048,6 +1199,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkDue
 render();
 updateNotifBanner();
 setTimeout(checkDue, 800);
+initCloud();
 
 /* Service worker (hors-ligne + installable) — actif uniquement en ligne (https) */
 if('serviceWorker' in navigator){
