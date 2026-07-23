@@ -115,10 +115,20 @@
   .badge-rec{font-size:11px;font-weight:800;color:var(--purple);background:#f2ecff;
     padding:2px 7px;border-radius:20px;display:inline-flex;gap:3px;align-items:center}
 
-  .del{
-    position:absolute;right:0;top:0;bottom:0;width:64px;background:var(--red);color:#fff;
-    display:none;place-items:center;font-size:22px;
+  /* swipe-to-delete wrapper */
+  .swipe{position:relative;margin-bottom:9px;border-radius:16px;overflow:hidden}
+  .swipe .row{margin-bottom:0}
+  .swipe .del{
+    position:absolute;inset:0;border-radius:16px;
+    background:linear-gradient(90deg,#ff9a9a,var(--red));
+    display:flex;align-items:center;justify-content:flex-end;gap:8px;
+    padding-right:22px;color:#fff;font-size:16px;font-weight:800;z-index:0;
+    opacity:0;transition:opacity .12s;
   }
+  .swipe.swiping .del{opacity:1}
+  .swipe .del .t{font-size:22px}
+  .swipe .row{position:relative;z-index:1;will-change:transform}
+  .swipe.swiping .row{transition:none}
 
   /* empty */
   .empty{text-align:center;padding:60px 20px;color:var(--muted)}
@@ -692,7 +702,8 @@ function rowTodo(t){
     const repTxt = t.repeat && t.repeat!=='none' ? ({day:'/jour',week:'/sem.',month:'/mois'}[t.repeat]) : '';
     sub.push(`<span class="due ${over?'over':''} ${repTxt?'rep':''}">🔔 ${dueLabel(t.due)}${repTxt}</span>`);
   }
-  return `<div class="row ${t.done?'done':''} ${over?'overdue':''}" data-id="${t.id}">
+  return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
+    <div class="row ${t.done?'done':''} ${over?'overdue':''}" data-id="${t.id}">
     <div class="check" data-check>${chk()}</div>
     <span class="emo">${t.emo}</span>
     <div class="label">${esc(t.txt)}
@@ -700,7 +711,7 @@ function rowTodo(t){
     </div>
     ${t.due?`<button class="cal" data-cal title="Ajouter à Google Agenda">📅</button>`:''}
     <span class="prio p${t.prio}"></span>
-  </div>`;
+  </div></div>`;
 }
 function dueLabel(ms){
   const d = new Date(ms), now = new Date();
@@ -768,35 +779,63 @@ function renderShop(){
   };
 }
 function rowShop(t){
-  return `<div class="row ${t.done?'done':''}" data-id="${t.id}">
+  return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
+    <div class="row ${t.done?'done':''}" data-id="${t.id}">
     <div class="check" data-check>${chk()}</div>
     <span class="emo">${t.emo}</span>
     <div class="label">${esc(t.txt)}${t.rec?` <span class="badge-rec">🔁</span>`:''}</div>
-  </div>`;
+  </div></div>`;
 }
 
+function delItem(key,itemId,silent){
+  const it = S[key].find(x=>x.id===itemId); if(!it) return;
+  if(!silent && !confirm('Supprimer « '+it.txt+' » ?')) return;
+  S[key] = S[key].filter(x=>x.id!==itemId); render(); if(silent) toast('Supprimé 🗑️');
+}
 function bindRows(el,key){
   el.querySelectorAll('.row').forEach(row=>{
     const item = S[key].find(x=>x.id===row.dataset.id);
     if(!item) return;
-    row.querySelector('[data-check]').onclick = (e)=>{
-      e.stopPropagation();
-      item.done = !item.done;
-      if(item.done) burst(row.querySelector('.check'));
-      render();
-    };
+    const check = row.querySelector('[data-check]');
+    check.onclick = (e)=>{ e.stopPropagation(); item.done=!item.done; if(item.done) burst(check); render(); };
     const calBtn = row.querySelector('[data-cal]');
     if(calBtn) calBtn.onclick = (e)=>{ e.stopPropagation(); openGcal(item); };
-    // long press to delete
-    let timer;
-    const start = ()=>{ timer = setTimeout(()=>{ if(confirm('Supprimer « '+item.txt+' » ?')){ S[key]=S[key].filter(x=>x.id!==item.id); render(); } },550); };
-    const cancel = ()=>clearTimeout(timer);
-    row.addEventListener('touchstart',start,{passive:true});
-    row.addEventListener('touchend',cancel);
-    row.addEventListener('touchmove',cancel);
-    row.addEventListener('mousedown',start);
-    row.addEventListener('mouseup',cancel);
-    row.addEventListener('mouseleave',cancel);
+
+    // --- gestes tactiles : glisser à gauche = supprimer, tap = modifier ---
+    let sx=0, sy=0, dx=0, dragging=false, horizontal=false, decided=false, moved=false, lp=null;
+    row.addEventListener('touchstart', e=>{
+      if(e.target.closest('[data-check],[data-cal]')) return;
+      const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
+      dragging=true; horizontal=false; decided=false; moved=false;
+      row.style.transition='';
+      lp = setTimeout(()=>{ if(!horizontal){ dragging=false; delItem(key,item.id,false); } }, 600);
+    }, {passive:true});
+    row.addEventListener('touchmove', e=>{
+      if(!dragging) return;
+      const t=e.touches[0]; dx=t.clientX-sx; const dy=t.clientY-sy;
+      if(Math.abs(dx)>5||Math.abs(dy)>5){ moved=true; clearTimeout(lp); }
+      if(!decided){
+        if(Math.abs(dx)>Math.abs(dy)+5){ horizontal=true; decided=true; row.parentElement.classList.add('swiping'); }
+        else if(Math.abs(dy)>Math.abs(dx)+5){ decided=true; }
+      }
+      if(horizontal){ e.preventDefault(); row.style.transform='translateX('+Math.min(0,dx)+'px)'; }
+    }, {passive:false});
+    row.addEventListener('touchend', ()=>{
+      if(!dragging){ return; }
+      dragging=false; clearTimeout(lp);
+      if(horizontal){
+        if(dx < -90){ row.style.transition='transform .2s'; row.style.transform='translateX(-100%)';
+          setTimeout(()=>delItem(key,item.id,true),170); }
+        else { row.style.transition='transform .2s'; row.style.transform='';
+          setTimeout(()=>row.parentElement && row.parentElement.classList.remove('swiping'),200); }
+      } else if(!moved){ openSheet(item, key); }
+    });
+    // clic souris (desktop) = modifier
+    row.addEventListener('click', e=>{
+      if(e.target.closest('[data-check],[data-cal]')) return;
+      if('ontouchstart' in window) return;
+      openSheet(item, key);
+    });
   });
 }
 
@@ -855,10 +894,12 @@ document.querySelectorAll('.tab').forEach(b=>{
 /* ============ ADD SHEET ============ */
 const sheet = document.getElementById('sheet'), bg = document.getElementById('sheetBg');
 const inp = document.getElementById('inp'), inpEmo = document.getElementById('inpEmo');
-let form = {prio:3, cat:'au', tcat:'perso', rec:false};
+let form = {prio:3, cat:'au', tcat:'perso', rec:false, catTouched:false};
+let editState = null;
 
-function openSheet(){
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, rec:false, due:null, repeat:'none', gcal:false};
+function openSheet(editItem=null, editKey=null){
+  editState = editItem ? {id:editItem.id, key:editKey} : null;
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
   const isTodo = tab==='todo';
   document.getElementById('sheetTitle').textContent = isTodo? 'Nouvelle tâche ✅':'Nouvel article 🛒';
   document.getElementById('todoOpts').style.display = isTodo?'block':'none';
@@ -877,20 +918,45 @@ function openSheet(){
   document.getElementById('remRep').value='none';
   document.getElementById('gcalRow').style.display='none';
   document.getElementById('gcalSw').classList.remove('on');
+  document.getElementById('addBtn').textContent = 'Ajouter';
   buildCatPick();
   buildTcatPick();
+
+  // ----- mode MODIFIER : on pré-remplit -----
+  if(editItem){
+    inp.value = editItem.txt;
+    inpEmo.textContent = editItem.emo || (isTodo?'⭐':'🛒');
+    document.getElementById('sheetTitle').textContent = isTodo? 'Modifier la tâche ✏️':'Modifier l\'article ✏️';
+    document.getElementById('addBtn').textContent = 'Enregistrer';
+    if(isTodo){
+      form.tcat = editItem.cat; form.prio = editItem.prio||3; form.rec = !!editItem.rec;
+      form.due = editItem.due||null; form.repeat = editItem.repeat||'none';
+      document.querySelectorAll('#todoOpts .opt').forEach(o=>o.classList.toggle('sel', +o.dataset.prio===form.prio));
+      document.getElementById('recSw').classList.toggle('on', form.rec);
+      syncTcatPick();
+      if(form.due){
+        document.querySelectorAll('#remChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.rem==='custom'));
+        showRemUI(form.due); document.getElementById('remRep').value = form.repeat;
+      }
+    } else {
+      form.cat = editItem.cat; form.rec = !!editItem.rec;
+      document.getElementById('recSw').classList.toggle('on', form.rec);
+      syncCatPick();
+    }
+  }
+
   bg.classList.add('open'); sheet.classList.add('open');
-  setTimeout(()=>inp.focus(),300);
+  if(!editItem) setTimeout(()=>inp.focus(),300);
 }
-function closeSheet(){ bg.classList.remove('open'); sheet.classList.remove('open'); inp.blur(); }
-document.getElementById('fab').onclick = openSheet;
+function closeSheet(){ bg.classList.remove('open'); sheet.classList.remove('open'); inp.blur(); editState=null; }
+document.getElementById('fab').onclick = ()=>openSheet();
 bg.onclick = closeSheet;
 
 inp.addEventListener('input',()=>{
   const v = inp.value.trim();
   if(!v){ inpEmo.textContent = tab==='todo'?'⭐':'🛒'; return; }
-  if(tab==='todo'){ inpEmo.textContent = guessTodo(v); const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); }
-  else{ const [e,c] = guessShop(v); inpEmo.textContent = e; form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); }
+  if(tab==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
+  else{ const [e,c] = guessShop(v); inpEmo.textContent = e; if(!form.catTouched){ form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); } }
 });
 
 document.querySelectorAll('#todoOpts .opt').forEach(o=>{
@@ -929,14 +995,14 @@ remRep.addEventListener('change',()=>{ form.repeat = remRep.value; });
 function buildCatPick(){
   const cp = document.getElementById('catPick');
   cp.innerHTML = S.shopCats.map(c=>`<button data-cat="${c.id}" class="${c.id===form.cat?'sel':''}"><span class="e">${c.e}</span>${esc(c.n.split(' ')[0])}</button>`).join('');
-  cp.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ form.cat=b.dataset.cat; syncCatPick(); }; });
+  cp.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ form.cat=b.dataset.cat; form.catTouched=true; syncCatPick(); }; });
 }
 function syncCatPick(){ document.querySelectorAll('#catPick button').forEach(b=>b.classList.toggle('sel', b.dataset.cat===form.cat)); }
 
 function buildTcatPick(){
   const cp = document.getElementById('tcatPick');
   cp.innerHTML = S.todoCats.map(c=>`<button data-tcat="${c.id}" class="${c.id===form.tcat?'sel':''}"><span class="e">${c.e}</span>${esc(c.n)}</button>`).join('');
-  cp.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ form.tcat=b.dataset.tcat; syncTcatPick(); }; });
+  cp.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ form.tcat=b.dataset.tcat; form.catTouched=true; syncTcatPick(); }; });
 }
 function syncTcatPick(){ document.querySelectorAll('#tcatPick button').forEach(b=>b.classList.toggle('sel', b.dataset.tcat===form.tcat)); }
 
@@ -944,6 +1010,27 @@ document.getElementById('addBtn').onclick = add;
 inp.addEventListener('keydown',e=>{ if(e.key==='Enter') add(); });
 function add(){
   const v = inp.value.trim(); if(!v){ inp.focus(); return; }
+
+  // ----- mode MODIFIER -----
+  if(editState){
+    const it = S[editState.key].find(x=>x.id===editState.id);
+    if(it){
+      it.txt = v;
+      if(tab==='todo'){
+        it.emo = guessTodo(v); it.cat = form.tcat; it.prio = form.prio; it.rec = form.rec;
+        it.due = form.due||null; it.repeat = form.repeat||'none';
+        it.notified = it.due && it.due>Date.now() ? false : it.notified;
+      } else {
+        it.emo = guessShop(v)[0]; it.cat = form.cat; it.rec = form.rec;
+      }
+    }
+    const wantGcal = form.gcal, editedItem = it;
+    editState = null; render(); closeSheet(); toast('Modifié ✏️');
+    if(tab==='todo' && wantGcal && editedItem && editedItem.due) setTimeout(()=>openGcal(editedItem),150);
+    return;
+  }
+
+  // ----- mode AJOUT -----
   if(tab==='todo'){
     const nt = {id:id(),txt:v,emo:guessTodo(v),cat:form.tcat,prio:form.prio,rec:form.rec,done:false,due:form.due||null,repeat:form.repeat||'none',notified:false};
     S.todos.unshift(nt);
@@ -955,6 +1042,7 @@ function add(){
   render(); toast('Ajouté ! '+inpEmo.textContent);
   inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':'🛒';
   document.getElementById('recSw').classList.remove('on'); form.rec=false;
+  // après un ajout on garde la catégorie choisie pour enchaîner
   inp.focus();
 }
 
