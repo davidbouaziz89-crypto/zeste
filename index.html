@@ -154,6 +154,25 @@
     background:#fff;color:var(--muted);font-weight:800;font-size:14px;box-shadow:var(--shadow-s);
   }
 
+  /* ---------- STORE BAR (magasins) ---------- */
+  .store-bar{display:flex;gap:8px;overflow-x:auto;padding:6px 2px 10px;margin:2px 0 2px;-webkit-overflow-scrolling:touch}
+  .store-bar::-webkit-scrollbar{display:none}
+  .store-chip{
+    flex:none;border:2px solid var(--line);background:var(--card);border-radius:20px;
+    padding:9px 14px;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;
+    box-shadow:var(--shadow-s);color:var(--ink);transition:.12s;
+  }
+  .store-chip .e{font-size:17px}
+  .store-chip .sc{background:var(--line);color:var(--muted);font-size:12px;font-weight:800;padding:1px 7px;border-radius:20px}
+  .store-chip:active{transform:scale(.95)}
+  .store-chip.on{background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;border-color:transparent}
+  .store-chip.on .sc{background:rgba(255,255,255,.3);color:#fff}
+  .store-add{
+    flex:none;border:2px dashed var(--purple);background:#f7f3ff;color:var(--purple);border-radius:20px;
+    width:42px;font-size:20px;font-weight:800;cursor:pointer;
+  }
+  .store-add:active{transform:scale(.95)}
+
   /* ---------- FAB ---------- */
   .fab{
     position:fixed;bottom:calc(var(--safe-b) + 92px);right:calc(50% - 260px + 20px);
@@ -441,8 +460,9 @@
 
   <div class="share-h" style="margin-top:22px">🗂️ Mes catégories</div>
   <div class="seg" id="setSeg">
-    <button class="on" data-seg="shop">🛒 Courses</button>
+    <button class="on" data-seg="shop">🛒 Rayons</button>
     <button data-seg="todo">✅ Tâches</button>
+    <button data-seg="stores">🏬 Magasins</button>
   </div>
   <p class="set-hint">Touche un emoji ou un nom pour le modifier. Glisse avec ↑↓ pour réordonner.</p>
   <div id="setList"></div>
@@ -466,6 +486,12 @@ const DEFAULT_SHOP_CATS = [
   {id:'hy', e:'🧴', n:'Hygiène & Beauté'},
   {id:'ma', e:'🧽', n:'Maison'},
   {id:'au', e:'🛒', n:'Autres'},
+];
+
+// magasins par défaut (listes de courses séparées)
+const DEFAULT_STORES = [
+  {id:'m1', e:'🛒', n:'Leclerc'},
+  {id:'m2', e:'🏬', n:'Action'},
 ];
 
 // keyword -> [emoji, categoryId]
@@ -624,11 +650,14 @@ function load(){
     (d.todos||[]).forEach(t=>{ if(!t.cat) t.cat = guessTodoCat(t.txt); }); // migration: range les anciennes tâches
     if(!d.shopCats) d.shopCats = clone(DEFAULT_SHOP_CATS); // migration: catégories personnalisables
     if(!d.todoCats) d.todoCats = clone(DEFAULT_TODO_CATS);
+    if(!d.stores) d.stores = clone(DEFAULT_STORES); // migration: magasins
+    (d.shop||[]).forEach(i=>{ if(!i.store) i.store = d.stores[0].id; }); // articles existants -> 1er magasin
     return d;
   } }catch(e){}
   return {
     shopCats: clone(DEFAULT_SHOP_CATS),
     todoCats: clone(DEFAULT_TODO_CATS),
+    stores: clone(DEFAULT_STORES),
     todos:[
       {id:id(),txt:'Envoyer le devis client',emo:'📧',cat:'bureau',prio:1,rec:false,done:false},
       {id:id(),txt:'Sortir les poubelles',emo:'🗑️',cat:'maison',prio:2,rec:true,done:false},
@@ -637,11 +666,12 @@ function load(){
       {id:id(),txt:'Arroser les plantes',emo:'🪴',cat:'maison',prio:3,rec:true,done:true},
     ],
     shop:[
-      {id:id(),txt:'Lait',emo:'🥛',cat:'fr',rec:true,done:false},
-      {id:id(),txt:'Pain',emo:'🥖',cat:'bl',rec:true,done:false},
-      {id:id(),txt:'Tomates',emo:'🍅',cat:'fl',rec:false,done:false},
-      {id:id(),txt:'Poulet',emo:'🍗',cat:'vp',rec:false,done:false},
-      {id:id(),txt:'Papier toilette',emo:'🧻',cat:'hy',rec:true,done:true},
+      {id:id(),txt:'Lait',emo:'🥛',cat:'fr',store:'m1',rec:true,done:false},
+      {id:id(),txt:'Pain',emo:'🥖',cat:'bl',store:'m1',rec:true,done:false},
+      {id:id(),txt:'Tomates',emo:'🍅',cat:'fl',store:'m1',rec:false,done:false},
+      {id:id(),txt:'Poulet',emo:'🍗',cat:'vp',store:'m1',rec:false,done:false},
+      {id:id(),txt:'Piles AA',emo:'🔋',cat:'ma',store:'m2',rec:false,done:false},
+      {id:id(),txt:'Papier toilette',emo:'🧻',cat:'hy',store:'m1',rec:true,done:true},
     ],
   };
 }
@@ -677,6 +707,8 @@ function openGcal(t){
 
 /* ============ RENDER ============ */
 let tab = 'todo';
+let curStore = (S.stores && S.stores[0]) ? S.stores[0].id : 'm1';
+function storeExists(id){ return S.stores && S.stores.some(s=>s.id===id); }
 
 function render(){
   renderTodo();
@@ -751,54 +783,74 @@ function dueLabel(ms){
   return d.getDate()+' '+mon[d.getMonth()]+' '+time;
 }
 
+function itemStore(i){ return storeExists(i.store)? i.store : (S.stores[0]||{}).id; }
 function renderShop(){
   const el = document.getElementById('view-shop');
-  const recs = S.shop.filter(i=>i.rec);
+  if(!S.stores || !S.stores.length) S.stores = clone(DEFAULT_STORES);
+  if(!storeExists(curStore)) curStore = S.stores[0].id;
   let h = '';
-  // quick recurrents
-  if(recs.length){
-    h += `<div class="quick"><div class="qh">🔁 Mes essentiels — 1 clic pour (dés)activer</div><div class="chips">`;
-    h += recs.map(i=>`<div class="chip ${i.done?'':'on'}" data-toggle="${i.id}"><span class="e">${i.emo}</span>${esc(i.txt)}</div>`).join('');
-    h += `</div></div>`;
-  }
-  const items = S.shop.filter(i=>true);
-  const active = items.filter(i=>!i.done);
-  if(!active.length && !recs.length){
-    el.innerHTML = emptyState('🛒','Panier vide','Ajoute ce qu\'il te faut avec le bouton +');
-    return;
-  }
-  // group by category
-  const scats = S.shopCats.length? S.shopCats : [{id:'au',e:'🛒',n:'Courses'}];
-  const sfirst = scats[0].id;
-  scats.forEach(c=>{
-    const list = active.filter(i=> catOrFirst(i.cat, scats, sfirst)===c.id );
-    if(!list.length) return;
-    h += `<div class="cat"><div class="cat-h"><span class="e">${c.e}</span>${c.n}<span class="n">${list.length}</span></div>`;
-    h += list.map(rowShop).join('');
-    h += `</div>`;
+
+  // barre des magasins
+  h += `<div class="store-bar">`;
+  S.stores.forEach(s=>{
+    const cnt = S.shop.filter(i=>itemStore(i)===s.id && !i.done).length;
+    h += `<button class="store-chip ${s.id===curStore?'on':''}" data-store="${s.id}"><span class="e">${s.e}</span>${esc(s.n)}${cnt?`<span class="sc">${cnt}</span>`:''}</button>`;
   });
-  const done = items.filter(i=>i.done);
-  if(done.length){
-    h += `<div class="cat-h" style="margin-top:22px"><span class="e">✅</span>Dans le caddie<span class="n">${done.length}</span></div>`;
-    h += done.map(rowShop).join('');
-    h += `<button class="clearbtn" id="clearDone">🧹 Vider le caddie (${done.length})</button>`;
+  h += `<button class="store-add" id="storeAdd" title="Ajouter un magasin">＋</button>`;
+  h += `</div>`;
+
+  // articles du magasin courant
+  const mine = S.shop.filter(i=>itemStore(i)===curStore);
+  const recs = mine.filter(i=>i.rec);
+  const active = mine.filter(i=>!i.done);
+  const done = mine.filter(i=>i.done);
+
+  if(!active.length && !recs.length && !done.length){
+    h += emptyState('🛒','Liste vide','Ajoute un article avec le bouton +');
+  } else {
+    if(recs.length){
+      h += `<div class="quick"><div class="qh">🔁 Mes essentiels — 1 clic pour (dés)activer</div><div class="chips">`;
+      h += recs.map(i=>`<div class="chip ${i.done?'':'on'}" data-toggle="${i.id}"><span class="e">${i.emo}</span>${esc(i.txt)}</div>`).join('');
+      h += `</div></div>`;
+    }
+    const scats = S.shopCats.length? S.shopCats : [{id:'au',e:'🛒',n:'Courses'}];
+    const sfirst = scats[0].id;
+    scats.forEach(c=>{
+      const list = active.filter(i=> catOrFirst(i.cat, scats, sfirst)===c.id );
+      if(!list.length) return;
+      h += `<div class="cat"><div class="cat-h"><span class="e">${c.e}</span>${c.n}<span class="n">${list.length}</span></div>`;
+      h += list.map(rowShop).join('');
+      h += `</div>`;
+    });
+    if(done.length){
+      h += `<div class="cat-h" style="margin-top:22px"><span class="e">✅</span>Dans le caddie<span class="n">${done.length}</span></div>`;
+      h += done.map(rowShop).join('');
+      h += `<button class="clearbtn" id="clearDone">🧹 Vider le caddie (${done.length})</button>`;
+    }
   }
+
   el.innerHTML = h;
   bindRows(el,'shop');
-  // chips
+  // sélection de magasin
+  el.querySelectorAll('[data-store]').forEach(b=>{ b.onclick = ()=>{ curStore=b.dataset.store; renderShop(); renderProgress(); }; });
+  const sa = document.getElementById('storeAdd');
+  if(sa) sa.onclick = addStore;
+  // essentiels
   el.querySelectorAll('[data-toggle]').forEach(ch=>{
-    ch.onclick = ()=>{
-      const it = S.shop.find(x=>x.id===ch.dataset.toggle);
-      it.done = !it.done; if(it.done) burst(ch);
-      render();
-    };
+    ch.onclick = ()=>{ const it = S.shop.find(x=>x.id===ch.dataset.toggle); it.done = !it.done; if(it.done) burst(ch); render(); };
   });
   const cd = document.getElementById('clearDone');
   if(cd) cd.onclick = ()=>{
-    S.shop.forEach(i=>{ if(i.done && i.rec) i.done=false; });
-    S.shop = S.shop.filter(i=>!(i.done && !i.rec));
+    S.shop.forEach(i=>{ if(itemStore(i)===curStore && i.done && i.rec) i.done=false; });
+    S.shop = S.shop.filter(i=>!(itemStore(i)===curStore && i.done && !i.rec));
     render(); toast('Caddie vidé 🎉');
   };
+}
+function addStore(){
+  const n = (prompt('Nom du nouveau magasin (ex : Lidl, Action, Pharmacie) :')||'').trim();
+  if(!n) return;
+  const s = { id:id(), e:'🛒', n };
+  S.stores.push(s); curStore = s.id; render(); toast('Magasin ajouté 🏬');
 }
 function rowShop(t){
   return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
@@ -862,7 +914,7 @@ function bindRows(el,key){
 }
 
 function renderProgress(){
-  const list = tab==='todo'? S.todos : S.shop;
+  const list = tab==='todo'? S.todos : S.shop.filter(i=>itemStore(i)===curStore);
   const tot = list.length, done = list.filter(i=>i.done).length;
   const pct = tot? Math.round(done/tot*100):0;
   const ring = document.getElementById('ring');
@@ -873,8 +925,9 @@ function renderProgress(){
     document.getElementById('progSub').textContent = tot? `${done}/${tot} tâche${tot>1?'s':''} faite${done>1?'s':''}` + (pct===100?' — bravo ! 🎉':'') : 'Rien à faire pour l\'instant';
   }else{
     const left = tot-done;
-    document.getElementById('progTitle').textContent = 'Liste de courses';
-    document.getElementById('progSub').textContent = tot? (left? `${left} article${left>1?'s':''} à prendre` : 'Tout est dans le caddie ! 🎉') : 'Panier vide';
+    const st = (S.stores.find(s=>s.id===curStore)||{});
+    document.getElementById('progTitle').textContent = (st.e?st.e+' ':'')+'Courses '+(st.n||'');
+    document.getElementById('progSub').textContent = tot? (left? `${left} article${left>1?'s':''} à prendre` : 'Tout est dans le caddie ! 🎉') : 'Liste vide';
   }
 }
 
@@ -1060,7 +1113,7 @@ function add(){
     if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
   }else{
     const [e] = guessShop(v);
-    S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,rec:form.rec,done:false});
+    S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,rec:form.rec,done:false});
   }
   render(); toast('Ajouté ! '+inpEmo.textContent);
   inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':'🛒';
@@ -1072,7 +1125,9 @@ function add(){
 /* ============ SETTINGS (catégories) ============ */
 const setSheet = document.getElementById('setSheet'), setBg = document.getElementById('setBg');
 let setSeg = 'shop';
-function catsFor(seg){ return seg==='shop'? S.shopCats : S.todoCats; }
+function catsFor(seg){ return seg==='shop'? S.shopCats : seg==='stores'? S.stores : S.todoCats; }
+// pour la suppression : quelle liste d'items et quel champ pointent vers cette "catégorie"
+function segItemRef(seg){ return seg==='stores'? {key:'shop', field:'store'} : {key:(seg==='shop'?'shop':'todos'), field:'cat'}; }
 
 document.getElementById('gear').onclick = openSettings;
 setBg.onclick = closeSettings;
@@ -1103,14 +1158,16 @@ function renderSettingsList(){
     row.querySelector('[data-down]').onclick = ()=>{ if(i<list.length-1){ [list[i+1],list[i]]=[list[i],list[i+1]]; save(); renderSettingsList(); } };
     row.querySelector('[data-rm]').onclick = ()=>{
       if(list.length<=1) return;
-      const key = setSeg==='shop'?'shop':'todos';
-      const nb = S[key].filter(x=>x.cat===c.id).length;
-      if(nb>0 && !confirm(`Supprimer « ${c.n} » ? Les ${nb} élément(s) de cette catégorie iront dans « ${list[0].id===c.id?(list[1]||{}).n:list[0].n} ».`)) return;
-      // réaffecte les éléments orphelins vers la 1re catégorie restante
+      const {key, field} = segItemRef(setSeg);
+      const nb = S[key].filter(x=>x[field]===c.id).length;
+      const dest = list[0].id===c.id?(list[1]||{}).n:list[0].n;
+      const mot = setSeg==='stores'?'magasin':'catégorie';
+      if(nb>0 && !confirm(`Supprimer le ${mot} « ${c.n} » ? Les ${nb} élément(s) iront dans « ${dest} ».`)) return;
       const remaining = list.filter(x=>x.id!==c.id);
       const fallback = remaining[0].id;
-      S[key].forEach(x=>{ if(x.cat===c.id) x.cat = fallback; });
+      S[key].forEach(x=>{ if(x[field]===c.id) x[field] = fallback; });
       const src = catsFor(setSeg); src.splice(src.indexOf(c),1);
+      if(setSeg==='stores' && !storeExists(curStore)) curStore = S.stores[0].id;
       save(); renderSettingsList();
     };
   });
@@ -1118,7 +1175,7 @@ function renderSettingsList(){
 
 document.getElementById('addCat').onclick = ()=>{
   const list = catsFor(setSeg);
-  list.push({id:id(), e: setSeg==='shop'?'🛒':'⭐', n:''});
+  list.push({id:id(), e: setSeg==='stores'?'🏬':(setSeg==='shop'?'🛒':'⭐'), n:''});
   save(); renderSettingsList();
   // focus le nom de la nouvelle catégorie
   const rows = document.querySelectorAll('#setList .set-row');
@@ -1126,9 +1183,12 @@ document.getElementById('addCat').onclick = ()=>{
 };
 
 document.getElementById('resetCat').onclick = ()=>{
-  if(!confirm('Remettre les catégories '+(setSeg==='shop'?'de courses':'de tâches')+' par défaut ? (tes éléments ne sont pas supprimés)')) return;
-  if(setSeg==='shop') S.shopCats = clone(DEFAULT_SHOP_CATS); else S.todoCats = clone(DEFAULT_TODO_CATS);
-  save(); renderSettingsList(); toast('Catégories réinitialisées ↺');
+  const lbl = setSeg==='shop'?'les rayons':setSeg==='stores'?'les magasins':'les catégories de tâches';
+  if(!confirm('Remettre '+lbl+' par défaut ? (tes éléments ne sont pas supprimés)')) return;
+  if(setSeg==='shop') S.shopCats = clone(DEFAULT_SHOP_CATS);
+  else if(setSeg==='stores'){ S.stores = clone(DEFAULT_STORES); curStore = S.stores[0].id; }
+  else S.todoCats = clone(DEFAULT_TODO_CATS);
+  save(); renderSettingsList(); toast('Réinitialisé ↺');
 };
 
 /* ============ NOTIFICATIONS & RAPPELS ============ */
@@ -1274,8 +1334,11 @@ async function cloudPush(){
 function ensureShape(){
   if(!S.shopCats) S.shopCats = clone(DEFAULT_SHOP_CATS);
   if(!S.todoCats) S.todoCats = clone(DEFAULT_TODO_CATS);
+  if(!S.stores || !S.stores.length) S.stores = clone(DEFAULT_STORES);
   if(!Array.isArray(S.todos)) S.todos=[];
   if(!Array.isArray(S.shop)) S.shop=[];
+  S.shop.forEach(i=>{ if(!i.store) i.store = S.stores[0].id; });
+  if(!storeExists(curStore)) curStore = S.stores[0].id;
 }
 
 /* ----- UI Partage ----- */
