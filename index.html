@@ -252,6 +252,24 @@
   .film-preview .pv-t{font-weight:800;font-size:15px;line-height:1.25}
   .film-preview .pv-o{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.4;margin-top:5px;max-height:104px;overflow:auto}
   .film-loading{font-size:13px;color:var(--muted);font-weight:700;padding:2px 4px 8px}
+  .trailer-btn{margin-top:9px;border:none;background:linear-gradient(135deg,#ff5d5d,#e11d1d);color:#fff;font-weight:800;
+    font-size:13.5px;padding:9px 14px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    box-shadow:0 4px 12px rgba(225,29,29,.3)}
+  .trailer-btn:active{transform:scale(.97)}
+  .row .cal.trailer-row{background:#ffe6e6}
+  .row .cal.trailer-row:active{background:var(--red)}
+  /* lecteur bande-annonce */
+  .trailer-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:80;opacity:0;pointer-events:none;transition:.2s}
+  .trailer-bg.open{opacity:1;pointer-events:auto}
+  .trailer-modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);z-index:81;
+    width:min(94vw,760px);opacity:0;pointer-events:none;transition:.2s}
+  .trailer-modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .trailer-frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:16px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.55)}
+  .trailer-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .trailer-close{position:absolute;top:-48px;right:0;border:none;background:rgba(255,255,255,.92);width:40px;height:40px;
+    border-radius:50%;font-size:18px;font-weight:800;cursor:pointer;z-index:82;box-shadow:var(--shadow)}
+  .trailer-close:active{transform:scale(.9)}
 
   /* ---------- SHEET (add modal) ---------- */
   .sheet-bg{position:fixed;inset:0;background:rgba(43,36,64,.4);z-index:50;opacity:0;
@@ -530,6 +548,13 @@
 <div class="toast" id="toast"></div>
 <div class="sync-pill" id="syncPill">🔄 Synchronisé</div>
 
+<!-- lecteur bande-annonce -->
+<div class="trailer-bg" id="trailerBg"></div>
+<div class="trailer-modal" id="trailerModal">
+  <button class="trailer-close" id="trailerClose">✕</button>
+  <div class="trailer-frame" id="trailerFrame"></div>
+</div>
+
 <script>
 /* ============ DATA ============ */
 const DEFAULT_SHOP_CATS = [
@@ -602,11 +627,22 @@ function renderFilmResults(list){
     <div><div class="ti">${esc(m.title)}</div><div class="yr">${m.year||'—'}</div></div></div>`).join('');
   el.querySelectorAll('.film-result').forEach(r=>{ r.onclick = ()=>selectFilmResult(list[+r.dataset.i]); });
 }
+async function tmdbTrailer(id){
+  if(!TMDB_KEY || !id) return '';
+  const pick = (arr)=>{ arr=(arr||[]).filter(v=>v.site==='YouTube'); return (arr.find(v=>v.type==='Trailer')||arr.find(v=>v.type==='Teaser')||arr[0]||{}).key||''; };
+  try{
+    let r = await fetch(`https://api.themoviedb.org/3/movie/${id}/videos?api_key=${TMDB_KEY}&language=fr-FR`);
+    let k = r.ok ? pick((await r.json()).results) : '';
+    if(!k){ r = await fetch(`https://api.themoviedb.org/3/movie/${id}/videos?api_key=${TMDB_KEY}`); k = r.ok ? pick((await r.json()).results) : ''; }
+    return k;
+  }catch(e){ return ''; }
+}
 function selectFilmResult(m){
-  form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId};
+  form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId, ytKey:''};
   inp.value = m.title; inpEmo.textContent = guessFilmEmo(m.title);
   document.getElementById('filmResults').innerHTML='';
   showFilmPreview(form.filmMeta, m.title);
+  tmdbTrailer(m.tmdbId).then(k=>{ if(form.filmMeta && form.filmMeta.tmdbId===m.tmdbId){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, m.title); } });
 }
 function showFilmPreview(meta, title){
   const el = document.getElementById('filmPreview');
@@ -614,8 +650,22 @@ function showFilmPreview(meta, title){
   el.style.display='flex';
   el.innerHTML = `${meta.poster?`<img src="${meta.poster}" alt="">`:''}
     <div><div class="pv-t">${esc(title||'')}${meta.year?` <span class="yr" style="color:var(--muted)">(${meta.year})</span>`:''}</div>
-    <div class="pv-o">${esc(meta.overview||'Pas de résumé disponible.')}</div></div>`;
+    <div class="pv-o">${esc(meta.overview||'Pas de résumé disponible.')}</div>
+    ${meta.ytKey?`<button class="trailer-btn" onclick="openTrailer('${meta.ytKey}')">▶️ Bande-annonce</button>`:''}</div>`;
 }
+function openTrailer(key){
+  if(!key) return;
+  document.getElementById('trailerFrame').innerHTML = `<iframe src="https://www.youtube.com/embed/${key}?autoplay=1&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+  document.getElementById('trailerBg').classList.add('open');
+  document.getElementById('trailerModal').classList.add('open');
+}
+function closeTrailer(){
+  document.getElementById('trailerFrame').innerHTML=''; // stoppe la lecture
+  document.getElementById('trailerBg').classList.remove('open');
+  document.getElementById('trailerModal').classList.remove('open');
+}
+document.getElementById('trailerBg').onclick = closeTrailer;
+document.getElementById('trailerClose').onclick = closeTrailer;
 
 // keyword -> [emoji, categoryId]
 const DICT = {
@@ -1037,6 +1087,7 @@ function rowFilm(f){
     <div class="check" data-check>${chk()}</div>
     ${media}
     <div class="label">${esc(f.txt)}${sub}</div>
+    ${f.ytKey?`<button class="cal trailer-row" data-trailer="${f.ytKey}" title="Bande-annonce">▶️</button>`:''}
   </div></div>`;
 }
 
@@ -1051,13 +1102,15 @@ function bindRows(el,key){
     if(!item) return;
     const check = row.querySelector('[data-check]');
     check.onclick = (e)=>{ e.stopPropagation(); item.done=!item.done; if(item.done) burst(check); render(); };
-    const calBtn = row.querySelector('[data-cal]');
+    const calBtn = row.querySelector('[data-cal]:not([data-trailer])');
     if(calBtn) calBtn.onclick = (e)=>{ e.stopPropagation(); openGcal(item); };
+    const trBtn = row.querySelector('[data-trailer]');
+    if(trBtn) trBtn.onclick = (e)=>{ e.stopPropagation(); openTrailer(trBtn.dataset.trailer); };
 
     // --- gestes tactiles : glisser à gauche = supprimer, tap = modifier ---
     let sx=0, sy=0, dx=0, dragging=false, horizontal=false, decided=false, moved=false, lp=null;
     row.addEventListener('touchstart', e=>{
-      if(e.target.closest('[data-check],[data-cal],.stars')) return;
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],.stars')) return;
       const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
       dragging=true; horizontal=false; decided=false; moved=false;
       row.style.transition='';
@@ -1085,7 +1138,7 @@ function bindRows(el,key){
     });
     // clic souris (desktop) = modifier
     row.addEventListener('click', e=>{
-      if(e.target.closest('[data-check],[data-cal],.stars')) return;
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],.stars')) return;
       if('ontouchstart' in window) return;
       openSheet(item, key);
     });
@@ -1213,8 +1266,11 @@ function openSheet(editItem=null, editKey=null){
     } else {
       form.plat = editItem.plat; syncPlatPick();
       if(editItem.poster || editItem.overview){
-        form.filmMeta = {poster:editItem.poster, overview:editItem.overview, year:editItem.year, tmdbId:editItem.tmdbId};
+        form.filmMeta = {poster:editItem.poster, overview:editItem.overview, year:editItem.year, tmdbId:editItem.tmdbId, ytKey:editItem.ytKey||''};
         showFilmPreview(form.filmMeta, editItem.txt);
+        if(!form.filmMeta.ytKey && editItem.tmdbId){
+          tmdbTrailer(editItem.tmdbId).then(k=>{ if(k && form.filmMeta && form.filmMeta.tmdbId===editItem.tmdbId){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, editItem.txt); } });
+        }
       }
     }
   }
@@ -1306,7 +1362,7 @@ function add(){
         it.notified = it.due && it.due>Date.now() ? false : it.notified;
       } else if(k==='films'){
         it.emo = guessFilmEmo(v); it.plat = form.plat;
-        if(form.filmMeta){ const fm=form.filmMeta; it.poster=fm.poster||''; it.overview=fm.overview||''; it.year=fm.year||''; it.tmdbId=fm.tmdbId||null; }
+        if(form.filmMeta){ const fm=form.filmMeta; it.poster=fm.poster||''; it.overview=fm.overview||''; it.year=fm.year||''; it.tmdbId=fm.tmdbId||null; it.ytKey=fm.ytKey||''; }
       } else {
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.rec = form.rec;
       }
@@ -1326,7 +1382,7 @@ function add(){
   }else if(tab==='film'){
     const fm = form.filmMeta || {};
     S.films.unshift({id:id(),txt:v,emo:guessFilmEmo(v),plat:form.plat,done:false,rating:0,
-      poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null});
+      poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||''});
   }else{
     const [e] = guessShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,rec:form.rec,done:false});
