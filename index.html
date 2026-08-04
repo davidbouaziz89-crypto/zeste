@@ -224,7 +224,16 @@
   .tab.active{color:var(--ink)}
   .tab.active.t-todo{background:linear-gradient(135deg,#fff0c2,#ffe08a)}
   .tab.active.t-shop{background:linear-gradient(135deg,#d8fbe6,#b6f3cf)}
+  .tab.active.t-film{background:linear-gradient(135deg,#ece2ff,#d6c4ff)}
   .tab.active .ic{transform:scale(1.18) translateY(-1px)}
+
+  /* films */
+  .plat-tag{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-flex;gap:3px;
+    align-items:center;background:hsl(var(--ch,265) 85% 93%);color:hsl(var(--ch,265) 45% 40%)}
+  .stars{display:flex;gap:3px;margin-top:4px}
+  .stars .star{font-size:16px;cursor:pointer;filter:grayscale(1);opacity:.5;transition:.1s}
+  .stars .star.on{filter:none;opacity:1;transform:scale(1.05)}
+  .stars .star:active{transform:scale(1.25)}
 
   /* ---------- SHEET (add modal) ---------- */
   .sheet-bg{position:fixed;inset:0;background:rgba(43,36,64,.4);z-index:50;opacity:0;
@@ -371,6 +380,7 @@
   <main>
     <div class="view active" id="view-todo"></div>
     <div class="view" id="view-shop"></div>
+    <div class="view" id="view-film"></div>
   </main>
 </div>
 
@@ -379,6 +389,7 @@
 <div class="tabs"><div class="tabs-inner">
   <button class="tab t-todo active" data-tab="todo"><span class="ic">✅</span>À faire</button>
   <button class="tab t-shop" data-tab="shop"><span class="ic">🛒</span>Courses</button>
+  <button class="tab t-film" data-tab="film"><span class="ic">🎬</span>Films</button>
 </div></div>
 
 <!-- ADD SHEET -->
@@ -429,7 +440,12 @@
     <div class="cat-pick" id="catPick"></div>
   </div>
 
-  <div class="rec-toggle">
+  <!-- FILM options -->
+  <div id="filmOpts" style="display:none">
+    <div class="cat-pick" id="platPick"></div>
+  </div>
+
+  <div class="rec-toggle" id="recToggleRow">
     <div class="switch" id="recSw"></div>
     <div><span id="recLabel">Récurrent</span> <span style="color:var(--muted);font-weight:600;font-size:13px" id="recHint">(revient à chaque fois)</span></div>
   </div>
@@ -514,6 +530,20 @@ const DEFAULT_STORES = [
   {id:'m1', e:'🛒', n:'Leclerc'},
   {id:'m2', e:'🏬', n:'Action'},
 ];
+
+// plateformes de films
+const FILM_PLATS = [
+  {id:'net',    e:'🔴', n:'Netflix'},
+  {id:'prime',  e:'🔵', n:'Prime'},
+  {id:'disney', e:'🏰', n:'Disney+'},
+  {id:'cine',   e:'🎦', n:'Ciné/Canal'},
+  {id:'yt',     e:'▶️', n:'YouTube'},
+  {id:'other',  e:'🎬', n:'Autre'},
+];
+const FPLATMAP = Object.fromEntries(FILM_PLATS.map(p=>[p.id,p]));
+// emoji d'ambiance selon le titre/genre
+const FILM_EMO = {horreur:'👻',peur:'👻',fantome:'👻',amour:'❤️',romance:'❤️',comedie:'😂','comédie':'😂',rire:'😂',action:'💥',guerre:'🎖️',espace:'🚀',science:'🛸',fiction:'🛸',enfant:'🧸',dessin:'🧸',anime:'🎌','animé':'🎌',policier:'🕵️',enquete:'🕵️',thriller:'🔪',doc:'🎥',documentaire:'🎥',foot:'⚽',sport:'🏆',musique:'🎵',western:'🤠',super:'🦸',magie:'🪄',dragon:'🐉'};
+function guessFilmEmo(t){ t=(t||'').toLowerCase(); for(const k in FILM_EMO){ if(t.includes(k)) return FILM_EMO[k]; } return '🎬'; }
 
 // keyword -> [emoji, categoryId]
 const DICT = {
@@ -673,6 +703,7 @@ function load(){
     if(!d.todoCats) d.todoCats = clone(DEFAULT_TODO_CATS);
     if(!d.stores) d.stores = clone(DEFAULT_STORES); // migration: magasins
     (d.shop||[]).forEach(i=>{ if(!i.store) i.store = d.stores[0].id; }); // articles existants -> 1er magasin
+    if(!d.films) d.films = []; // migration: films
     return d;
   } }catch(e){}
   return {
@@ -693,6 +724,11 @@ function load(){
       {id:id(),txt:'Poulet',emo:'🍗',cat:'vp',store:'m1',rec:false,done:false},
       {id:id(),txt:'Piles AA',emo:'🔋',cat:'ma',store:'m2',rec:false,done:false},
       {id:id(),txt:'Papier toilette',emo:'🧻',cat:'hy',store:'m1',rec:true,done:true},
+    ],
+    films:[
+      {id:id(),txt:'Oppenheimer',emo:'💥',plat:'net',done:false,rating:0},
+      {id:id(),txt:'Le Comte de Monte-Cristo',emo:'🎬',plat:'cine',done:false,rating:0},
+      {id:id(),txt:'Intouchables',emo:'😂',plat:'prime',done:true,rating:5},
     ],
   };
 }
@@ -736,6 +772,7 @@ function storeExists(id){ return S.stores && S.stores.some(s=>s.id===id); }
 function render(){
   renderTodo();
   renderShop();
+  renderFilms();
   renderProgress();
   save();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
@@ -884,6 +921,50 @@ function rowShop(t){
   </div></div>`;
 }
 
+/* ---------- FILMS ---------- */
+function renderFilms(){
+  const el = document.getElementById('view-film');
+  const films = S.films || [];
+  if(!films.length){ el.innerHTML = emptyState('🍿','Aucun film','Ajoute un film à voir avec le bouton +'); return; }
+  const toSee = films.filter(f=>!f.done), seen = films.filter(f=>f.done);
+  let h = '';
+  FILM_PLATS.forEach(p=>{
+    const list = toSee.filter(f=>(f.plat||'other')===p.id);
+    if(!list.length) return;
+    h += `<div class="cat"><div class="cat-h" style="--ch:${catHue(p.id)}"><span class="e">${p.e}</span>${p.n}<span class="n">${list.length}</span></div>`;
+    h += list.map(rowFilm).join('');
+    h += `</div>`;
+  });
+  if(!toSee.length) h += emptyState('🍿','Tout est vu !','Ajoute un nouveau film avec le bouton +');
+  if(seen.length){
+    h += `<div class="cat-h" style="margin-top:22px;--ch:280"><span class="e">🍿</span>Déjà vus<span class="n">${seen.length}</span></div>`;
+    h += seen.map(rowFilm).join('');
+  }
+  el.innerHTML = h;
+  bindRows(el,'films');
+  el.querySelectorAll('.stars').forEach(st=>{
+    st.querySelectorAll('.star').forEach(s=>{
+      s.onclick = (e)=>{ e.stopPropagation(); const f=S.films.find(x=>x.id===st.dataset.id); if(!f) return; const v=+s.dataset.v; f.rating = (f.rating===v? v-1 : v); render(); };
+    });
+  });
+}
+function rowFilm(f){
+  const p = FPLATMAP[f.plat] || FILM_PLATS[FILM_PLATS.length-1];
+  let sub;
+  if(f.done){
+    let stars=''; for(let i=1;i<=5;i++) stars += `<span class="star ${i<=(f.rating||0)?'on':''}" data-v="${i}">⭐</span>`;
+    sub = `<div class="stars" data-id="${f.id}">${stars}</div>`;
+  } else {
+    sub = `<div class="sub"><span class="plat-tag" style="--ch:${catHue(p.id)}">${p.e} ${esc(p.n)}</span></div>`;
+  }
+  return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
+    <div class="row ${f.done?'done':''}" data-id="${f.id}" style="--ch:${catHue(f.plat)}">
+    <div class="check" data-check>${chk()}</div>
+    <span class="emo">${f.emo||'🎬'}</span>
+    <div class="label">${esc(f.txt)}${sub}</div>
+  </div></div>`;
+}
+
 function delItem(key,itemId,silent){
   const it = S[key].find(x=>x.id===itemId); if(!it) return;
   if(!silent && !confirm('Supprimer « '+it.txt+' » ?')) return;
@@ -901,7 +982,7 @@ function bindRows(el,key){
     // --- gestes tactiles : glisser à gauche = supprimer, tap = modifier ---
     let sx=0, sy=0, dx=0, dragging=false, horizontal=false, decided=false, moved=false, lp=null;
     row.addEventListener('touchstart', e=>{
-      if(e.target.closest('[data-check],[data-cal]')) return;
+      if(e.target.closest('[data-check],[data-cal],.stars')) return;
       const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
       dragging=true; horizontal=false; decided=false; moved=false;
       row.style.transition='';
@@ -929,7 +1010,7 @@ function bindRows(el,key){
     });
     // clic souris (desktop) = modifier
     row.addEventListener('click', e=>{
-      if(e.target.closest('[data-check],[data-cal]')) return;
+      if(e.target.closest('[data-check],[data-cal],.stars')) return;
       if('ontouchstart' in window) return;
       openSheet(item, key);
     });
@@ -937,20 +1018,25 @@ function bindRows(el,key){
 }
 
 function renderProgress(){
-  const list = tab==='todo'? S.todos : S.shop.filter(i=>itemStore(i)===curStore);
+  const list = tab==='todo'? S.todos : tab==='film'? S.films : S.shop.filter(i=>itemStore(i)===curStore);
   const tot = list.length, done = list.filter(i=>i.done).length;
   const pct = tot? Math.round(done/tot*100):0;
   const ring = document.getElementById('ring');
   ring.style.setProperty('--p', pct+'%');
   document.getElementById('ringtxt').textContent = pct+'%';
+  const T = document.getElementById('progTitle'), D = document.getElementById('progSub');
   if(tab==='todo'){
-    document.getElementById('progTitle').textContent = 'Ta journée';
-    document.getElementById('progSub').textContent = tot? `${done}/${tot} tâche${tot>1?'s':''} faite${done>1?'s':''}` + (pct===100?' — bravo ! 🎉':'') : 'Rien à faire pour l\'instant';
+    T.textContent = 'Ta journée';
+    D.textContent = tot? `${done}/${tot} tâche${tot>1?'s':''} faite${done>1?'s':''}` + (pct===100?' — bravo ! 🎉':'') : 'Rien à faire pour l\'instant';
+  }else if(tab==='film'){
+    const left = tot-done;
+    T.textContent = '🎬 Mes films';
+    D.textContent = tot? (left? `${left} film${left>1?'s':''} à voir` : 'Tout est vu ! 🍿') : 'Aucun film';
   }else{
     const left = tot-done;
     const st = (S.stores.find(s=>s.id===curStore)||{});
-    document.getElementById('progTitle').textContent = (st.e?st.e+' ':'')+'Courses '+(st.n||'');
-    document.getElementById('progSub').textContent = tot? (left? `${left} article${left>1?'s':''} à prendre` : 'Tout est dans le caddie ! 🎉') : 'Liste vide';
+    T.textContent = (st.e?st.e+' ':'')+'Courses '+(st.n||'');
+    D.textContent = tot? (left? `${left} article${left>1?'s':''} à prendre` : 'Tout est dans le caddie ! 🎉') : 'Liste vide';
   }
 }
 
@@ -997,14 +1083,17 @@ let editState = null;
 
 function openSheet(editItem=null, editKey=null){
   editState = editItem ? {id:editItem.id, key:editKey} : null;
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
-  const isTodo = tab==='todo';
-  document.getElementById('sheetTitle').textContent = isTodo? 'Nouvelle tâche ✅':'Nouvel article 🛒';
+  const mode = editItem ? ({todos:'todo',shop:'shop',films:'film'}[editKey]) : tab;
+  const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film';
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
+  document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':'Nouveau film 🎬';
   document.getElementById('todoOpts').style.display = isTodo?'block':'none';
-  document.getElementById('shopOpts').style.display = isTodo?'none':'block';
-  inp.placeholder = isTodo? 'Ex : Sortir les poubelles':'Ex : Tomates';
+  document.getElementById('shopOpts').style.display = isShop?'block':'none';
+  document.getElementById('filmOpts').style.display = isFilm?'block':'none';
+  document.getElementById('recToggleRow').style.display = isFilm?'none':'flex';
+  inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':'Ex : Oppenheimer';
   document.getElementById('recHint').textContent = isTodo? '(revient chaque fois)':'(essentiel à racheter)';
-  inp.value=''; inpEmo.textContent = isTodo?'⭐':'🛒';
+  inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':'🎬';
   // reset prio
   document.querySelectorAll('#todoOpts .opt').forEach(o=>o.classList.toggle('sel', o.dataset.prio==='3'));
   document.getElementById('recSw').classList.remove('on');
@@ -1019,12 +1108,13 @@ function openSheet(editItem=null, editKey=null){
   document.getElementById('addBtn').textContent = 'Ajouter';
   buildCatPick();
   buildTcatPick();
+  buildPlatPick();
 
   // ----- mode MODIFIER : on pré-remplit -----
   if(editItem){
     inp.value = editItem.txt;
-    inpEmo.textContent = editItem.emo || (isTodo?'⭐':'🛒');
-    document.getElementById('sheetTitle').textContent = isTodo? 'Modifier la tâche ✏️':'Modifier l\'article ✏️';
+    inpEmo.textContent = editItem.emo || (isTodo?'⭐':isShop?'🛒':'🎬');
+    document.getElementById('sheetTitle').textContent = isTodo?'Modifier la tâche ✏️':isShop?"Modifier l'article ✏️":'Modifier le film ✏️';
     document.getElementById('addBtn').textContent = 'Enregistrer';
     if(isTodo){
       form.tcat = editItem.cat; form.prio = editItem.prio||3; form.rec = !!editItem.rec;
@@ -1036,10 +1126,12 @@ function openSheet(editItem=null, editKey=null){
         document.querySelectorAll('#remChips .chip').forEach(c=>c.classList.toggle('on', c.dataset.rem==='custom'));
         showRemUI(form.due); document.getElementById('remRep').value = form.repeat;
       }
-    } else {
+    } else if(isShop){
       form.cat = editItem.cat; form.rec = !!editItem.rec;
       document.getElementById('recSw').classList.toggle('on', form.rec);
       syncCatPick();
+    } else {
+      form.plat = editItem.plat; syncPlatPick();
     }
   }
 
@@ -1052,8 +1144,10 @@ bg.onclick = closeSheet;
 
 inp.addEventListener('input',()=>{
   const v = inp.value.trim();
-  if(!v){ inpEmo.textContent = tab==='todo'?'⭐':'🛒'; return; }
-  if(tab==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
+  const m = editState ? ({todos:'todo',shop:'shop',films:'film'}[editState.key]) : tab;
+  if(!v){ inpEmo.textContent = m==='todo'?'⭐':m==='shop'?'🛒':'🎬'; return; }
+  if(m==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
+  else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); }
   else{ const [e,c] = guessShop(v); inpEmo.textContent = e; if(!form.catTouched){ form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); } }
 });
 
@@ -1104,6 +1198,13 @@ function buildTcatPick(){
 }
 function syncTcatPick(){ document.querySelectorAll('#tcatPick button').forEach(b=>b.classList.toggle('sel', b.dataset.tcat===form.tcat)); }
 
+function buildPlatPick(){
+  const cp = document.getElementById('platPick');
+  cp.innerHTML = FILM_PLATS.map(p=>`<button data-plat="${p.id}" class="${p.id===form.plat?'sel':''}"><span class="e">${p.e}</span>${esc(p.n)}</button>`).join('');
+  cp.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ form.plat=b.dataset.plat; syncPlatPick(); }; });
+}
+function syncPlatPick(){ document.querySelectorAll('#platPick button').forEach(b=>b.classList.toggle('sel', b.dataset.plat===form.plat)); }
+
 document.getElementById('addBtn').onclick = add;
 inp.addEventListener('keydown',e=>{ if(e.key==='Enter') add(); });
 function add(){
@@ -1111,20 +1212,23 @@ function add(){
 
   // ----- mode MODIFIER -----
   if(editState){
-    const it = S[editState.key].find(x=>x.id===editState.id);
+    const k = editState.key;
+    const it = S[k].find(x=>x.id===editState.id);
     if(it){
       it.txt = v;
-      if(tab==='todo'){
+      if(k==='todos'){
         it.emo = guessTodo(v); it.cat = form.tcat; it.prio = form.prio; it.rec = form.rec;
         it.due = form.due||null; it.repeat = form.repeat||'none';
         it.notified = it.due && it.due>Date.now() ? false : it.notified;
+      } else if(k==='films'){
+        it.emo = guessFilmEmo(v); it.plat = form.plat;
       } else {
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.rec = form.rec;
       }
     }
-    const wantGcal = form.gcal, editedItem = it;
+    const wantGcal = form.gcal, editedItem = it, wasTodo = k==='todos';
     editState = null; render(); closeSheet(); toast('Modifié ✏️');
-    if(tab==='todo' && wantGcal && editedItem && editedItem.due) setTimeout(()=>openGcal(editedItem),150);
+    if(wasTodo && wantGcal && editedItem && editedItem.due) setTimeout(()=>openGcal(editedItem),150);
     return;
   }
 
@@ -1134,12 +1238,14 @@ function add(){
     S.todos.unshift(nt);
     const autoG = gcal.auto && gcalConnected();
     if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
+  }else if(tab==='film'){
+    S.films.unshift({id:id(),txt:v,emo:guessFilmEmo(v),plat:form.plat,done:false,rating:0});
   }else{
     const [e] = guessShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,rec:form.rec,done:false});
   }
   render(); toast('Ajouté ! '+inpEmo.textContent);
-  inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':'🛒';
+  inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':tab==='film'?'🎬':'🛒';
   document.getElementById('recSw').classList.remove('on'); form.rec=false;
   // après un ajout on garde la catégorie choisie pour enchaîner
   inp.focus();
@@ -1360,6 +1466,7 @@ function ensureShape(){
   if(!S.stores || !S.stores.length) S.stores = clone(DEFAULT_STORES);
   if(!Array.isArray(S.todos)) S.todos=[];
   if(!Array.isArray(S.shop)) S.shop=[];
+  if(!Array.isArray(S.films)) S.films=[];
   S.shop.forEach(i=>{ if(!i.store) i.store = S.stores[0].id; });
   if(!storeExists(curStore)) curStore = S.stores[0].id;
 }
