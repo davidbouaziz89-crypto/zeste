@@ -234,6 +234,24 @@
   .stars .star{font-size:16px;cursor:pointer;filter:grayscale(1);opacity:.5;transition:.1s}
   .stars .star.on{filter:none;opacity:1;transform:scale(1.05)}
   .stars .star:active{transform:scale(1.25)}
+  .row .emo.poster{padding:0;overflow:hidden;background:#e9e6f2}
+  .row .emo.poster img{width:100%;height:100%;object-fit:cover;border-radius:13px;display:block}
+
+  /* recherche films (TMDB) */
+  .film-results{display:flex;flex-direction:column;gap:6px;margin:2px 0 10px;max-height:250px;overflow-y:auto}
+  .film-results:empty{display:none}
+  .film-result{display:flex;gap:10px;align-items:center;padding:6px;border-radius:12px;background:#faf8ff;
+    border:1.5px solid var(--line);cursor:pointer}
+  .film-result:active{background:#efe8ff}
+  .film-result img,.film-result .ph{width:38px;height:56px;border-radius:7px;flex:none;background:#e9e6f2;object-fit:cover}
+  .film-result .ph{display:grid;place-items:center;font-size:20px}
+  .film-result .ti{font-weight:800;font-size:14.5px;line-height:1.2}
+  .film-result .yr{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+  .film-preview{display:flex;gap:12px;margin:2px 0 12px;padding:10px;border-radius:14px;background:#faf8ff;border:1.5px solid var(--line)}
+  .film-preview img{width:74px;height:110px;object-fit:cover;border-radius:10px;flex:none;background:#e9e6f2}
+  .film-preview .pv-t{font-weight:800;font-size:15px;line-height:1.25}
+  .film-preview .pv-o{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.4;margin-top:5px;max-height:104px;overflow:auto}
+  .film-loading{font-size:13px;color:var(--muted);font-weight:700;padding:2px 4px 8px}
 
   /* ---------- SHEET (add modal) ---------- */
   .sheet-bg{position:fixed;inset:0;background:rgba(43,36,64,.4);z-index:50;opacity:0;
@@ -442,6 +460,8 @@
 
   <!-- FILM options -->
   <div id="filmOpts" style="display:none">
+    <div class="film-results" id="filmResults"></div>
+    <div class="film-preview" id="filmPreview" style="display:none"></div>
     <div class="cat-pick" id="platPick"></div>
   </div>
 
@@ -544,6 +564,58 @@ const FPLATMAP = Object.fromEntries(FILM_PLATS.map(p=>[p.id,p]));
 // emoji d'ambiance selon le titre/genre
 const FILM_EMO = {horreur:'👻',peur:'👻',fantome:'👻',amour:'❤️',romance:'❤️',comedie:'😂','comédie':'😂',rire:'😂',action:'💥',guerre:'🎖️',espace:'🚀',science:'🛸',fiction:'🛸',enfant:'🧸',dessin:'🧸',anime:'🎌','animé':'🎌',policier:'🕵️',enquete:'🕵️',thriller:'🔪',doc:'🎥',documentaire:'🎥',foot:'⚽',sport:'🏆',musique:'🎵',western:'🤠',super:'🦸',magie:'🪄',dragon:'🐉'};
 function guessFilmEmo(t){ t=(t||'').toLowerCase(); for(const k in FILM_EMO){ if(t.includes(k)) return FILM_EMO[k]; } return '🎬'; }
+
+// ----- Recherche de films via TMDB (base gratuite) -----
+const TMDB_KEY = ''; // ← clé API TMDB (à remplir : voir TMDB-SETUP.md)
+let filmSearchT = null, filmSearchSeq = 0;
+async function tmdbSearch(q){
+  if(!TMDB_KEY || !q || q.length<2) return [];
+  try{
+    const url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&language=fr-FR&include_adult=false&query=${encodeURIComponent(q)}`;
+    const r = await fetch(url); if(!r.ok) return [];
+    const j = await r.json();
+    return (j.results||[]).slice(0,6).map(m=>({
+      tmdbId:m.id, title:m.title, year:(m.release_date||'').slice(0,4),
+      poster: m.poster_path ? 'https://image.tmdb.org/t/p/w185'+m.poster_path : '',
+      overview: m.overview||''
+    }));
+  }catch(e){ console.warn('tmdb',e); return []; }
+}
+function scheduleFilmSearch(q){
+  if(!TMDB_KEY) return;
+  clearTimeout(filmSearchT);
+  const el = document.getElementById('filmResults');
+  if(!q || q.length<2){ el.innerHTML=''; return; }
+  const seq = ++filmSearchSeq;
+  el.innerHTML = `<div class="film-loading">🔎 Recherche…</div>`;
+  filmSearchT = setTimeout(async ()=>{
+    const res = await tmdbSearch(q);
+    if(seq!==filmSearchSeq) return;
+    renderFilmResults(res);
+  }, 350);
+}
+function renderFilmResults(list){
+  const el = document.getElementById('filmResults');
+  if(!list.length){ el.innerHTML=''; return; }
+  el.innerHTML = list.map((m,i)=>`<div class="film-result" data-i="${i}">
+    ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>🎬</div>'">`:`<div class="ph">🎬</div>`}
+    <div><div class="ti">${esc(m.title)}</div><div class="yr">${m.year||'—'}</div></div></div>`).join('');
+  el.querySelectorAll('.film-result').forEach(r=>{ r.onclick = ()=>selectFilmResult(list[+r.dataset.i]); });
+}
+function selectFilmResult(m){
+  form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId};
+  inp.value = m.title; inpEmo.textContent = guessFilmEmo(m.title);
+  document.getElementById('filmResults').innerHTML='';
+  showFilmPreview(form.filmMeta, m.title);
+}
+function showFilmPreview(meta, title){
+  const el = document.getElementById('filmPreview');
+  if(!meta || (!meta.poster && !meta.overview)){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='flex';
+  el.innerHTML = `${meta.poster?`<img src="${meta.poster}" alt="">`:''}
+    <div><div class="pv-t">${esc(title||'')}${meta.year?` <span class="yr" style="color:var(--muted)">(${meta.year})</span>`:''}</div>
+    <div class="pv-o">${esc(meta.overview||'Pas de résumé disponible.')}</div></div>`;
+}
 
 // keyword -> [emoji, categoryId]
 const DICT = {
@@ -955,12 +1027,15 @@ function rowFilm(f){
     let stars=''; for(let i=1;i<=5;i++) stars += `<span class="star ${i<=(f.rating||0)?'on':''}" data-v="${i}">⭐</span>`;
     sub = `<div class="stars" data-id="${f.id}">${stars}</div>`;
   } else {
-    sub = `<div class="sub"><span class="plat-tag" style="--ch:${catHue(p.id)}">${p.e} ${esc(p.n)}</span></div>`;
+    sub = `<div class="sub"><span class="plat-tag" style="--ch:${catHue(p.id)}">${p.e} ${esc(p.n)}${f.year?' · '+esc(f.year):''}</span></div>`;
   }
+  const media = f.poster
+    ? `<span class="emo poster"><img src="${f.poster}" alt="" onerror="this.parentElement.textContent='🎬'"></span>`
+    : `<span class="emo">${f.emo||'🎬'}</span>`;
   return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
     <div class="row ${f.done?'done':''}" data-id="${f.id}" style="--ch:${catHue(f.plat)}">
     <div class="check" data-check>${chk()}</div>
-    <span class="emo">${f.emo||'🎬'}</span>
+    ${media}
     <div class="label">${esc(f.txt)}${sub}</div>
   </div></div>`;
 }
@@ -1106,6 +1181,11 @@ function openSheet(editItem=null, editKey=null){
   document.getElementById('gcalRow').style.display='none';
   document.getElementById('gcalSw').classList.remove('on');
   document.getElementById('addBtn').textContent = 'Ajouter';
+  // reset recherche film
+  form.filmMeta = null;
+  document.getElementById('filmResults').innerHTML='';
+  document.getElementById('filmPreview').style.display='none';
+  document.getElementById('filmPreview').innerHTML='';
   buildCatPick();
   buildTcatPick();
   buildPlatPick();
@@ -1132,6 +1212,10 @@ function openSheet(editItem=null, editKey=null){
       syncCatPick();
     } else {
       form.plat = editItem.plat; syncPlatPick();
+      if(editItem.poster || editItem.overview){
+        form.filmMeta = {poster:editItem.poster, overview:editItem.overview, year:editItem.year, tmdbId:editItem.tmdbId};
+        showFilmPreview(form.filmMeta, editItem.txt);
+      }
     }
   }
 
@@ -1147,7 +1231,7 @@ inp.addEventListener('input',()=>{
   const m = editState ? ({todos:'todo',shop:'shop',films:'film'}[editState.key]) : tab;
   if(!v){ inpEmo.textContent = m==='todo'?'⭐':m==='shop'?'🛒':'🎬'; return; }
   if(m==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
-  else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); }
+  else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); form.filmMeta = null; const pv=document.getElementById('filmPreview'); pv.style.display='none'; pv.innerHTML=''; scheduleFilmSearch(v); }
   else{ const [e,c] = guessShop(v); inpEmo.textContent = e; if(!form.catTouched){ form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); } }
 });
 
@@ -1222,6 +1306,7 @@ function add(){
         it.notified = it.due && it.due>Date.now() ? false : it.notified;
       } else if(k==='films'){
         it.emo = guessFilmEmo(v); it.plat = form.plat;
+        if(form.filmMeta){ const fm=form.filmMeta; it.poster=fm.poster||''; it.overview=fm.overview||''; it.year=fm.year||''; it.tmdbId=fm.tmdbId||null; }
       } else {
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.rec = form.rec;
       }
@@ -1239,7 +1324,9 @@ function add(){
     const autoG = gcal.auto && gcalConnected();
     if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
   }else if(tab==='film'){
-    S.films.unshift({id:id(),txt:v,emo:guessFilmEmo(v),plat:form.plat,done:false,rating:0});
+    const fm = form.filmMeta || {};
+    S.films.unshift({id:id(),txt:v,emo:guessFilmEmo(v),plat:form.plat,done:false,rating:0,
+      poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null});
   }else{
     const [e] = guessShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,rec:form.rec,done:false});
