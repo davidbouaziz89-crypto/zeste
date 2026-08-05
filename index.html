@@ -376,6 +376,7 @@
   .share-btn.primary{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border:none;
     box-shadow:0 6px 16px rgba(155,107,255,.3)}
   .share-btn.danger{color:var(--red);border-color:#ffd6d6;background:#fff}
+  .auth-inp{margin-top:8px;font-size:16px;padding:13px 14px}
   .share-btn:active{transform:scale(.98)}
   .code-row{display:flex;gap:8px;margin-top:8px}
   .code-inp{flex:1;min-width:0;border:2px solid var(--line);border-radius:12px;padding:11px 12px;
@@ -497,22 +498,20 @@
   <div class="grab"></div>
   <h3>⚙️ Réglages</h3>
 
-  <!-- Partage / Foyer -->
+  <!-- Compte / Connexion -->
   <div class="share-box" id="shareBox">
-    <div class="share-h">👨‍👩‍👧 Partage du foyer</div>
-    <div id="shareOff">
-      <p class="set-hint" style="margin-top:2px">Partage ta liste en temps réel (ta femme voit la même chose, instantanément).</p>
-      <button class="share-btn primary" id="createSpace">✨ Créer un foyer partagé</button>
-      <button class="share-btn" id="joinSpace">🔗 Rejoindre avec un code</button>
+    <div class="share-h">🔐 Mon compte</div>
+    <div id="authOut">
+      <p class="set-hint" style="margin-top:2px">Connecte-toi pour retrouver tes listes sur <b>tous tes appareils</b> automatiquement. Même identifiant = mêmes listes (partage avec ta femme : elle se connecte pareil).</p>
+      <input class="field auth-inp" id="authEmail" type="email" placeholder="Email" autocomplete="username" autocapitalize="none" />
+      <input class="field auth-inp" id="authPass" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+      <button class="share-btn primary" id="loginBtn">Se connecter</button>
+      <div class="set-hint" id="authMsg" style="color:var(--red)"></div>
     </div>
-    <div id="shareOn" style="display:none">
-      <p class="set-hint" style="margin-top:2px" id="shareStatus">✅ Foyer partagé actif.</p>
-      <div class="code-row">
-        <input class="code-inp" id="spaceCode" readonly />
-        <button class="code-copy" id="copyCode">Copier</button>
-      </div>
-      <p class="set-hint">Donne ce code à la personne avec qui tu partages (sur son appli : Rejoindre avec un code).</p>
-      <button class="share-btn danger" id="leaveSpace">Quitter le partage</button>
+    <div id="authIn" style="display:none">
+      <p class="set-hint" style="margin-top:2px" id="authWho">✅ Connecté.</p>
+      <p class="set-hint">Tes listes se synchronisent en temps réel sur tous les appareils connectés avec ce compte. 🔄</p>
+      <button class="share-btn danger" id="logoutBtn">Se déconnecter</button>
     </div>
   </div>
 
@@ -1532,7 +1531,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkDue
 const SB_URL = 'https://lrslisyydbiejqzpsoxc.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyc2xpc3l5ZGJpZWpxenBzb3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwOTAyNDgsImV4cCI6MjA5ODY2NjI0OH0.dzAYncOUM-VZKncf0NCoxF4MEAgr3yfaH2O_GTuglX8';
 const VAPID_PUBLIC = 'BJV34z5DAKOGtYAftRSySl_bVeDfTLpZRkUjoJ3bEAem1RFhllbSMRcFY3ysk7yjGs4TYXTAWsDSQMd-9obuo1E';
-const cloud = { sb:null, on:false, id:null, chan:null, applying:false };
+const cloud = { sb:null, on:false, id:null, email:null, chan:null, applying:false };
 
 function urlB64ToUint8(b64){
   const pad='='.repeat((4-b64.length%4)%4);
@@ -1566,38 +1565,52 @@ async function syncReminders(){
 function flashSync(){ const p=document.getElementById('syncPill'); p.classList.add('show'); setTimeout(()=>p.classList.remove('show'),1100); }
 
 function initCloud(){
-  if(window.supabase){ try{ cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:false}}); }catch(e){ console.warn('supabase init',e); } }
-  cloud.id = localStorage.getItem('zeste_space') || null;
-  if(cloud.sb && cloud.id){ goOnline(); }
+  if(window.supabase){ try{ cloud.sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true, autoRefreshToken:true}}); }catch(e){ console.warn('supabase init',e); } }
+  if(!cloud.sb){ updateShareUI(); return; }
+  // la session est restaurée automatiquement ; onAuthStateChange se déclenche au démarrage
+  cloud.sb.auth.onAuthStateChange((event, session)=>{
+    setTimeout(()=>{ if(session && session.user) onLogin(session.user); else onLogout(); }, 0);
+  });
   updateShareUI();
 }
-async function goOnline(){ cloud.on=true; subscribeChan(); await cloudPull(); updateShareUI(); subscribePush(); syncReminders(); }
+async function onLogin(user){
+  if(cloud.on && cloud.id===user.id){ updateShareUI(); return; }
+  cloud.on = true; cloud.id = user.id; cloud.email = user.email;
+  subscribeChan();
+  await cloudPull();
+  updateShareUI();
+  subscribePush(); syncReminders();
+}
+function onLogout(){
+  if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
+  cloud.on=false; cloud.id=null; cloud.email=null; updateShareUI();
+}
 function subscribeChan(){
   if(!cloud.sb || !cloud.id) return;
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
-  cloud.chan = cloud.sb.channel('zeste-'+cloud.id, { config:{ broadcast:{ self:false } } });
+  cloud.chan = cloud.sb.channel('zeste-user-'+cloud.id, { config:{ broadcast:{ self:false } } });
   cloud.chan.on('broadcast', {event:'sync'}, ({payload})=>{
     if(payload && payload.data){ applyRemote(payload.data); }
   });
   cloud.chan.subscribe();
 }
 function applyRemote(data){
-  if(!data || !(data.todos||data.shop)) return;
+  if(!data || !(data.todos||data.shop||data.films)) return;
   cloud.applying=true; S=data; ensureShape(); saveLocal(); render(); cloud.applying=false; flashSync();
 }
 async function cloudPull(){
-  if(!cloud.sb || !cloud.id) return;
+  if(!cloud.on || !cloud.sb) return;
   try{
-    const {data,error} = await cloud.sb.rpc('zeste_load',{p_id:cloud.id});
+    const {data,error} = await cloud.sb.rpc('zeste_load_mine');
     if(error){ console.warn('load',error); toast('⚠️ Synchro indisponible'); return; }
-    if(data && (data.todos||data.shop)) applyRemote(data);
-    else cloudPush(); // espace neuf → on y met notre contenu actuel
+    if(data && (data.todos||data.shop||data.films)) applyRemote(data);
+    else cloudPush(); // compte neuf → on y met le contenu local actuel
   }catch(e){ console.warn(e); }
 }
 async function cloudPush(){
-  if(!cloud.on || !cloud.sb || !cloud.id) return;
+  if(!cloud.on || !cloud.sb) return;
   try{
-    const {error} = await cloud.sb.rpc('zeste_save',{p_id:cloud.id, p_data:S});
+    const {error} = await cloud.sb.rpc('zeste_save_mine',{ p_data:S });
     if(error){ console.warn('save',error); return; }
     if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:S}});
     syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
@@ -1614,54 +1627,33 @@ function ensureShape(){
   if(!storeExists(curStore)) curStore = S.stores[0].id;
 }
 
-/* ----- UI Partage ----- */
+/* ----- UI compte (connexion) ----- */
 function updateShareUI(){
-  const off=document.getElementById('shareOff'), on=document.getElementById('shareOn');
-  if(cloud.on && cloud.id){
-    off.style.display='none'; on.style.display='block';
-    document.getElementById('spaceCode').value = cloud.id;
-    document.getElementById('shareStatus').textContent = '✅ Foyer partagé actif — tout se synchronise en direct.';
-  } else { off.style.display='block'; on.style.display='none'; }
+  const out=document.getElementById('authOut'), inn=document.getElementById('authIn');
+  if(!out||!inn) return;
+  if(cloud.on){
+    out.style.display='none'; inn.style.display='block';
+    document.getElementById('authWho').textContent = '✅ Connecté : '+(cloud.email||'');
+  } else { out.style.display='block'; inn.style.display='none'; }
 }
-document.getElementById('createSpace').onclick = async ()=>{
+const loginBtn = document.getElementById('loginBtn');
+if(loginBtn) loginBtn.onclick = async ()=>{
   if(!cloud.sb){ toast('🌐 Connexion internet requise'); return; }
-  toast('Création du foyer…');
-  try{
-    const {data,error} = await cloud.sb.rpc('zeste_new_space');
-    if(error||!data){ toast('❌ Échec (base pas prête ?)'); console.warn(error); return; }
-    cloud.id = data; localStorage.setItem('zeste_space', data);
-    await goOnline();        // espace neuf → cloudPull poussera notre contenu local
-    toast('🎉 Foyer créé et partagé !');
-  }catch(e){ console.warn(e); toast('❌ Erreur'); }
+  const email = (document.getElementById('authEmail').value||'').trim();
+  const pass  = document.getElementById('authPass').value||'';
+  const msg = document.getElementById('authMsg'); msg.textContent='';
+  if(!email || !pass){ msg.textContent='Entre ton email et ton mot de passe.'; return; }
+  loginBtn.textContent='Connexion…'; loginBtn.disabled=true;
+  const {error} = await cloud.sb.auth.signInWithPassword({ email, password:pass });
+  loginBtn.textContent='Se connecter'; loginBtn.disabled=false;
+  if(error){ msg.textContent = '❌ '+(/invalid login/i.test(error.message)?'Email ou mot de passe incorrect':error.message); return; }
+  document.getElementById('authPass').value='';
+  toast('Connecté ! 🎉'); // onAuthStateChange → onLogin fait le reste
 };
-document.getElementById('joinSpace').onclick = async ()=>{
-  if(!cloud.sb){ toast('🌐 Connexion internet requise'); return; }
-  const code = (prompt('Colle le code du foyer partagé :')||'').trim();
-  if(!code) return;
-  if(!/^[0-9a-fA-F-]{30,40}$/.test(code)){ toast('Code invalide 🤔'); return; }
-  if(!confirm('Rejoindre ce foyer va remplacer ta liste actuelle par celle du foyer. Continuer ?')) return;
-  cloud.id = code; localStorage.setItem('zeste_space', code);
-  cloud.on = true; subscribeChan();
-  try{
-    const {data,error} = await cloud.sb.rpc('zeste_load',{p_id:code});
-    if(error){ toast('❌ Foyer introuvable'); leaveSpaceInternal(); return; }
-    if(data && (data.todos||data.shop)){ applyRemote(data); toast('🔗 Foyer rejoint !'); }
-    else { cloudPush(); toast('🔗 Foyer rejoint (vide) !'); }
-    updateShareUI();
-  }catch(e){ console.warn(e); toast('❌ Erreur'); }
-};
-function leaveSpaceInternal(){
-  if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
-  cloud.on=false; cloud.id=null; localStorage.removeItem('zeste_space'); updateShareUI();
-}
-document.getElementById('leaveSpace').onclick = ()=>{
-  if(!confirm('Quitter le partage ? Ta liste restera sur ce téléphone (copie locale), mais ne sera plus synchronisée.')) return;
-  leaveSpaceInternal(); toast('Partage arrêté');
-};
-document.getElementById('copyCode').onclick = ()=>{
-  const v=document.getElementById('spaceCode').value;
-  if(navigator.clipboard){ navigator.clipboard.writeText(v).then(()=>toast('Code copié 📋')); }
-  else { document.getElementById('spaceCode').select(); document.execCommand('copy'); toast('Code copié 📋'); }
+const logoutBtn = document.getElementById('logoutBtn');
+if(logoutBtn) logoutBtn.onclick = async ()=>{
+  if(!confirm('Se déconnecter ? Tes listes restent sur cet appareil (copie locale) mais ne seront plus synchronisées.')) return;
+  await cloud.sb.auth.signOut(); toast('Déconnecté');
 };
 
 /* rafraîchit depuis le cloud quand on rouvre l'appli */
