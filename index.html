@@ -192,6 +192,21 @@
   }
   .store-add:active{transform:scale(.95)}
 
+  /* quantité + suggestions */
+  .qty-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-weight:800;font-size:15px}
+  .qty-stepper{display:flex;align-items:center;gap:0;background:var(--line);border-radius:14px;padding:4px}
+  .qty-stepper button{border:none;background:#fff;width:40px;height:40px;border-radius:11px;font-size:22px;font-weight:800;
+    cursor:pointer;color:var(--ink);box-shadow:var(--shadow-s)}
+  .qty-stepper button:active{transform:scale(.92)}
+  .qty-stepper span{min-width:46px;text-align:center;font-size:18px;font-weight:800}
+  .qty-badge{font-size:12.5px;font-weight:800;color:hsl(var(--ch,265) 45% 40%);background:hsl(var(--ch,265) 85% 92%);
+    padding:1px 8px;border-radius:20px;margin-left:2px}
+  .chip.sugg .plus{color:var(--purple);font-weight:900;margin-left:2px}
+
+  /* fenêtre de déplacement (appui long) */
+  .move-sheet .cat-pick{flex-wrap:wrap;overflow:visible}
+  .move-sheet .cat-pick button{min-width:0}
+
   /* ---------- FAB ---------- */
   .fab{
     position:fixed;bottom:calc(var(--safe-b) + 92px);right:calc(50% - 260px + 20px);
@@ -475,6 +490,14 @@
   <!-- SHOP options -->
   <div id="shopOpts" style="display:none">
     <div class="cat-pick" id="catPick"></div>
+    <div class="qty-row">
+      <span>Quantité</span>
+      <div class="qty-stepper">
+        <button type="button" id="qtyMinus">−</button>
+        <span id="qtyVal">1</span>
+        <button type="button" id="qtyPlus">+</button>
+      </div>
+    </div>
   </div>
 
   <!-- FILM options -->
@@ -542,6 +565,14 @@
   <div id="setList"></div>
   <button class="add-cat" id="addCat">＋ Ajouter une catégorie</button>
   <button class="reset-cat" id="resetCat">↺ Réinitialiser par défaut</button>
+</div>
+
+<!-- fenêtre déplacer (appui long) -->
+<div class="sheet-bg" id="moveBg"></div>
+<div class="sheet move-sheet" id="moveSheet">
+  <div class="grab"></div>
+  <h3 id="moveTitle">Déplacer</h3>
+  <div class="cat-pick" id="movePick"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -825,6 +856,7 @@ function load(){
     if(!d.stores) d.stores = clone(DEFAULT_STORES); // migration: magasins
     (d.shop||[]).forEach(i=>{ if(!i.store) i.store = d.stores[0].id; }); // articles existants -> 1er magasin
     if(!d.films) d.films = []; // migration: films
+    if(!d.history) d.history = {}; // migration: historique d'achats (suggestions)
     return d;
   } }catch(e){}
   return {
@@ -982,18 +1014,21 @@ function renderShop(){
 
   // articles du magasin courant
   const mine = S.shop.filter(i=>itemStore(i)===curStore);
-  const recs = mine.filter(i=>i.rec);
   const active = mine.filter(i=>!i.done);
   const done = mine.filter(i=>i.done);
 
-  if(!active.length && !recs.length && !done.length){
-    h += emptyState('🛒','Liste vide','Ajoute un article avec le bouton +');
+  // suggestions basées sur l'historique d'achats
+  const inList = new Set(mine.map(i=>histKey(i.txt)));
+  const sugg = topSuggestions(8).filter(s=>!inList.has(s.key));
+  if(sugg.length){
+    h += `<div class="quick"><div class="qh">💡 Suggestions — d'après tes achats</div><div class="chips">`;
+    h += sugg.map(s=>`<div class="chip sugg" data-sugg="${esc(s.key)}"><span class="e">${s.emo||'🛒'}</span>${esc(s.txt)} <span class="plus">＋</span></div>`).join('');
+    h += `</div></div>`;
+  }
+
+  if(!active.length && !done.length){
+    h += emptyState('🛒','Liste vide','Ajoute un article avec le bouton + (ou tape une suggestion)');
   } else {
-    if(recs.length){
-      h += `<div class="quick"><div class="qh">🔁 Mes essentiels — 1 clic pour (dés)activer</div><div class="chips">`;
-      h += recs.map(i=>`<div class="chip ${i.done?'':'on'}" data-toggle="${i.id}"><span class="e">${i.emo}</span>${esc(i.txt)}</div>`).join('');
-      h += `</div></div>`;
-    }
     const scats = S.shopCats.length? S.shopCats : [{id:'au',e:'🛒',n:'Courses'}];
     const sfirst = scats[0].id;
     scats.forEach(c=>{
@@ -1016,16 +1051,31 @@ function renderShop(){
   el.querySelectorAll('[data-store]').forEach(b=>{ b.onclick = ()=>{ curStore=b.dataset.store; renderShop(); renderProgress(); }; });
   const sa = document.getElementById('storeAdd');
   if(sa) sa.onclick = addStore;
-  // essentiels
-  el.querySelectorAll('[data-toggle]').forEach(ch=>{
-    ch.onclick = ()=>{ const it = S.shop.find(x=>x.id===ch.dataset.toggle); it.done = !it.done; if(it.done) burst(ch); render(); };
+  // suggestions : 1 clic pour ajouter
+  el.querySelectorAll('[data-sugg]').forEach(ch=>{
+    ch.onclick = ()=>{
+      const s = S.history[ch.dataset.sugg]; if(!s) return;
+      S.shop.unshift({id:id(),txt:s.txt,emo:s.emo||guessShop(s.txt)[0],cat:s.cat||guessShop(s.txt)[1],store:curStore,qty:1,done:false});
+      burst(ch); render(); toast('Ajouté ! '+(s.emo||'🛒'));
+    };
   });
   const cd = document.getElementById('clearDone');
   if(cd) cd.onclick = ()=>{
-    S.shop.forEach(i=>{ if(itemStore(i)===curStore && i.done && i.rec) i.done=false; });
-    S.shop = S.shop.filter(i=>!(itemStore(i)===curStore && i.done && !i.rec));
+    S.shop.forEach(i=>{ if(itemStore(i)===curStore && i.done) recordPurchase(i); });
+    S.shop = S.shop.filter(i=>!(itemStore(i)===curStore && i.done));
     render(); toast('Caddie vidé 🎉');
   };
+}
+function histKey(txt){ return (txt||'').toLowerCase().trim(); }
+function recordPurchase(it){
+  const k = histKey(it.txt); if(!k) return;
+  const cur = S.history[k] || {txt:it.txt, emo:it.emo, cat:it.cat, count:0};
+  cur.count = (cur.count||0)+1; cur.txt = it.txt; cur.emo = it.emo||cur.emo; cur.cat = it.cat||cur.cat;
+  S.history[k] = cur;
+}
+function topSuggestions(n){
+  return Object.keys(S.history||{}).map(k=>Object.assign({key:k}, S.history[k]))
+    .filter(s=>s.count>0).sort((a,b)=> b.count-a.count).slice(0,n);
 }
 function addStore(){
   const n = (prompt('Nom du nouveau magasin (ex : Lidl, Action, Pharmacie) :')||'').trim();
@@ -1034,11 +1084,12 @@ function addStore(){
   S.stores.push(s); curStore = s.id; render(); toast('Magasin ajouté 🏬');
 }
 function rowShop(t){
+  const q = (t.qty && t.qty>1) ? ` <span class="qty-badge">×${t.qty}</span>` : '';
   return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
     <div class="row ${t.done?'done':''}" data-id="${t.id}" style="--ch:${catHue(t.cat)}">
     <div class="check" data-check>${chk()}</div>
     <span class="emo">${t.emo}</span>
-    <div class="label">${esc(t.txt)}${t.rec?` <span class="badge-rec">🔁</span>`:''}</div>
+    <div class="label">${esc(t.txt)}${q}</div>
   </div></div>`;
 }
 
@@ -1113,7 +1164,7 @@ function bindRows(el,key){
       const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
       dragging=true; horizontal=false; decided=false; moved=false;
       row.style.transition='';
-      lp = setTimeout(()=>{ if(!horizontal){ dragging=false; delItem(key,item.id,false); } }, 600);
+      lp = setTimeout(()=>{ if(!horizontal){ dragging=false; openMove(item,key); } }, 550);
     }, {passive:true});
     row.addEventListener('touchmove', e=>{
       if(!dragging) return;
@@ -1212,12 +1263,13 @@ function openSheet(editItem=null, editKey=null){
   editState = editItem ? {id:editItem.id, key:editKey} : null;
   const mode = editItem ? ({todos:'todo',shop:'shop',films:'film'}[editKey]) : tab;
   const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film';
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
   document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':'Nouveau film 🎬';
   document.getElementById('todoOpts').style.display = isTodo?'block':'none';
   document.getElementById('shopOpts').style.display = isShop?'block':'none';
   document.getElementById('filmOpts').style.display = isFilm?'block':'none';
-  document.getElementById('recToggleRow').style.display = isFilm?'none':'flex';
+  document.getElementById('recToggleRow').style.display = isTodo?'flex':'none';
+  document.getElementById('qtyVal').textContent = '1';
   inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':'Ex : Oppenheimer';
   document.getElementById('recHint').textContent = isTodo? '(revient chaque fois)':'(essentiel à racheter)';
   inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':'🎬';
@@ -1259,8 +1311,8 @@ function openSheet(editItem=null, editKey=null){
         showRemUI(form.due); document.getElementById('remRep').value = form.repeat;
       }
     } else if(isShop){
-      form.cat = editItem.cat; form.rec = !!editItem.rec;
-      document.getElementById('recSw').classList.toggle('on', form.rec);
+      form.cat = editItem.cat; form.qty = editItem.qty||1;
+      document.getElementById('qtyVal').textContent = String(form.qty);
       syncCatPick();
     } else {
       form.plat = editItem.plat; syncPlatPick();
@@ -1281,6 +1333,29 @@ function closeSheet(){ bg.classList.remove('open'); sheet.classList.remove('open
 document.getElementById('fab').onclick = ()=>openSheet();
 bg.onclick = closeSheet;
 
+/* ----- Déplacer (appui long) : changer de rayon/catégorie/plateforme ----- */
+const moveBg = document.getElementById('moveBg'), moveSheet = document.getElementById('moveSheet');
+let moveTarget = null;
+function openMove(item, key){
+  let cats, field, cur, title;
+  if(key==='shop'){ cats=S.shopCats; field='cat'; cur=item.cat; title='Déplacer « '+item.txt+' »'; }
+  else if(key==='todos'){ cats=S.todoCats; field='cat'; cur=item.cat; title='Changer la catégorie'; }
+  else { cats=FILM_PLATS; field='plat'; cur=item.plat; title='Changer la plateforme'; }
+  moveTarget = {id:item.id, key, field};
+  document.getElementById('moveTitle').textContent = title;
+  const el = document.getElementById('movePick');
+  el.innerHTML = cats.map(c=>`<button data-mv="${c.id}" class="${c.id===cur?'sel':''}"><span class="e">${c.e}</span>${esc(c.n)}</button>`).join('');
+  el.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{
+    const it = S[moveTarget.key].find(x=>x.id===moveTarget.id);
+    if(it){ it[moveTarget.field] = b.dataset.mv; render(); }
+    closeMove(); toast('Déplacé ✅');
+  };});
+  moveBg.classList.add('open'); moveSheet.classList.add('open');
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+function closeMove(){ moveBg.classList.remove('open'); moveSheet.classList.remove('open'); moveTarget=null; }
+moveBg.onclick = closeMove;
+
 inp.addEventListener('input',()=>{
   const v = inp.value.trim();
   const m = editState ? ({todos:'todo',shop:'shop',films:'film'}[editState.key]) : tab;
@@ -1294,6 +1369,8 @@ document.querySelectorAll('#todoOpts .opt').forEach(o=>{
   o.onclick = ()=>{ document.querySelectorAll('#todoOpts .opt').forEach(x=>x.classList.remove('sel')); o.classList.add('sel'); form.prio=+o.dataset.prio; };
 });
 document.getElementById('recSw').onclick = function(){ this.classList.toggle('on'); form.rec = this.classList.contains('on'); };
+document.getElementById('qtyMinus').onclick = ()=>{ form.qty = Math.max(1,(form.qty||1)-1); document.getElementById('qtyVal').textContent = String(form.qty); };
+document.getElementById('qtyPlus').onclick  = ()=>{ form.qty = Math.min(99,(form.qty||1)+1); document.getElementById('qtyVal').textContent = String(form.qty); };
 
 /* ----- reminder controls ----- */
 const remDt = document.getElementById('remDt'), repRow = document.getElementById('repRow'), remRep = document.getElementById('remRep');
@@ -1363,7 +1440,7 @@ function add(){
         it.emo = guessFilmEmo(v); it.plat = form.plat;
         if(form.filmMeta){ const fm=form.filmMeta; it.poster=fm.poster||''; it.overview=fm.overview||''; it.year=fm.year||''; it.tmdbId=fm.tmdbId||null; it.ytKey=fm.ytKey||''; }
       } else {
-        it.emo = guessShop(v)[0]; it.cat = form.cat; it.rec = form.rec;
+        it.emo = guessShop(v)[0]; it.cat = form.cat; it.qty = form.qty||1;
       }
     }
     const wantGcal = form.gcal, editedItem = it, wasTodo = k==='todos';
@@ -1384,7 +1461,7 @@ function add(){
       poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||''});
   }else{
     const [e] = guessShop(v);
-    S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,rec:form.rec,done:false});
+    S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
   }
   render(); toast('Ajouté ! '+inpEmo.textContent);
   inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':tab==='film'?'🎬':'🛒';
@@ -1623,6 +1700,7 @@ function ensureShape(){
   if(!Array.isArray(S.todos)) S.todos=[];
   if(!Array.isArray(S.shop)) S.shop=[];
   if(!Array.isArray(S.films)) S.films=[];
+  if(!S.history || typeof S.history!=='object') S.history={};
   S.shop.forEach(i=>{ if(!i.store) i.store = S.stores[0].id; });
   if(!storeExists(curStore)) curStore = S.stores[0].id;
 }
