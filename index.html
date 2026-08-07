@@ -297,6 +297,7 @@
   .film-preview img{width:74px;height:110px;object-fit:cover;border-radius:10px;flex:none;background:var(--line)}
   .film-preview .pv-t{font-weight:800;font-size:15px;line-height:1.25}
   .film-preview .pv-o{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.4;margin-top:5px;max-height:104px;overflow:auto}
+  .film-preview .pv-prov{font-size:12.5px;font-weight:800;color:var(--green-d);margin-top:6px}
   .film-loading{font-size:13px;color:var(--muted);font-weight:700;padding:2px 4px 8px}
   .trailer-btn{margin-top:9px;border:none;background:linear-gradient(135deg,#ff5d5d,#e11d1d);color:#fff;font-weight:800;
     font-size:13.5px;padding:9px 14px;border-radius:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
@@ -608,7 +609,7 @@
   </div>
 
   <!-- Google Agenda -->
-  <div class="share-box" id="gcalBox" style="margin-top:14px;background:#eef4ff;border-color:#d6e4ff">
+  <div class="share-box" id="gcalBox" style="margin-top:14px;background:var(--soft);border-color:var(--line)">
     <div class="share-h">📅 Google Agenda</div>
     <div id="gcalOff">
       <p class="set-hint" style="margin-top:2px">Connecte ton agenda pour que les tâches datées y soient ajoutées automatiquement.</p>
@@ -717,11 +718,13 @@ let filmSearchT = null, filmSearchSeq = 0;
 async function tmdbSearch(q){
   if(!TMDB_KEY || !q || q.length<2) return [];
   try{
-    const url = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&language=fr-FR&include_adult=false&query=${encodeURIComponent(q)}`;
+    const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&language=fr-FR&include_adult=false&query=${encodeURIComponent(q)}`;
     const r = await fetch(url); if(!r.ok) return [];
     const j = await r.json();
-    return (j.results||[]).slice(0,6).map(m=>({
-      tmdbId:m.id, title:m.title, year:(m.release_date||'').slice(0,4),
+    return (j.results||[]).filter(m=>m.media_type==='movie'||m.media_type==='tv').slice(0,7).map(m=>({
+      tmdbId:m.id, type:m.media_type,
+      title: m.title||m.name,
+      year: ((m.release_date||m.first_air_date)||'').slice(0,4),
       poster: m.poster_path ? 'https://image.tmdb.org/t/p/w185'+m.poster_path : '',
       overview: m.overview||''
     }));
@@ -744,34 +747,56 @@ function renderFilmResults(list){
   const el = document.getElementById('filmResults');
   if(!list.length){ el.innerHTML=''; return; }
   el.innerHTML = list.map((m,i)=>`<div class="film-result" data-i="${i}">
-    ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>🎬</div>'">`:`<div class="ph">🎬</div>`}
-    <div><div class="ti">${esc(m.title)}</div><div class="yr">${m.year||'—'}</div></div></div>`).join('');
+    ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>${m.type==='tv'?'📺':'🎬'}</div>'">`:`<div class="ph">${m.type==='tv'?'📺':'🎬'}</div>`}
+    <div><div class="ti">${esc(m.title)}</div><div class="yr">${m.type==='tv'?'📺 Série':'🎬 Film'}${m.year?' · '+m.year:''}</div></div></div>`).join('');
   el.querySelectorAll('.film-result').forEach(r=>{ r.onclick = ()=>selectFilmResult(list[+r.dataset.i]); });
 }
-async function tmdbTrailer(id){
+async function tmdbTrailer(id, type){
   if(!TMDB_KEY || !id) return '';
+  const kind = type==='tv'?'tv':'movie';
   const pick = (arr)=>{ arr=(arr||[]).filter(v=>v.site==='YouTube'); return (arr.find(v=>v.type==='Trailer')||arr.find(v=>v.type==='Teaser')||arr[0]||{}).key||''; };
   try{
-    let r = await fetch(`https://api.themoviedb.org/3/movie/${id}/videos?api_key=${TMDB_KEY}&language=fr-FR`);
+    let r = await fetch(`https://api.themoviedb.org/3/${kind}/${id}/videos?api_key=${TMDB_KEY}&language=fr-FR`);
     let k = r.ok ? pick((await r.json()).results) : '';
-    if(!k){ r = await fetch(`https://api.themoviedb.org/3/movie/${id}/videos?api_key=${TMDB_KEY}`); k = r.ok ? pick((await r.json()).results) : ''; }
+    if(!k){ r = await fetch(`https://api.themoviedb.org/3/${kind}/${id}/videos?api_key=${TMDB_KEY}`); k = r.ok ? pick((await r.json()).results) : ''; }
     return k;
   }catch(e){ return ''; }
 }
+// détecte la plateforme de streaming (région FR)
+const PROV_MAP = [[/netflix/i,'net'],[/prime video|amazon/i,'prime'],[/disney/i,'disney'],[/canal|ocs/i,'cine'],[/youtube/i,'yt'],[/apple tv/i,'other']];
+async function tmdbProviders(id, type){
+  if(!TMDB_KEY || !id) return {plat:'', name:''};
+  const kind = type==='tv'?'tv':'movie';
+  try{
+    const r = await fetch(`https://api.themoviedb.org/3/${kind}/${id}/watch/providers?api_key=${TMDB_KEY}`);
+    if(!r.ok) return {plat:'',name:''};
+    const fr = ((await r.json()).results||{}).FR||{};
+    const list = fr.flatrate || fr.free || fr.ads || [];
+    if(!list.length) return {plat:'',name:''};
+    for(const [re,pid] of PROV_MAP){ const hit=list.find(p=>re.test(p.provider_name||'')); if(hit) return {plat:pid, name:hit.provider_name}; }
+    return {plat:'other', name:list[0].provider_name||''};
+  }catch(e){ return {plat:'',name:''}; }
+}
 function selectFilmResult(m){
-  form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId, ytKey:''};
-  inp.value = m.title; inpEmo.textContent = guessFilmEmo(m.title);
+  form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId, type:m.type||'movie', ytKey:'', provName:''};
+  inp.value = m.title; inpEmo.textContent = m.type==='tv'?'📺':guessFilmEmo(m.title);
   document.getElementById('filmResults').innerHTML='';
   showFilmPreview(form.filmMeta, m.title);
-  tmdbTrailer(m.tmdbId).then(k=>{ if(form.filmMeta && form.filmMeta.tmdbId===m.tmdbId){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, m.title); } });
+  const same = ()=> form.filmMeta && form.filmMeta.tmdbId===m.tmdbId;
+  tmdbTrailer(m.tmdbId, m.type).then(k=>{ if(same()){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, m.title); } });
+  tmdbProviders(m.tmdbId, m.type).then(p=>{ if(same() && p.plat){ form.plat=p.plat; syncPlatPick(); form.filmMeta.provName=p.name; showFilmPreview(form.filmMeta, m.title); } });
 }
 function showFilmPreview(meta, title){
   const el = document.getElementById('filmPreview');
   if(!meta || (!meta.poster && !meta.overview)){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='flex';
+  const kindTag = meta.type==='tv' ? `<span class="yr" style="color:var(--muted)">📺 Série</span> ` : '';
+  const prov = meta.provName ? `<div class="pv-prov">📍 Dispo sur <b>${esc(meta.provName)}</b></div>` : '';
   el.innerHTML = `${meta.poster?`<img src="${meta.poster}" alt="">`:''}
     <div><div class="pv-t">${esc(title||'')}${meta.year?` <span class="yr" style="color:var(--muted)">(${meta.year})</span>`:''}</div>
+    ${kindTag?`<div style="margin-top:2px">${kindTag}</div>`:''}
     <div class="pv-o">${esc(meta.overview||'Pas de résumé disponible.')}</div>
+    ${prov}
     ${meta.ytKey?`<button class="trailer-btn" onclick="openTrailer('${meta.ytKey}')">▶️ Bande-annonce</button>`:''}</div>`;
 }
 function openTrailer(key){
@@ -1238,7 +1263,7 @@ function rowFilm(f){
     let stars=''; for(let i=1;i<=5;i++) stars += `<span class="star ${i<=(f.rating||0)?'on':''}" data-v="${i}">⭐</span>`;
     sub = `<div class="stars" data-id="${f.id}">${stars}</div>`;
   } else {
-    sub = `<div class="sub"><span class="plat-tag" style="--ch:${catHue(p.id)}">${p.e} ${esc(p.n)}${f.year?' · '+esc(f.year):''}</span></div>`;
+    sub = `<div class="sub"><span class="plat-tag" style="--ch:${catHue(p.id)}">${p.e} ${esc(p.n)}${f.year?' · '+esc(f.year):''}${f.type==='tv'?' · 📺 Série':''}</span></div>`;
   }
   const media = f.poster
     ? `<span class="emo poster"><img src="${f.poster}" alt="" onerror="this.parentElement.textContent='🎬'"></span>`
@@ -1453,7 +1478,7 @@ function openSheet(editItem=null, editKey=null){
     } else {
       form.plat = editItem.plat; syncPlatPick();
       if(editItem.poster || editItem.overview){
-        form.filmMeta = {poster:editItem.poster, overview:editItem.overview, year:editItem.year, tmdbId:editItem.tmdbId, ytKey:editItem.ytKey||''};
+        form.filmMeta = {poster:editItem.poster, overview:editItem.overview, year:editItem.year, tmdbId:editItem.tmdbId, type:editItem.type||'movie', provName:editItem.provName||'', ytKey:editItem.ytKey||''};
         showFilmPreview(form.filmMeta, editItem.txt);
         if(!form.filmMeta.ytKey && editItem.tmdbId){
           tmdbTrailer(editItem.tmdbId).then(k=>{ if(k && form.filmMeta && form.filmMeta.tmdbId===editItem.tmdbId){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, editItem.txt); } });
@@ -1573,8 +1598,9 @@ function add(){
         it.due = form.due||null; it.repeat = form.repeat||'none';
         it.notified = it.due && it.due>Date.now() ? false : it.notified;
       } else if(k==='films'){
-        it.emo = guessFilmEmo(v); it.plat = form.plat;
-        if(form.filmMeta){ const fm=form.filmMeta; it.poster=fm.poster||''; it.overview=fm.overview||''; it.year=fm.year||''; it.tmdbId=fm.tmdbId||null; it.ytKey=fm.ytKey||''; }
+        const fmt = form.filmMeta;
+        it.emo = (fmt&&fmt.type==='tv')?'📺':guessFilmEmo(v); it.plat = form.plat;
+        if(fmt){ it.type=fmt.type||'movie'; it.poster=fmt.poster||''; it.overview=fmt.overview||''; it.year=fmt.year||''; it.tmdbId=fmt.tmdbId||null; it.ytKey=fmt.ytKey||''; it.provName=fmt.provName||''; }
       } else {
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.qty = form.qty||1;
       }
@@ -1593,8 +1619,8 @@ function add(){
     if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
   }else if(tab==='film'){
     const fm = form.filmMeta || {};
-    S.films.unshift({id:id(),txt:v,emo:guessFilmEmo(v),plat:form.plat,done:false,rating:0,
-      poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||''});
+    S.films.unshift({id:id(),txt:v,emo:(fm.type==='tv'?'📺':guessFilmEmo(v)),plat:form.plat,done:false,rating:0,
+      type:fm.type||'movie',poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||'',provName:fm.provName||''});
   }else{
     const [e] = guessShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
