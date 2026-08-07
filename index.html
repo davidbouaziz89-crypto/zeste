@@ -412,6 +412,41 @@
     z-index:70;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow);white-space:nowrap;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* snackbar "annuler" */
+  .snack{position:fixed;bottom:calc(var(--safe-b) + 168px);left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:9px 10px 9px 16px;border-radius:16px;font-weight:700;font-size:13.5px;
+    z-index:71;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;max-width:92vw}
+  .snack.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  .snack .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .snack button{flex:none;border:none;background:rgba(255,255,255,.22);color:#fff;font-weight:800;padding:7px 13px;border-radius:11px;cursor:pointer}
+  .snack button:active{background:rgba(255,255,255,.35)}
+
+  /* barre de recherche */
+  .searchbar{margin-top:10px;position:relative}
+  .searchbar input{width:100%;border:2px solid var(--line);border-radius:16px;padding:11px 14px 11px 40px;
+    font-size:15.5px;font-weight:600;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
+  .searchbar input:focus{border-color:var(--purple)}
+  .searchbar .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.6}
+  .searchbar .sx{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:var(--line);
+    width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;color:var(--muted);display:none}
+  .searchbar.has .sx{display:block}
+
+  /* écran d'accueil / connexion */
+  .welcome{position:fixed;inset:0;z-index:90;background:
+    radial-gradient(120% 60% at 100% 0%, #ffe0ee 0%, rgba(255,224,238,0) 55%),
+    radial-gradient(120% 60% at 0% 100%, #e6dcff 0%, rgba(230,220,255,0) 55%), var(--bg);
+    display:none;flex-direction:column;align-items:center;justify-content:center;padding:26px}
+  .welcome.show{display:flex}
+  .welcome .wlogo{font-size:66px;filter:drop-shadow(0 6px 10px rgba(245,184,0,.5));animation:bob 3.5s ease-in-out infinite}
+  .welcome h2{font-size:27px;margin:12px 0 4px;font-weight:800}
+  .welcome p{color:var(--muted);font-weight:600;text-align:center;max-width:320px;margin:0 0 18px;line-height:1.45}
+  .welcome .wcard{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+  .welcome .field{font-size:16px}
+  .welcome .wgo{border:none;border-radius:16px;padding:15px;font-weight:800;font-size:16px;cursor:pointer;
+    background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 8px 20px rgba(155,107,255,.35)}
+  .welcome .wskip{border:none;background:none;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer;padding:8px}
+  .welcome .werr{color:var(--red);font-weight:700;font-size:13px;text-align:center;min-height:16px}
 </style>
 </head>
 <body>
@@ -425,6 +460,11 @@
     <div class="progress">
       <div class="ring" id="ring"><span id="ringtxt">0%</span></div>
       <div class="txt"><b id="progTitle">Ta journée</b><div id="progSub">Rien à faire pour l'instant</div></div>
+    </div>
+    <div class="searchbar" id="searchbar">
+      <span class="si">🔎</span>
+      <input id="search" type="search" placeholder="Rechercher…" autocomplete="off" />
+      <button class="sx" id="searchClear" aria-label="Effacer">✕</button>
     </div>
   </header>
 
@@ -576,7 +616,22 @@
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="snack" id="snack"><span class="m" id="snackMsg"></span><button id="snackUndo">↩︎ Annuler</button></div>
 <div class="sync-pill" id="syncPill">🔄 Synchronisé</div>
+
+<!-- écran d'accueil / connexion -->
+<div class="welcome" id="welcome">
+  <div class="wlogo">🍋</div>
+  <h2>Bienvenue sur Zeste</h2>
+  <p>Connecte-toi pour retrouver tes tâches, courses et films sur <b>tous tes appareils</b>, automatiquement.</p>
+  <div class="wcard">
+    <input class="field" id="wEmail" type="email" placeholder="Email" autocomplete="username" autocapitalize="none" />
+    <input class="field" id="wPass" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+    <div class="werr" id="wErr"></div>
+    <button class="wgo" id="wLogin">Se connecter</button>
+    <button class="wskip" id="wSkip">Continuer sans compte</button>
+  </div>
+</div>
 
 <!-- lecteur bande-annonce -->
 <div class="trailer-bg" id="trailerBg"></div>
@@ -921,20 +976,39 @@ function openGcal(t){
 let tab = 'todo';
 let curStore = (S.stores && S.stores[0]) ? S.stores[0].id : 'm1';
 function storeExists(id){ return S.stores && S.stores.some(s=>s.id===id); }
+let searchQ = '';
+function matchQ(txt){ return !searchQ || (txt||'').toLowerCase().includes(searchQ); }
 
-function render(){
+/* petit son de validation (WebAudio) */
+let _actx=null, soundOn = localStorage.getItem('zeste_sound')!=='0';
+function playDing(){
+  if(!soundOn) return;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+    _actx = _actx || new AC(); if(_actx.state==='suspended') _actx.resume();
+    const o=_actx.createOscillator(), g=_actx.createGain();
+    o.type='sine'; o.connect(g); g.connect(_actx.destination);
+    const t=_actx.currentTime;
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.12,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+    o.frequency.setValueAtTime(720,t); o.frequency.exponentialRampToValueAtTime(1180,t+0.12);
+    o.start(t); o.stop(t+0.22);
+  }catch(e){}
+}
+
+function paint(){
   renderTodo();
   renderShop();
   renderFilms();
   renderProgress();
-  save();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
 }
+function render(){ paint(); save(); }
 
 function renderTodo(){
   const el = document.getElementById('view-todo');
-  const items = [...S.todos].sort((a,b)=> a.done-b.done || a.prio-b.prio);
-  if(!items.length){ el.innerHTML = emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
+  const items = [...S.todos].filter(i=>matchQ(i.txt)).sort((a,b)=> a.done-b.done || a.prio-b.prio);
+  if(!items.length){ el.innerHTML = searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
   let h = '';
   const active = items.filter(i=>!i.done), done = items.filter(i=>i.done);
   // group active by category
@@ -1013,13 +1087,13 @@ function renderShop(){
   h += `</div>`;
 
   // articles du magasin courant
-  const mine = S.shop.filter(i=>itemStore(i)===curStore);
+  const mine = S.shop.filter(i=>itemStore(i)===curStore && matchQ(i.txt));
   const active = mine.filter(i=>!i.done);
   const done = mine.filter(i=>i.done);
 
-  // suggestions basées sur l'historique d'achats
-  const inList = new Set(mine.map(i=>histKey(i.txt)));
-  const sugg = topSuggestions(8).filter(s=>!inList.has(s.key));
+  // suggestions basées sur l'historique d'achats (masquées pendant la recherche)
+  const inList = new Set(S.shop.filter(i=>itemStore(i)===curStore).map(i=>histKey(i.txt)));
+  const sugg = searchQ ? [] : topSuggestions(8).filter(s=>!inList.has(s.key));
   if(sugg.length){
     h += `<div class="quick"><div class="qh">💡 Suggestions — d'après tes achats</div><div class="chips">`;
     h += sugg.map(s=>`<div class="chip sugg" data-sugg="${esc(s.key)}"><span class="e">${s.emo||'🛒'}</span>${esc(s.txt)} <span class="plus">＋</span></div>`).join('');
@@ -1027,7 +1101,8 @@ function renderShop(){
   }
 
   if(!active.length && !done.length){
-    h += emptyState('🛒','Liste vide','Ajoute un article avec le bouton + (ou tape une suggestion)');
+    h += searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot')
+                 : emptyState('🛒','Liste vide','Ajoute un article avec le bouton + (ou tape une suggestion)');
   } else {
     const scats = S.shopCats.length? S.shopCats : [{id:'au',e:'🛒',n:'Courses'}];
     const sfirst = scats[0].id;
@@ -1096,8 +1171,8 @@ function rowShop(t){
 /* ---------- FILMS ---------- */
 function renderFilms(){
   const el = document.getElementById('view-film');
-  const films = S.films || [];
-  if(!films.length){ el.innerHTML = emptyState('🍿','Aucun film','Ajoute un film à voir avec le bouton +'); return; }
+  const films = (S.films || []).filter(f=>matchQ(f.txt));
+  if(!films.length){ el.innerHTML = searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🍿','Aucun film','Ajoute un film à voir avec le bouton +'); return; }
   const toSee = films.filter(f=>!f.done), seen = films.filter(f=>f.done);
   let h = '';
   FILM_PLATS.forEach(p=>{
@@ -1141,11 +1216,24 @@ function rowFilm(f){
   </div></div>`;
 }
 
-function delItem(key,itemId,silent){
-  const it = S[key].find(x=>x.id===itemId); if(!it) return;
-  if(!silent && !confirm('Supprimer « '+it.txt+' » ?')) return;
-  S[key] = S[key].filter(x=>x.id!==itemId); render(); if(silent) toast('Supprimé 🗑️');
+let lastDel=null, snackT=null;
+function showSnack(msg){
+  const s=document.getElementById('snack'); document.getElementById('snackMsg').textContent=msg;
+  s.classList.add('show'); clearTimeout(snackT); snackT=setTimeout(()=>s.classList.remove('show'),5000);
 }
+function delItem(key,itemId){
+  const idx = S[key].findIndex(x=>x.id===itemId); if(idx<0) return;
+  const item = S[key][idx];
+  S[key].splice(idx,1); lastDel={key,item,index:idx}; render();
+  showSnack('🗑️ « '+item.txt+' » supprimé');
+  if(navigator.vibrate) navigator.vibrate(15);
+}
+document.getElementById('snackUndo').onclick = ()=>{
+  if(!lastDel) return;
+  const {key,item,index}=lastDel; lastDel=null;
+  S[key].splice(Math.min(index,S[key].length),0,item);
+  document.getElementById('snack').classList.remove('show'); render(); toast('Restauré ↩︎');
+};
 function bindRows(el,key){
   el.querySelectorAll('.row').forEach(row=>{
     const item = S[key].find(x=>x.id===row.dataset.id);
@@ -1181,7 +1269,7 @@ function bindRows(el,key){
       dragging=false; clearTimeout(lp);
       if(horizontal){
         if(dx < -90){ row.style.transition='transform .2s'; row.style.transform='translateX(-100%)';
-          setTimeout(()=>delItem(key,item.id,true),170); }
+          setTimeout(()=>delItem(key,item.id),170); }
         else { row.style.transition='transform .2s'; row.style.transform='';
           setTimeout(()=>row.parentElement && row.parentElement.classList.remove('swiping'),200); }
       } else if(!moved){ openSheet(item, key); }
@@ -1234,6 +1322,7 @@ function burst(node){
     document.body.appendChild(p); setTimeout(()=>p.remove(),800);
   }
   if(navigator.vibrate) navigator.vibrate(15);
+  playDing();
 }
 let toastT;
 function toast(msg){
@@ -1252,6 +1341,17 @@ document.querySelectorAll('.tab').forEach(b=>{
     renderProgress();
   };
 });
+
+/* ============ RECHERCHE ============ */
+const searchEl = document.getElementById('search');
+searchEl.addEventListener('input',()=>{
+  searchQ = searchEl.value.trim().toLowerCase();
+  document.getElementById('searchbar').classList.toggle('has', !!searchQ);
+  paint();
+});
+document.getElementById('searchClear').onclick = ()=>{
+  searchEl.value=''; searchQ=''; document.getElementById('searchbar').classList.remove('has'); paint(); searchEl.focus();
+};
 
 /* ============ ADD SHEET ============ */
 const sheet = document.getElementById('sheet'), bg = document.getElementById('sheetBg');
@@ -1651,6 +1751,7 @@ function initCloud(){
   updateShareUI();
 }
 async function onLogin(user){
+  const w=document.getElementById('welcome'); if(w) w.classList.remove('show');
   if(cloud.on && cloud.id===user.id){ updateShareUI(); return; }
   cloud.on = true; cloud.id = user.id; cloud.email = user.email;
   subscribeChan();
@@ -1714,25 +1815,36 @@ function updateShareUI(){
     document.getElementById('authWho').textContent = '✅ Connecté : '+(cloud.email||'');
   } else { out.style.display='block'; inn.style.display='none'; }
 }
+async function doLogin(email, pass, errEl, btn){
+  if(!cloud.sb){ if(errEl) errEl.textContent='🌐 Connexion internet requise'; return false; }
+  email=(email||'').trim();
+  if(!email || !pass){ if(errEl) errEl.textContent='Entre ton email et ton mot de passe.'; return false; }
+  if(errEl) errEl.textContent='';
+  const old = btn ? btn.textContent : ''; if(btn){ btn.textContent='Connexion…'; btn.disabled=true; }
+  const {error} = await cloud.sb.auth.signInWithPassword({ email, password:pass });
+  if(btn){ btn.textContent=old; btn.disabled=false; }
+  if(error){ if(errEl) errEl.textContent='❌ '+(/invalid login/i.test(error.message)?'Email ou mot de passe incorrect':error.message); return false; }
+  return true;
+}
 const loginBtn = document.getElementById('loginBtn');
 if(loginBtn) loginBtn.onclick = async ()=>{
-  if(!cloud.sb){ toast('🌐 Connexion internet requise'); return; }
-  const email = (document.getElementById('authEmail').value||'').trim();
-  const pass  = document.getElementById('authPass').value||'';
-  const msg = document.getElementById('authMsg'); msg.textContent='';
-  if(!email || !pass){ msg.textContent='Entre ton email et ton mot de passe.'; return; }
-  loginBtn.textContent='Connexion…'; loginBtn.disabled=true;
-  const {error} = await cloud.sb.auth.signInWithPassword({ email, password:pass });
-  loginBtn.textContent='Se connecter'; loginBtn.disabled=false;
-  if(error){ msg.textContent = '❌ '+(/invalid login/i.test(error.message)?'Email ou mot de passe incorrect':error.message); return; }
-  document.getElementById('authPass').value='';
-  toast('Connecté ! 🎉'); // onAuthStateChange → onLogin fait le reste
+  const ok = await doLogin(document.getElementById('authEmail').value, document.getElementById('authPass').value, document.getElementById('authMsg'), loginBtn);
+  if(ok){ document.getElementById('authPass').value=''; toast('Connecté ! 🎉'); }
 };
 const logoutBtn = document.getElementById('logoutBtn');
 if(logoutBtn) logoutBtn.onclick = async ()=>{
   if(!confirm('Se déconnecter ? Tes listes restent sur cet appareil (copie locale) mais ne seront plus synchronisées.')) return;
+  localStorage.setItem('zeste_skip_login','1');
   await cloud.sb.auth.signOut(); toast('Déconnecté');
 };
+/* écran d'accueil (connexion au 1er lancement) */
+const welcomeEl = document.getElementById('welcome');
+document.getElementById('wLogin').onclick = async ()=>{
+  const ok = await doLogin(document.getElementById('wEmail').value, document.getElementById('wPass').value, document.getElementById('wErr'), document.getElementById('wLogin'));
+  if(ok){ welcomeEl.classList.remove('show'); toast('Connecté ! 🎉'); }
+};
+document.getElementById('wSkip').onclick = ()=>{ localStorage.setItem('zeste_skip_login','1'); welcomeEl.classList.remove('show'); };
+function maybeWelcome(){ if(cloud.on) return; if(localStorage.getItem('zeste_skip_login')==='1') return; if(welcomeEl) welcomeEl.classList.add('show'); }
 
 /* rafraîchit depuis le cloud quand on rouvre l'appli */
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && cloud.on) cloudPull(); });
@@ -1815,6 +1927,7 @@ render();
 updateNotifBanner();
 setTimeout(checkDue, 800);
 initCloud();
+setTimeout(maybeWelcome, 800); // affiche l'écran de connexion si toujours déconnecté
 updateGcalUI();
 
 /* Service worker (hors-ligne + installable) — actif uniquement en ligne (https) */
