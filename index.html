@@ -1036,6 +1036,24 @@ function guessShop(txt){
   for(const k in DICT){ if(t.includes(k)) return DICT[k]; }
   return ['🛒','au'];
 }
+// rayon appris pour ce produit (retours des corrections de l'utilisateur), si toujours valide
+function learnedCat(txt){
+  const k = (txt||'').toLowerCase().trim();
+  const c = S.catLearn && S.catLearn[k];
+  return (c && S.shopCats.some(x=>x.id===c)) ? c : null;
+}
+// enregistre l'association produit -> rayon (apprentissage)
+function learnCat(txt, cat){
+  const k = (txt||'').toLowerCase().trim();
+  if(!k || !cat) return;
+  if(!S.catLearn) S.catLearn = {};
+  S.catLearn[k] = cat;
+}
+// détecte [emoji, rayon] en privilégiant l'appris, puis le dictionnaire
+function detectShop(txt){
+  const [e,c] = guessShop(txt);
+  return [e, learnedCat(txt) || c];
+}
 function guessTodo(txt){
   const t = txt.toLowerCase();
   for(const k in TODO_DICT){ if(t.includes(k)) return TODO_DICT[k]; }
@@ -1053,6 +1071,7 @@ function load(){
     (d.shop||[]).forEach(i=>{ if(!i.store) i.store = d.stores[0].id; }); // articles existants -> 1er magasin
     if(!d.films) d.films = []; // migration: films
     if(!d.history) d.history = {}; // migration: historique d'achats (suggestions)
+    if(!d.catLearn) d.catLearn = {}; // migration: rayons appris (auto-catégorisation)
     return d;
   } }catch(e){}
   return {
@@ -1670,7 +1689,7 @@ function openMove(item, key){
   el.innerHTML = cats.map(c=>`<button data-mv="${c.id}" class="${c.id===cur?'sel':''}"><span class="e">${c.e}</span>${esc(c.n)}</button>`).join('');
   el.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{
     const it = S[moveTarget.key].find(x=>x.id===moveTarget.id);
-    if(it){ it[moveTarget.field] = b.dataset.mv; render(); }
+    if(it){ it[moveTarget.field] = b.dataset.mv; if(moveTarget.key==='shop' && moveTarget.field==='cat') learnCat(it.txt, b.dataset.mv); render(); }
     closeMove(); toast('Déplacé ✅');
   };});
   moveBg.classList.add('open'); moveSheet.classList.add('open');
@@ -1718,7 +1737,7 @@ inp.addEventListener('input',()=>{
   if(!v){ inpEmo.textContent = m==='todo'?'⭐':m==='shop'?'🛒':'🎬'; return; }
   if(m==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
   else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); form.filmMeta = null; const pv=document.getElementById('filmPreview'); pv.style.display='none'; pv.innerHTML=''; scheduleFilmSearch(v); }
-  else{ const [e,c] = guessShop(v); inpEmo.textContent = e; if(!form.catTouched){ form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); } }
+  else{ const [e,c] = detectShop(v); inpEmo.textContent = e; if(!form.catTouched){ form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); } }
 });
 
 document.querySelectorAll('#todoOpts .opt').forEach(o=>{
@@ -1813,6 +1832,7 @@ function add(){
         if(fmt){ it.type=fmt.type||'movie'; it.poster=fmt.poster||''; it.overview=fmt.overview||''; it.year=fmt.year||''; it.tmdbId=fmt.tmdbId||null; it.ytKey=fmt.ytKey||''; it.provName=fmt.provName||''; }
       } else {
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.qty = form.qty||1;
+        learnCat(v, form.cat); // apprend la correction éventuelle
       }
     }
     const wantGcal = form.gcal, editedItem = it, wasTodo = k==='todos';
@@ -1832,8 +1852,9 @@ function add(){
     S.films.unshift({id:id(),txt:v,emo:(fm.type==='tv'?'📺':guessFilmEmo(v)),plat:form.plat,done:false,rating:0,
       type:fm.type||'movie',poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||'',provName:fm.provName||''});
   }else{
-    const [e] = guessShop(v);
+    const [e] = detectShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
+    learnCat(v, form.cat); // apprend le rayon choisi pour ce produit
   }
   render(); toast('Ajouté ! '+inpEmo.textContent);
   inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':tab==='film'?'🎬':'🛒';
@@ -2074,6 +2095,7 @@ function ensureShape(){
   if(!Array.isArray(S.shop)) S.shop=[];
   if(!Array.isArray(S.films)) S.films=[];
   if(!S.history || typeof S.history!=='object') S.history={};
+  if(!S.catLearn || typeof S.catLearn!=='object') S.catLearn={};
   S.shop.forEach(i=>{ if(!i.store) i.store = S.stores[0].id; });
   if(!storeExists(curStore)) curStore = S.stores[0].id;
 }
