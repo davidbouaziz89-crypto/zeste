@@ -163,8 +163,32 @@
   /* priority dot */
   .prio{width:9px;height:9px;border-radius:50%;flex:none}
   .prio.p1{background:var(--red)}.prio.p2{background:var(--orange)}.prio.p3{background:var(--green)}
-  .badge-rec{font-size:11px;font-weight:800;color:var(--purple);background:#f2ecff;
+  .badge-rec{font-size:11px;font-weight:800;color:var(--purple);background:var(--soft);
     padding:2px 7px;border-radius:20px;display:inline-flex;gap:3px;align-items:center}
+  .badge-sub{font-size:11px;font-weight:800;color:var(--green-d);background:hsl(145 70% 92%);
+    padding:2px 7px;border-radius:20px;display:inline-flex;gap:3px;align-items:center}
+  :root[data-theme="dark"] .badge-sub{background:hsl(145 40% 20%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .badge-sub{background:hsl(145 40% 20%)}}
+
+  /* sous-tâches (dans la fenêtre) */
+  .subs-block{margin-top:16px;padding-top:14px;border-top:2px dashed var(--line)}
+  .subs-h{font-weight:800;font-size:15px;margin-bottom:10px}
+  .sub-item{display:flex;align-items:center;gap:10px;padding:7px 4px}
+  .sub-item .sub-ck{width:24px;height:24px;border-radius:8px;flex:none;border:2.5px solid var(--line);
+    display:grid;place-items:center;cursor:pointer;background:var(--chip)}
+  .sub-item .sub-ck svg{width:13px;height:13px;stroke:#fff;stroke-width:3.5;fill:none;stroke-linecap:round;
+    stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:.2s}
+  .sub-item.done .sub-ck{background:var(--green);border-color:var(--green)}
+  .sub-item.done .sub-ck svg{stroke-dashoffset:0}
+  .sub-item .sub-tx{flex:1;font-weight:600;font-size:15px}
+  .sub-item.done .sub-tx{text-decoration:line-through;color:var(--muted)}
+  .sub-item .sub-rm{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px}
+  .subs-add{display:flex;gap:8px;margin-top:6px}
+  .subs-add input{flex:1;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px;
+    font-family:inherit;font-weight:600;background:var(--field);color:var(--ink);outline:none}
+  .subs-add input:focus{border-color:var(--purple)}
+  .subs-add button{flex:none;border:none;background:var(--soft);color:var(--purple);font-weight:800;font-size:20px;
+    width:44px;border-radius:12px;cursor:pointer}
 
   /* swipe-to-delete wrapper */
   .swipe{position:relative;margin-bottom:9px;border-radius:16px;overflow:hidden}
@@ -233,6 +257,19 @@
   .qty-badge{font-size:12.5px;font-weight:800;color:hsl(var(--ch,265) 55% var(--ttl));background:hsl(var(--ch,265) var(--ts) var(--tl));
     padding:1px 8px;border-radius:20px;margin-left:2px}
   .chip.sugg .plus{color:var(--purple);font-weight:900;margin-left:2px}
+
+  .scan-btn{width:100%;padding:13px;border-radius:14px;border:2px dashed var(--blue);background:var(--soft);
+    color:var(--blue);font-weight:800;font-size:15px;cursor:pointer;margin-bottom:12px}
+  .scan-btn:active{transform:scale(.98)}
+  .scan-bg{position:fixed;inset:0;background:#000;z-index:95;opacity:0;pointer-events:none;transition:.2s}
+  .scan-bg.open{opacity:1;pointer-events:auto}
+  .scan-modal{position:fixed;inset:0;z-index:96;display:none;align-items:center;justify-content:center}
+  .scan-modal.open{display:flex}
+  .scan-modal video{width:100%;height:100%;object-fit:cover}
+  .scan-frame-line{position:fixed;left:8%;right:8%;top:50%;height:3px;background:var(--red);box-shadow:0 0 12px var(--red);border-radius:3px;z-index:97;animation:scanline 1.6s ease-in-out infinite}
+  @keyframes scanline{0%,100%{transform:translateY(-70px)}50%{transform:translateY(70px)}}
+  .scan-hint{position:fixed;bottom:calc(var(--safe-b) + 40px);left:0;right:0;text-align:center;color:#fff;font-weight:800;font-size:15px;z-index:97;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+  .scan-close{position:fixed;top:calc(var(--safe-t) + 16px);right:18px;z-index:98;border:none;background:rgba(255,255,255,.92);width:44px;height:44px;border-radius:50%;font-size:20px;font-weight:800;cursor:pointer}
 
   /* fenêtre de déplacement (appui long) */
   .move-sheet .cat-pick{flex-wrap:wrap;overflow:visible}
@@ -555,10 +592,19 @@
         <div>📅 Ajouter aussi à <b>Google Agenda</b></div>
       </div>
     </div>
+    <div class="subs-block">
+      <div class="subs-h">☑️ Sous-tâches</div>
+      <div id="subsList"></div>
+      <div class="subs-add">
+        <input id="subInp" placeholder="Ajouter une étape…" autocomplete="off" />
+        <button type="button" id="subAdd">＋</button>
+      </div>
+    </div>
   </div>
 
   <!-- SHOP options -->
   <div id="shopOpts" style="display:none">
+    <button type="button" class="scan-btn" id="scanBtn">📷 Scanner un code-barres</button>
     <div class="cat-pick" id="catPick"></div>
     <div class="qty-row">
       <span>Quantité</span>
@@ -642,6 +688,15 @@
   <div id="setList"></div>
   <button class="add-cat" id="addCat">＋ Ajouter une catégorie</button>
   <button class="reset-cat" id="resetCat">↺ Réinitialiser par défaut</button>
+</div>
+
+<!-- scanner code-barres -->
+<div class="scan-bg" id="scanBg"></div>
+<div class="scan-modal" id="scanModal">
+  <video id="scanVideo" playsinline muted></video>
+  <div class="scan-frame-line"></div>
+  <div class="scan-hint">Vise le code-barres du produit</div>
+  <button class="scan-close" id="scanClose">✕</button>
 </div>
 
 <!-- fenêtre déplacer (appui long) -->
@@ -1100,6 +1155,7 @@ function rowTodo(t){
   const over = t.due && !t.done && t.due < Date.now();
   let sub = [];
   if(t.rec) sub.push(`<span class="badge-rec">🔁 récurrent</span>`);
+  if(t.subs && t.subs.length) sub.push(`<span class="badge-sub">☑️ ${t.subs.filter(s=>s.done).length}/${t.subs.length}</span>`);
   if(t.due){
     const repTxt = t.repeat && t.repeat!=='none' ? ({day:'/jour',week:'/sem.',month:'/mois'}[t.repeat]) : '';
     sub.push(`<span class="due ${over?'over':''} ${repTxt?'rep':''}">🔔 ${dueLabel(t.due)}${repTxt}</span>`);
@@ -1424,13 +1480,14 @@ function openSheet(editItem=null, editKey=null){
   editState = editItem ? {id:editItem.id, key:editKey} : null;
   const mode = editItem ? ({todos:'todo',shop:'shop',films:'film'}[editKey]) : tab;
   const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film';
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
   document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':'Nouveau film 🎬';
   document.getElementById('todoOpts').style.display = isTodo?'block':'none';
   document.getElementById('shopOpts').style.display = isShop?'block':'none';
   document.getElementById('filmOpts').style.display = isFilm?'block':'none';
   document.getElementById('recToggleRow').style.display = isTodo?'flex':'none';
   document.getElementById('qtyVal').textContent = '1';
+  document.getElementById('subInp').value=''; renderSubs();
   inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':'Ex : Oppenheimer';
   document.getElementById('recHint').textContent = isTodo? '(revient chaque fois)':'(essentiel à racheter)';
   inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':'🎬';
@@ -1464,6 +1521,7 @@ function openSheet(editItem=null, editKey=null){
     if(isTodo){
       form.tcat = editItem.cat; form.prio = editItem.prio||3; form.rec = !!editItem.rec;
       form.due = editItem.due||null; form.repeat = editItem.repeat||'none';
+      form.subs = (editItem.subs||[]).map(s=>Object.assign({},s)); renderSubs();
       document.querySelectorAll('#todoOpts .opt').forEach(o=>o.classList.toggle('sel', +o.dataset.prio===form.prio));
       document.getElementById('recSw').classList.toggle('on', form.rec);
       syncTcatPick();
@@ -1517,6 +1575,39 @@ function openMove(item, key){
 function closeMove(){ moveBg.classList.remove('open'); moveSheet.classList.remove('open'); moveTarget=null; }
 moveBg.onclick = closeMove;
 
+/* ----- Scanner de code-barres (ZXing chargé à la demande + Open Food Facts) ----- */
+let _zx=null;
+function loadZxing(){ return new Promise((res,rej)=>{ if(window.ZXing && ZXing.BrowserMultiFormatReader){res();return;} const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1'; s.onload=()=>res(); s.onerror=rej; document.head.appendChild(s); }); }
+const scanBg=document.getElementById('scanBg'), scanModal=document.getElementById('scanModal');
+async function openScan(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('Caméra non disponible ici 📷'); return; }
+  toast('Ouverture de la caméra…');
+  try{ await loadZxing(); }catch(e){ toast('Scanner indisponible (hors-ligne ?)'); return; }
+  scanBg.classList.add('open'); scanModal.classList.add('open');
+  const video=document.getElementById('scanVideo');
+  try{
+    _zx = _zx || new ZXing.BrowserMultiFormatReader();
+    const cb=(result)=>{ if(result){ const code=result.getText(); stopScan(); onBarcode(code); } };
+    if(typeof _zx.decodeFromConstraints==='function') _zx.decodeFromConstraints({video:{facingMode:{ideal:'environment'}}}, video, cb);
+    else _zx.decodeFromVideoDevice(undefined, video, cb);
+  }catch(e){ console.warn('scan',e); toast("Impossible d'ouvrir la caméra 📷"); stopScan(); }
+}
+function stopScan(){ try{ if(_zx) _zx.reset(); }catch(e){} scanBg.classList.remove('open'); scanModal.classList.remove('open'); }
+document.getElementById('scanClose').onclick=stopScan;
+document.getElementById('scanBtn').onclick=openScan;
+async function onBarcode(code){
+  if(navigator.vibrate) navigator.vibrate(60);
+  toast('🔎 Code '+code);
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json?fields=product_name,product_name_fr,generic_name,brands');
+    const j=await r.json();
+    const p=(j&&j.product)||{};
+    const name=p.product_name_fr||p.product_name||p.generic_name||'';
+    if(name){ inp.value=name; inp.dispatchEvent(new Event('input',{bubbles:true})); toast('📦 '+name); }
+    else { toast('Produit inconnu 🤷 — tape le nom'); inp.focus(); }
+  }catch(e){ console.warn(e); toast('Recherche produit impossible'); }
+}
+
 inp.addEventListener('input',()=>{
   const v = inp.value.trim();
   const m = editState ? ({todos:'todo',shop:'shop',films:'film'}[editState.key]) : tab;
@@ -1532,6 +1623,21 @@ document.querySelectorAll('#todoOpts .opt').forEach(o=>{
 document.getElementById('recSw').onclick = function(){ this.classList.toggle('on'); form.rec = this.classList.contains('on'); };
 document.getElementById('qtyMinus').onclick = ()=>{ form.qty = Math.max(1,(form.qty||1)-1); document.getElementById('qtyVal').textContent = String(form.qty); };
 document.getElementById('qtyPlus').onclick  = ()=>{ form.qty = Math.min(99,(form.qty||1)+1); document.getElementById('qtyVal').textContent = String(form.qty); };
+
+/* ----- sous-tâches ----- */
+function renderSubs(){
+  const el=document.getElementById('subsList');
+  el.innerHTML=(form.subs||[]).map((s,i)=>`<div class="sub-item ${s.done?'done':''}" data-i="${i}">
+    <div class="sub-ck" data-sck>${chk()}</div><span class="sub-tx">${esc(s.txt)}</span>
+    <button class="sub-rm" data-srm>✕</button></div>`).join('');
+  el.querySelectorAll('.sub-item').forEach(row=>{ const i=+row.dataset.i;
+    row.querySelector('[data-sck]').onclick=()=>{ form.subs[i].done=!form.subs[i].done; renderSubs(); };
+    row.querySelector('[data-srm]').onclick=()=>{ form.subs.splice(i,1); renderSubs(); };
+  });
+}
+function addSub(){ const el=document.getElementById('subInp'); const v=el.value.trim(); if(!v)return; if(!form.subs)form.subs=[]; form.subs.push({id:id(),txt:v,done:false}); el.value=''; renderSubs(); el.focus(); }
+document.getElementById('subAdd').onclick=addSub;
+document.getElementById('subInp').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addSub(); } });
 
 /* ----- reminder controls ----- */
 const remDt = document.getElementById('remDt'), repRow = document.getElementById('repRow'), remRep = document.getElementById('remRep');
@@ -1595,7 +1701,7 @@ function add(){
       it.txt = v;
       if(k==='todos'){
         it.emo = guessTodo(v); it.cat = form.tcat; it.prio = form.prio; it.rec = form.rec;
-        it.due = form.due||null; it.repeat = form.repeat||'none';
+        it.due = form.due||null; it.repeat = form.repeat||'none'; it.subs = form.subs||[];
         it.notified = it.due && it.due>Date.now() ? false : it.notified;
       } else if(k==='films'){
         const fmt = form.filmMeta;
@@ -1613,7 +1719,7 @@ function add(){
 
   // ----- mode AJOUT -----
   if(tab==='todo'){
-    const nt = {id:id(),txt:v,emo:guessTodo(v),cat:form.tcat,prio:form.prio,rec:form.rec,done:false,due:form.due||null,repeat:form.repeat||'none',notified:false};
+    const nt = {id:id(),txt:v,emo:guessTodo(v),cat:form.tcat,prio:form.prio,rec:form.rec,done:false,due:form.due||null,repeat:form.repeat||'none',notified:false,subs:form.subs||[]};
     S.todos.unshift(nt);
     const autoG = gcal.auto && gcalConnected();
     if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
