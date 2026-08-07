@@ -131,6 +131,24 @@
   .cat-h .n{background:hsl(var(--ch) var(--ts) var(--tl));color:hsl(var(--ch) 55% var(--ttl));font-size:12px;font-weight:800;
     padding:3px 9px;border-radius:20px;margin-left:auto}
 
+  /* ---------- GRILLE CATÉGORIES (tâches) ---------- */
+  .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .cat-card{border:none;cursor:pointer;border-radius:20px;padding:18px 14px;text-align:left;
+    background:var(--card);box-shadow:var(--shadow-s);display:flex;flex-direction:column;gap:2px;
+    position:relative;overflow:hidden;transition:transform .12s}
+  .cat-card:active{transform:scale(.97)}
+  .cat-card::before{content:"";position:absolute;inset:0;background:hsl(var(--ch) var(--ts) var(--tl));opacity:.55}
+  .cat-card>*{position:relative}
+  .cat-card .cc-emo{font-size:30px;width:52px;height:52px;display:grid;place-items:center;border-radius:16px;
+    background:var(--card);box-shadow:0 3px 8px hsla(var(--ch),60%,45%,.25);margin-bottom:8px}
+  .cat-card .cc-name{font-weight:800;font-size:17px}
+  .cat-card .cc-count{font-size:13px;font-weight:700;color:hsl(var(--ch) 45% var(--ttl))}
+  .back-cat{border:none;background:var(--card);box-shadow:var(--shadow-s);border-radius:14px;padding:9px 14px;
+    font-weight:800;font-size:14px;color:var(--ink);cursor:pointer;margin:14px 0 4px}
+  .back-cat:active{transform:scale(.97)}
+  .cat-h.big{font-size:20px;margin:10px 2px 12px}
+  .cat-h.big .e{width:38px;height:38px;font-size:22px}
+
   /* ---------- ITEM ROW ---------- */
   .row{
     background:var(--card);border-radius:17px;padding:11px 13px;margin-bottom:9px;
@@ -1097,6 +1115,7 @@ function openGcal(t){
 
 /* ============ RENDER ============ */
 let tab = 'todo';
+let todoCat = null; // null = aperçu des catégories ; sinon id de catégorie ouverte
 let curStore = (S.stores && S.stores[0]) ? S.stores[0].id : 'm1';
 function storeExists(id){ return S.stores && S.stores.some(s=>s.id===id); }
 let searchQ = '';
@@ -1128,35 +1147,69 @@ function paint(){
 }
 function render(){ paint(); save(); }
 
-function renderTodo(){
-  const el = document.getElementById('view-todo');
-  const items = [...S.todos].filter(i=>matchQ(i.txt));
-  if(!items.length){ el.innerHTML = searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
-  let h = '';
-  const active = items.filter(i=>!i.done), done = items.filter(i=>i.done);
-  // group active by category (ordre manuel : ordre du tableau)
-  const tcats = S.todoCats.length? S.todoCats : [{id:'perso',e:'📝',n:'Tâches'}];
-  const tfirst = tcats[0].id;
-  tcats.forEach((c,ci)=>{
-    const list = active.filter(i=> catOrFirst(i.cat, tcats, tfirst)===c.id );
-    if(!list.length) return;
-    h += `<div class="cat"><div class="cat-h" style="--ch:${catHue(c.id)}"><span class="e">${c.e}</span>${esc(c.n)}<span class="n">${list.length}</span></div>`;
-    h += list.map(rowTodo).join('');
-    h += `</div>`;
-  });
-  if(done.length){
-    h += `<div class="cat-h" style="margin-top:22px;--ch:145"><span class="e">✨</span>Terminé<span class="n">${done.length}</span></div>`;
-    h += done.map(rowTodo).join('');
-    h += `<button class="clearbtn" id="clearTodo">🧹 Effacer les tâches terminées (${done.filter(i=>!i.rec).length})</button>`;
-  }
-  el.innerHTML = h;
-  bindRows(el,'todos');
-  const ct = document.getElementById('clearTodo');
+function bindClearTodo(el){
+  const ct = el.querySelector('#clearTodo');
   if(ct) ct.onclick = ()=>{
     S.todos.forEach(i=>{ if(i.done && i.rec) i.done=false; });
     S.todos = S.todos.filter(i=>!(i.done && !i.rec));
     render(); toast('Bien joué ! 🎉');
   };
+}
+function renderTodo(){
+  const el = document.getElementById('view-todo');
+  const tcats = S.todoCats.length? S.todoCats : [{id:'perso',e:'📝',n:'Tâches'}];
+  const tfirst = tcats[0].id;
+  if(todoCat && !tcats.some(c=>c.id===todoCat)) todoCat=null;
+
+  // ----- vue RECHERCHE : liste plate -----
+  if(searchQ){
+    const items = S.todos.filter(i=>matchQ(i.txt));
+    if(!items.length){ el.innerHTML = emptyState('🔍','Aucun résultat','Essaie un autre mot'); return; }
+    let h=''; const active=items.filter(i=>!i.done), done=items.filter(i=>i.done);
+    h += active.map(rowTodo).join('');
+    if(done.length){ h += `<div class="cat-h" style="margin-top:22px;--ch:145"><span class="e">✨</span>Terminé<span class="n">${done.length}</span></div>`; h += done.map(rowTodo).join(''); }
+    el.innerHTML=h; bindRows(el,'todos'); return;
+  }
+
+  // ----- APERÇU DES CATÉGORIES (dossiers) -----
+  if(!todoCat){
+    if(!S.todos.length){ el.innerHTML = emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
+    let h = `<div class="cat-grid">`;
+    tcats.forEach(c=>{
+      const inCat = S.todos.filter(i=> catOrFirst(i.cat, tcats, tfirst)===c.id );
+      const activeN = inCat.filter(i=>!i.done).length;
+      const label = activeN? activeN+' à faire' : (inCat.length? 'tout est fait ✓' : 'vide');
+      h += `<button class="cat-card" data-open="${c.id}" style="--ch:${catHue(c.id)}">
+        <span class="cc-emo">${c.e}</span>
+        <span class="cc-name">${esc(c.n)}</span>
+        <span class="cc-count">${label}</span></button>`;
+    });
+    h += `</div>`;
+    el.innerHTML = h;
+    el.querySelectorAll('[data-open]').forEach(b=>{ b.onclick=()=>{ todoCat=b.dataset.open; paint(); renderProgress(); }; });
+    return;
+  }
+
+  // ----- TÂCHES D'UNE CATÉGORIE -----
+  const c = tcats.find(x=>x.id===todoCat) || tcats[0];
+  const inCat = S.todos.filter(i=> catOrFirst(i.cat, tcats, tfirst)===todoCat );
+  const active = inCat.filter(i=>!i.done), done = inCat.filter(i=>i.done);
+  let h = `<button class="back-cat" id="backCat">← Catégories</button>
+    <div class="cat-h big" style="--ch:${catHue(c.id)}"><span class="e">${c.e}</span>${esc(c.n)}<span class="n">${active.length}</span></div>`;
+  if(!active.length && !done.length){
+    h += emptyState(c.e,'Rien ici','Appuie sur + pour ajouter une tâche');
+  } else {
+    h += active.map(rowTodo).join('');
+    if(done.length){
+      h += `<div class="cat-h" style="margin-top:22px;--ch:145"><span class="e">✨</span>Terminé<span class="n">${done.length}</span></div>`;
+      h += done.map(rowTodo).join('');
+      h += `<button class="clearbtn" id="clearTodo">🧹 Effacer les tâches terminées (${done.filter(i=>!i.rec).length})</button>`;
+    }
+  }
+  el.innerHTML = h;
+  bindRows(el,'todos');
+  el.querySelector('#backCat').onclick = ()=>{ todoCat=null; paint(); renderProgress(); };
+  bindClearTodo(el);
 }
 function rowTodo(t){
   const over = t.due && !t.done && t.due < Date.now();
@@ -1448,7 +1501,8 @@ function commitReorder(key, ids){
 }
 
 function renderProgress(){
-  const list = tab==='todo'? S.todos : tab==='film'? S.films : S.shop.filter(i=>itemStore(i)===curStore);
+  let list = tab==='todo'? S.todos : tab==='film'? S.films : S.shop.filter(i=>itemStore(i)===curStore);
+  if(tab==='todo' && todoCat){ const tc=S.todoCats.length?S.todoCats:[{id:'perso'}]; const f=tc[0].id; list=S.todos.filter(i=>catOrFirst(i.cat,tc,f)===todoCat); }
   const tot = list.length, done = list.filter(i=>i.done).length;
   const pct = tot? Math.round(done/tot*100):0;
   const ring = document.getElementById('ring');
@@ -1456,8 +1510,9 @@ function renderProgress(){
   document.getElementById('ringtxt').textContent = pct+'%';
   const T = document.getElementById('progTitle'), D = document.getElementById('progSub');
   if(tab==='todo'){
-    T.textContent = 'Ta journée';
-    D.textContent = tot? `${done}/${tot} tâche${tot>1?'s':''} faite${done>1?'s':''}` + (pct===100?' — bravo ! 🎉':'') : 'Rien à faire pour l\'instant';
+    const cc = todoCat && (S.todoCats.find(c=>c.id===todoCat));
+    T.textContent = cc ? (cc.e+' '+cc.n) : 'Ta journée';
+    D.textContent = tot? `${done}/${tot} tâche${tot>1?'s':''} faite${done>1?'s':''}` + (pct===100?' — bravo ! 🎉':'') : (cc?'Rien ici':'Choisis une catégorie');
   }else if(tab==='film'){
     const left = tot-done;
     T.textContent = '🎬 Mes films';
@@ -1528,6 +1583,8 @@ function openSheet(editItem=null, editKey=null){
   const mode = editItem ? ({todos:'todo',shop:'shop',films:'film'}[editKey]) : tab;
   const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film';
   form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
+  // dans une catégorie ouverte : nouvelle tâche = cette catégorie par défaut
+  if(!editItem && isTodo && todoCat && S.todoCats.some(c=>c.id===todoCat)){ form.tcat=todoCat; form.catTouched=true; }
   document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':'Nouveau film 🎬';
   document.getElementById('todoOpts').style.display = isTodo?'block':'none';
   document.getElementById('shopOpts').style.display = isShop?'block':'none';
