@@ -454,6 +454,9 @@
 
   /* topbar + gear */
   .topbar{display:flex;align-items:center;justify-content:space-between}
+  .top-back{border:none;background:var(--card);width:40px;height:40px;border-radius:14px;font-size:22px;font-weight:800;
+    cursor:pointer;box-shadow:var(--shadow-s);display:grid;place-items:center;color:var(--ink);flex:none}
+  .top-back:active{transform:scale(.9)}
   .gear{border:none;background:var(--card);width:40px;height:40px;border-radius:14px;font-size:19px;
     cursor:pointer;box-shadow:var(--shadow-s);display:grid;place-items:center;transition:transform .3s}
   .gear:active{transform:rotate(90deg) scale(.9)}
@@ -548,7 +551,10 @@
 <div id="app">
   <header>
     <div class="topbar">
-      <div class="hi" id="greet">Bonjour 👋</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="top-back" id="topBack" aria-label="Retour aux catégories" style="display:none">←</button>
+        <div class="hi" id="greet">Bonjour 👋</div>
+      </div>
       <button class="gear" id="gear" aria-label="Réglages">⚙️</button>
     </div>
     <div class="brand"><span class="logo">🍋</span><h1>Zeste</h1></div>
@@ -1213,6 +1219,7 @@ function renderTodo(){
     if(!shown){ el.innerHTML = emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
     el.innerHTML = h;
     el.querySelectorAll('[data-open]').forEach(b=>{ b.onclick=()=>{ todoCat=b.dataset.open; paint(); renderProgress(); }; });
+    updateTopBack();
     return;
   }
 
@@ -1233,9 +1240,15 @@ function renderTodo(){
     }
   }
   el.innerHTML = h;
+  const bk = el.querySelector('#backCat');
+  if(bk) bk.onclick = ()=>{ goBackTodo(); };
   bindRows(el,'todos');
-  el.querySelector('#backCat').onclick = ()=>{ todoCat=null; paint(); renderProgress(); };
   bindClearTodo(el);
+}
+function goBackTodo(){ todoCat=null; paint(); renderProgress(); }
+function updateTopBack(){
+  const b=document.getElementById('topBack'); if(!b) return;
+  b.style.display = (tab==='todo' && todoCat) ? 'grid' : 'none';
 }
 function rowTodo(t){
   const over = t.due && !t.done && t.due < Date.now();
@@ -1549,6 +1562,7 @@ function renderProgress(){
     T.textContent = (st.e?st.e+' ':'')+'Courses '+(st.n||'');
     D.textContent = tot? (left? `${left} article${left>1?'s':''} à prendre` : 'Tout est dans le caddie ! 🎉') : 'Liste vide';
   }
+  if(typeof updateTopBack==='function') updateTopBack();
 }
 
 /* ============ HELPERS ============ */
@@ -1681,6 +1695,7 @@ function openSheet(editItem=null, editKey=null){
 function closeSheet(){ bg.classList.remove('open'); sheet.classList.remove('open'); inp.blur(); editState=null; }
 document.getElementById('fab').onclick = ()=>openSheet();
 bg.onclick = closeSheet;
+document.getElementById('topBack').onclick = ()=>goBackTodo();
 
 /* ----- Déplacer (appui long) : changer de rayon/catégorie/plateforme ----- */
 const moveBg = document.getElementById('moveBg'), moveSheet = document.getElementById('moveSheet');
