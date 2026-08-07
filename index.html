@@ -160,6 +160,13 @@
   .row.done .check{background:var(--green);border-color:var(--green)}
   .row.done .check svg{stroke-dashoffset:0}
 
+  /* poignée de réordonnancement */
+  .row .drag{flex:none;width:26px;text-align:center;color:var(--muted);font-size:19px;cursor:grab;
+    touch-action:none;opacity:.6;line-height:1;letter-spacing:-2px}
+  .row .drag:active{cursor:grabbing;opacity:.9}
+  .swipe.dragging{z-index:6;position:relative}
+  .swipe.dragging .row{box-shadow:0 14px 30px rgba(0,0,0,.28);transform:scale(1.02);transition:box-shadow .15s}
+
   /* priority dot */
   .prio{width:9px;height:9px;border-radius:50%;flex:none}
   .prio.p1{background:var(--red)}.prio.p2{background:var(--orange)}.prio.p3{background:var(--green)}
@@ -1123,15 +1130,15 @@ function render(){ paint(); save(); }
 
 function renderTodo(){
   const el = document.getElementById('view-todo');
-  const items = [...S.todos].filter(i=>matchQ(i.txt)).sort((a,b)=> a.done-b.done || a.prio-b.prio);
+  const items = [...S.todos].filter(i=>matchQ(i.txt));
   if(!items.length){ el.innerHTML = searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
   let h = '';
   const active = items.filter(i=>!i.done), done = items.filter(i=>i.done);
-  // group active by category
+  // group active by category (ordre manuel : ordre du tableau)
   const tcats = S.todoCats.length? S.todoCats : [{id:'perso',e:'📝',n:'Tâches'}];
   const tfirst = tcats[0].id;
   tcats.forEach((c,ci)=>{
-    const list = active.filter(i=> catOrFirst(i.cat, tcats, tfirst)===c.id ).sort((a,b)=>a.prio-b.prio);
+    const list = active.filter(i=> catOrFirst(i.cat, tcats, tfirst)===c.id );
     if(!list.length) return;
     h += `<div class="cat"><div class="cat-h" style="--ch:${catHue(c.id)}"><span class="e">${c.e}</span>${esc(c.n)}<span class="n">${list.length}</span></div>`;
     h += list.map(rowTodo).join('');
@@ -1169,6 +1176,7 @@ function rowTodo(t){
     </div>
     ${t.due?`<button class="cal" data-cal title="Ajouter à Google Agenda">📅</button>`:''}
     <span class="prio p${t.prio}"></span>
+    <span class="drag" data-drag title="Réordonner">⠿</span>
   </div></div>`;
 }
 function dueLabel(ms){
@@ -1282,6 +1290,7 @@ function rowShop(t){
     <div class="check" data-check>${chk()}</div>
     <span class="emo">${t.emo}</span>
     <div class="label">${esc(t.txt)}${q}</div>
+    <span class="drag" data-drag title="Réordonner">⠿</span>
   </div></div>`;
 }
 
@@ -1330,6 +1339,7 @@ function rowFilm(f){
     ${media}
     <div class="label">${esc(f.txt)}${sub}</div>
     ${f.ytKey?`<button class="cal trailer-row" data-trailer="${f.ytKey}" title="Bande-annonce">▶️</button>`:''}
+    <span class="drag" data-drag title="Réordonner">⠿</span>
   </div></div>`;
 }
 
@@ -1365,7 +1375,7 @@ function bindRows(el,key){
     // --- gestes tactiles : glisser à gauche = supprimer, tap = modifier ---
     let sx=0, sy=0, dx=0, dragging=false, horizontal=false, decided=false, moved=false, lp=null;
     row.addEventListener('touchstart', e=>{
-      if(e.target.closest('[data-check],[data-cal],[data-trailer],.stars')) return;
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],.stars')) return;
       const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
       dragging=true; horizontal=false; decided=false; moved=false;
       row.style.transition='';
@@ -1393,11 +1403,48 @@ function bindRows(el,key){
     });
     // clic souris (desktop) = modifier
     row.addEventListener('click', e=>{
-      if(e.target.closest('[data-check],[data-cal],[data-trailer],.stars')) return;
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],.stars')) return;
       if('ontouchstart' in window) return;
       openSheet(item, key);
     });
+
+    // --- poignée : glisser pour réordonner (pointer events) ---
+    const handle = row.querySelector('[data-drag]');
+    if(handle) handle.addEventListener('pointerdown', e=>{
+      e.preventDefault(); e.stopPropagation();
+      const wrap = row.parentElement;            // .swipe
+      const group = wrap.parentElement;          // .cat ou la vue
+      wrap.classList.add('dragging');
+      try{ handle.setPointerCapture(e.pointerId); }catch(_){}
+      const onMove = (ev)=>{
+        const sibs = Array.from(group.children).filter(n=>n.classList && n.classList.contains('swipe') && n!==wrap);
+        const after = sibs.find(s=>{ const r=s.getBoundingClientRect(); return ev.clientY < r.top + r.height/2; });
+        if(after) group.insertBefore(wrap, after); else group.appendChild(wrap);
+      };
+      const onUp = ()=>{
+        wrap.classList.remove('dragging');
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        const ids = Array.from(group.children)
+          .filter(n=>n.classList && n.classList.contains('swipe'))
+          .map(n=>{ const r=n.querySelector('.row'); return r&&r.dataset.id; }).filter(Boolean);
+        commitReorder(key, ids);
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
   });
+}
+// réordonne S[key] pour que les éléments du groupe suivent l'ordre "ids" (les autres gardent leur place)
+function commitReorder(key, ids){
+  if(!ids.length) return;
+  const set = new Set(ids);
+  const byId = {}; S[key].forEach(it=>{ byId[it.id]=it; });
+  let ptr = 0;
+  S[key] = S[key].map(it => set.has(it.id) ? byId[ids[ptr++]] : it);
+  render();
 }
 
 function renderProgress(){
