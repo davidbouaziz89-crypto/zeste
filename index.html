@@ -140,7 +140,10 @@
   .cat-card::before{content:"";position:absolute;inset:0;background:hsl(var(--ch) var(--ts) var(--tl));opacity:.55}
   .cat-card>*{position:relative}
   .cat-card .cc-emo{font-size:30px;width:52px;height:52px;display:grid;place-items:center;border-radius:16px;
-    background:var(--card);box-shadow:0 3px 8px hsla(var(--ch),60%,45%,.25);margin-bottom:8px}
+    background:var(--card);box-shadow:0 3px 8px hsla(var(--ch),60%,45%,.25);margin-bottom:8px;position:relative}
+  .cat-card .cc-badge{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;
+    background:hsl(var(--ch) 60% 48%);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;
+    box-shadow:0 2px 5px hsla(var(--ch),60%,40%,.5);line-height:1}
   .cat-card .cc-name{font-weight:800;font-size:17px}
   .cat-card .cc-count{font-size:13px;font-weight:700;color:hsl(var(--ch) 45% var(--ttl))}
   .back-cat{border:none;background:var(--card);box-shadow:var(--shadow-s);border-radius:14px;padding:9px 14px;
@@ -1194,16 +1197,20 @@ function renderTodo(){
   if(!todoCat){
     if(!S.todos.length){ el.innerHTML = emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
     let h = `<div class="cat-grid">`;
+    let shown = 0;
     tcats.forEach(c=>{
       const inCat = S.todos.filter(i=> catOrFirst(i.cat, tcats, tfirst)===c.id );
+      if(!inCat.length) return; // on n'affiche que les catégories qui contiennent des tâches
+      shown++;
       const activeN = inCat.filter(i=>!i.done).length;
-      const label = activeN? activeN+' à faire' : (inCat.length? 'tout est fait ✓' : 'vide');
+      const label = activeN? activeN+' à faire' : 'tout est fait ✓';
       h += `<button class="cat-card" data-open="${c.id}" style="--ch:${catHue(c.id)}">
-        <span class="cc-emo">${c.e}</span>
+        <span class="cc-emo">${c.e}<span class="cc-badge">${inCat.length}</span></span>
         <span class="cc-name">${esc(c.n)}</span>
         <span class="cc-count">${label}</span></button>`;
     });
     h += `</div>`;
+    if(!shown){ el.innerHTML = emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
     el.innerHTML = h;
     el.querySelectorAll('[data-open]').forEach(b=>{ b.onclick=()=>{ todoCat=b.dataset.open; paint(); renderProgress(); }; });
     return;
