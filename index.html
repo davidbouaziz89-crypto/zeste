@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Zeste" />
+<meta name="format-detection" content="telephone=no" />
 <meta name="theme-color" content="#ffd23f" />
 <title>Zeste — Tâches & Courses</title>
 <script>try{var _t=localStorage.getItem('zeste_theme');if(_t&&_t!=='auto')document.documentElement.setAttribute('data-theme',_t);}catch(e){}</script>
@@ -71,8 +72,15 @@
       radial-gradient(150% 80% at 50% 100%, #14261f 0%, rgba(20,38,31,0) 45%),
       var(--bg);
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+  /* on ré-autorise la sélection/saisie dans les champs */
+  input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+  input,textarea,select,button{font-family:inherit}
   html,body{margin:0;padding:0;height:100%}
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
   body{
     font-family:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
     color:var(--ink);
@@ -118,7 +126,7 @@
   .progress .txt div{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px}
 
   /* ---------- MAIN ---------- */
-  main{flex:1;padding:8px 16px 140px;overflow-y:auto}
+  main{flex:1;padding:8px 16px 140px;overflow-y:auto;-webkit-overflow-scrolling:touch}
   .view{display:none;animation:fade .25s ease}
   .view.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -212,7 +220,7 @@
   .sub-item.done .sub-tx{text-decoration:line-through;color:var(--muted)}
   .sub-item .sub-rm{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px}
   .subs-add{display:flex;gap:8px;margin-top:6px}
-  .subs-add input{flex:1;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:15px;
+  .subs-add input{flex:1;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;
     font-family:inherit;font-weight:600;background:var(--field);color:var(--ink);outline:none}
   .subs-add input:focus{border-color:var(--purple)}
   .subs-add button{flex:none;border:none;background:var(--soft);color:var(--purple);font-weight:800;font-size:20px;
@@ -409,10 +417,12 @@
     pointer-events:none;transition:.25s;backdrop-filter:blur(2px)}
   .sheet-bg.open{opacity:1;pointer-events:auto}
   .sheet{
-    position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--card);
+    position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:51;background:var(--card);
     border-radius:28px 28px 0 0;padding:10px 20px calc(var(--safe-b) + 24px);
-    max-width:520px;margin:0 auto;transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    max-width:520px;margin:0 auto;transform:translateY(110%);
+    transition:transform .3s cubic-bezier(.2,.9,.3,1), bottom .22s ease;
     box-shadow:0 -10px 40px rgba(0,0,0,.15);
+    max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   }
   .sheet.open{transform:none}
   .grab{width:50px;height:6px;background:var(--line);border-radius:6px;margin:0 auto 12px;cursor:grab;
@@ -468,7 +478,7 @@
   .remind-h{font-weight:800;font-size:15px;margin-bottom:10px}
   .dt{font-size:16px;padding:12px 14px;color:var(--ink)}
   .rep-row{display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;font-size:14.5px}
-  .rep-sel{flex:1;border:2.5px solid var(--line);border-radius:14px;padding:11px 12px;font-size:15px;
+  .rep-sel{flex:1;border:2.5px solid var(--line);border-radius:14px;padding:11px 12px;font-size:16px;
     font-weight:700;font-family:inherit;background:var(--field);color:var(--ink);outline:none}
   .cal{border:none;background:#eaf3ff;width:34px;height:34px;border-radius:11px;flex:none;font-size:17px;
     cursor:pointer;display:grid;place-items:center}
@@ -551,7 +561,7 @@
   /* barre de recherche */
   .searchbar{margin-top:10px;position:relative}
   .searchbar input{width:100%;border:2px solid var(--line);border-radius:16px;padding:11px 14px 11px 40px;
-    font-size:15.5px;font-weight:600;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
+    font-size:16px;font-weight:600;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
   .searchbar input:focus{border-color:var(--purple)}
   .searchbar .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.6}
   .searchbar .sx{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:var(--line);
@@ -590,7 +600,7 @@
     </div>
     <div class="searchbar" id="searchbar">
       <span class="si">🔎</span>
-      <input id="search" type="search" placeholder="Rechercher…" autocomplete="off" />
+      <input id="search" type="search" enterkeyhint="search" placeholder="Rechercher…" autocomplete="off" autocorrect="off" />
       <button class="sx" id="searchClear" aria-label="Effacer">✕</button>
     </div>
   </header>
@@ -620,7 +630,7 @@
   <div class="grab"></div>
   <h3 id="sheetTitle">Nouvelle tâche</h3>
   <div class="field-wrap">
-    <input class="field" id="inp" placeholder="Ex : Sortir les poubelles" autocomplete="off" />
+    <input class="field" id="inp" placeholder="Ex : Sortir les poubelles" autocomplete="off" enterkeyhint="done" />
     <span class="field-emo" id="inpEmo"></span>
   </div>
 
@@ -1699,13 +1709,17 @@ function toast(msg){
 }
 
 /* ============ TABS ============ */
+const mainEl = document.querySelector('main');
 document.querySelectorAll('.tab').forEach(b=>{
   b.onclick = ()=>{
+    // taper l'onglet déjà actif → remonter en haut (réflexe iPhone)
+    if(tab === b.dataset.tab){ mainEl.scrollTo({top:0, behavior:'smooth'}); return; }
     tab = b.dataset.tab;
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('view-'+tab).classList.add('active');
+    mainEl.scrollTo({top:0});
     renderProgress();
   };
 });
@@ -2430,6 +2444,17 @@ document.getElementById('moveX').onclick  = closeMove;
 enableSwipeDown(sheet, closeSheet);
 enableSwipeDown(setSheet, closeSettings);
 enableSwipeDown(moveSheet, closeMove);
+
+/* Clavier iOS : les fenêtres remontent au-dessus du clavier (API visualViewport) */
+if(window.visualViewport){
+  const vv = window.visualViewport;
+  const onVV = ()=>{
+    const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    document.documentElement.style.setProperty('--kb', kb+'px');
+  };
+  vv.addEventListener('resize', onVV);
+  vv.addEventListener('scroll', onVV);
+}
 
 /* Service worker (hors-ligne + installable) — actif uniquement en ligne (https) */
 if('serviceWorker' in navigator){
