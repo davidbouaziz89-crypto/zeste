@@ -1,5 +1,18 @@
 # 🔔 Activer les notifications push (brique 2) — 3 étapes
 
+> ⚠️ **PÉRIMÉ depuis la migration du 2026-08-11.** Ce document décrit la
+> procédure sur le Supabase **managé** (`lrslisyydbiejqzpsoxc`), qui n'est plus
+> la production. Le backend est désormais auto-hébergé :
+> `https://api.srv.proformationplus.fr`, stack dans `/opt/supabase` sur le
+> serveur Hetzner. Les secrets ne se posent plus par la CLI `supabase secrets`
+> mais dans `/opt/supabase/functions.env`, et la tâche planifiée `zeste-push`
+> tourne déjà en pg_cron sur le serveur (chaque minute).
+>
+> **Point à vérifier** : la paire VAPID a été régénérée pendant la migration.
+> Si `zeste-push` signe avec la clé de `functions.env`, la constante
+> `VAPID_PUBLIC` d'`index.html` doit valoir la même clé publique, sinon les
+> abonnements iPhone échoueront silencieusement.
+
 Tout le code est prêt. Il reste à créer les tables, déployer la fonction serveur, et
 programmer l'envoi automatique. ~5 minutes, en copier-coller.
 
