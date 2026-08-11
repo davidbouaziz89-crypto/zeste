@@ -336,7 +336,28 @@
   .tab.active.t-todo{background:linear-gradient(135deg,#fff0c2,#ffe08a)}
   .tab.active.t-shop{background:linear-gradient(135deg,#d8fbe6,#b6f3cf)}
   .tab.active.t-film{background:linear-gradient(135deg,#ece2ff,#d6c4ff)}
+  .tab.active.t-debt{background:linear-gradient(135deg,#ffe8c2,#ffd591)}
   .tab.active .ic{transform:scale(1.18) translateY(-1px)}
+  .tabs-inner{padding:5px}
+  .tab{font-size:11px;padding:9px 4px}
+  .tab .ic{font-size:21px}
+
+  /* on me doit */
+  .debt-total{margin-top:14px;border-radius:22px;padding:18px 18px;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#ffb347,#ff8a3d);color:#fff;box-shadow:0 10px 26px rgba(255,138,61,.4)}
+  .debt-total .dt-lab{font-size:14px;font-weight:800;opacity:.95}
+  .debt-total .dt-val{font-size:34px;font-weight:800;letter-spacing:-.5px;margin-top:2px}
+  .debt-total .dt-sub{font-size:13px;font-weight:700;opacity:.9;margin-top:2px}
+  .debt-person{display:flex;align-items:center;gap:9px;margin:18px 2px 10px;font-weight:800;font-size:16px}
+  .debt-person .pp{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:12px;
+    background:var(--soft);color:var(--purple);font-size:16px;font-weight:800;text-transform:uppercase}
+  .debt-person .pt{margin-left:auto;font-size:15px;font-weight:800;color:var(--green-d)}
+  .row .debt-amt{font-size:16px;font-weight:800;color:var(--green-d);flex:none}
+  .row.done .debt-amt{color:var(--muted)}
+  .row .debt-note{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:2px}
+  .debt-thing-tag{font-size:12.5px;font-weight:800;color:var(--orange);background:hsl(35 90% 92%);padding:2px 8px;border-radius:20px}
+  :root[data-theme="dark"] .debt-thing-tag{background:hsl(35 50% 20%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .debt-thing-tag{background:hsl(35 50% 20%)}}
 
   /* films */
   .plat-tag{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-flex;gap:3px;
@@ -574,6 +595,7 @@
     <div class="view active" id="view-todo"></div>
     <div class="view" id="view-shop"></div>
     <div class="view" id="view-film"></div>
+    <div class="view" id="view-debt"></div>
   </main>
 </div>
 
@@ -583,6 +605,7 @@
   <button class="tab t-todo active" data-tab="todo"><span class="ic">✅</span>À faire</button>
   <button class="tab t-shop" data-tab="shop"><span class="ic">🛒</span>Courses</button>
   <button class="tab t-film" data-tab="film"><span class="ic">🎬</span>Films</button>
+  <button class="tab t-debt" data-tab="debt"><span class="ic">🤝</span>Prêts</button>
 </div></div>
 
 <!-- ADD SHEET -->
@@ -655,6 +678,24 @@
     <div class="film-results" id="filmResults"></div>
     <div class="film-preview" id="filmPreview" style="display:none"></div>
     <div class="cat-pick" id="platPick"></div>
+  </div>
+
+  <!-- DEBT options (on me doit) -->
+  <div id="debtOpts" style="display:none">
+    <div class="seg" id="debtType">
+      <button type="button" class="on" data-dt="money">💶 De l'argent</button>
+      <button type="button" data-dt="thing">📦 Autre chose</button>
+    </div>
+    <div id="debtMoney" style="margin-top:12px">
+      <div class="field-wrap">
+        <input class="field" id="debtAmount" type="number" inputmode="decimal" step="0.01" placeholder="Montant" />
+        <span class="field-emo">€</span>
+      </div>
+    </div>
+    <div id="debtThing" style="display:none;margin-top:12px">
+      <input class="field" id="debtWhat" placeholder="Quoi ? (ex : ma perceuse)" autocomplete="off" />
+    </div>
+    <input class="field auth-inp" id="debtNote" placeholder="Note (facultatif : motif, date…)" autocomplete="off" />
   </div>
 
   <div class="rec-toggle" id="recToggleRow">
@@ -1081,6 +1122,7 @@ function load(){
     if(!d.films) d.films = []; // migration: films
     if(!d.history) d.history = {}; // migration: historique d'achats (suggestions)
     if(!d.catLearn) d.catLearn = {}; // migration: rayons appris (auto-catégorisation)
+    if(!d.debts) d.debts = []; // migration: on me doit (prêts)
     return d;
   } }catch(e){}
   return {
@@ -1107,6 +1149,9 @@ function load(){
       {id:id(),txt:'Le Comte de Monte-Cristo',emo:'🎬',plat:'cine',done:false,rating:0},
       {id:id(),txt:'Intouchables',emo:'😂',plat:'prime',done:true,rating:5},
     ],
+    debts:[],
+    history:{},
+    catLearn:{},
   };
 }
 function saveLocal(){ localStorage.setItem('zeste', JSON.stringify(S)); }
@@ -1170,6 +1215,7 @@ function paint(){
   renderTodo();
   renderShop();
   renderFilms();
+  renderDebt();
   renderProgress();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
 }
@@ -1435,6 +1481,55 @@ function rowFilm(f){
   </div></div>`;
 }
 
+/* ---------- ON ME DOIT (prêts) ---------- */
+function eur(n){ n=Math.round((+n||0)*100)/100; return n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' €'; }
+function personKey(w){ return (w||'').trim().toLowerCase(); }
+function renderDebt(){
+  const el = document.getElementById('view-debt');
+  const debts = S.debts || [];
+  const owedMoney = debts.filter(d=>!d.done && d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
+  const thingsN = debts.filter(d=>!d.done && d.kind==='thing').length;
+  let h = `<div class="debt-total"><div class="dt-lab">💰 On te doit au total</div>
+    <div class="dt-val">${eur(owedMoney)}</div>
+    <div class="dt-sub">${thingsN? '+ '+thingsN+' objet'+(thingsN>1?'s':'')+' à récupérer' : 'aucun objet en attente'}</div></div>`;
+
+  const all = debts.filter(d=> matchQ(d.who) || matchQ(d.txt) || matchQ(d.note) );
+  if(!all.length){
+    el.innerHTML = h + (searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🤝','Personne ne te doit rien','Appuie sur + pour noter un prêt'));
+    return;
+  }
+  const active = all.filter(d=>!d.done), done = all.filter(d=>d.done);
+  const groups={}, order=[];
+  active.forEach(d=>{ const k=personKey(d.who); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(d); });
+  order.forEach(k=>{
+    const list=groups[k], name=list[0].who||'—';
+    const sum=list.filter(d=>d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
+    h += `<div class="debt-person" style="--ch:${catHue(name)}"><span class="pp">${esc((name.trim()[0]||'?'))}</span>${esc(name)}${sum?`<span class="pt">${eur(sum)}</span>`:''}</div>`;
+    h += list.map(rowDebt).join('');
+  });
+  if(done.length){
+    h += `<div class="cat-h" style="margin-top:22px;--ch:145"><span class="e">✅</span>Réglés<span class="n">${done.length}</span></div>`;
+    h += done.map(rowDebt).join('');
+    h += `<button class="clearbtn" id="clearDebt">🧹 Effacer les prêts réglés (${done.length})</button>`;
+  }
+  el.innerHTML = h;
+  bindRows(el,'debts');
+  const cd=document.getElementById('clearDebt'); if(cd) cd.onclick=()=>{ S.debts=S.debts.filter(d=>!d.done); render(); toast('Nettoyé 🎉'); };
+}
+function rowDebt(d){
+  const money = d.kind==='money';
+  const label = money ? (d.note?esc(d.note):'Prêt d\'argent') : esc(d.txt||'Objet prêté');
+  const right = money ? `<span class="debt-amt">${eur(+d.amount||0)}</span>` : '';
+  const noteThing = (!money && d.note) ? `<div class="debt-note">${esc(d.note)}</div>` : '';
+  return `<div class="swipe"><div class="del">Réglé <span class="t">✅</span></div>
+    <div class="row ${d.done?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
+    <div class="check" data-check>${chk()}</div>
+    <span class="emo">${money?'💶':'📦'}</span>
+    <div class="label">${label}${noteThing}</div>
+    ${right}
+  </div></div>`;
+}
+
 let lastDel=null, snackT=null;
 function showSnack(msg){
   const s=document.getElementById('snack'); document.getElementById('snackMsg').textContent=msg;
@@ -1540,7 +1635,7 @@ function commitReorder(key, ids){
 }
 
 function renderProgress(){
-  let list = tab==='todo'? S.todos : tab==='film'? S.films : S.shop.filter(i=>itemStore(i)===curStore);
+  let list = tab==='todo'? S.todos : tab==='film'? S.films : tab==='debt'? S.debts : S.shop.filter(i=>itemStore(i)===curStore);
   if(tab==='todo' && todoCat){ const tc=S.todoCats.length?S.todoCats:[{id:'perso'}]; const f=tc[0].id; list=S.todos.filter(i=>catOrFirst(i.cat,tc,f)===todoCat); }
   const tot = list.length, done = list.filter(i=>i.done).length;
   const pct = tot? Math.round(done/tot*100):0;
@@ -1556,6 +1651,12 @@ function renderProgress(){
     const left = tot-done;
     T.textContent = '🎬 Mes films';
     D.textContent = tot? (left? `${left} film${left>1?'s':''} à voir` : 'Tout est vu ! 🍿') : 'Aucun film';
+  }else if(tab==='debt'){
+    const dl = S.debts||[];
+    const owed = dl.filter(d=>!d.done && d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
+    const nActive = dl.filter(d=>!d.done).length;
+    T.textContent = '🤝 On me doit';
+    D.textContent = dl.length ? (eur(owed) + (nActive? ` · ${nActive} en cours` : ' · tout est réglé 🎉')) : 'Rien pour l\'instant';
   }else{
     const left = tot-done;
     const st = (S.stores.find(s=>s.id===curStore)||{});
@@ -1620,21 +1721,27 @@ let editState = null;
 
 function openSheet(editItem=null, editKey=null){
   editState = editItem ? {id:editItem.id, key:editKey} : null;
-  const mode = editItem ? ({todos:'todo',shop:'shop',films:'film'}[editKey]) : tab;
-  const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film';
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem};
+  const mode = editItem ? ({todos:'todo',shop:'shop',films:'film',debts:'debt'}[editKey]) : tab;
+  const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film', isDebt = mode==='debt';
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem, debtKind:'money'};
   // dans une catégorie ouverte : nouvelle tâche = cette catégorie par défaut
   if(!editItem && isTodo && todoCat && S.todoCats.some(c=>c.id===todoCat)){ form.tcat=todoCat; form.catTouched=true; }
-  document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':'Nouveau film 🎬';
+  document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':isFilm?'Nouveau film 🎬':'Nouveau prêt 🤝';
   document.getElementById('todoOpts').style.display = isTodo?'block':'none';
   document.getElementById('shopOpts').style.display = isShop?'block':'none';
   document.getElementById('filmOpts').style.display = isFilm?'block':'none';
+  document.getElementById('debtOpts').style.display = isDebt?'block':'none';
   document.getElementById('recToggleRow').style.display = isTodo?'flex':'none';
   document.getElementById('qtyVal').textContent = '1';
   document.getElementById('subInp').value=''; renderSubs();
-  inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':'Ex : Oppenheimer';
+  // reset debt ui
+  document.querySelectorAll('#debtType button').forEach(b=>b.classList.toggle('on', b.dataset.dt==='money'));
+  document.getElementById('debtMoney').style.display='block';
+  document.getElementById('debtThing').style.display='none';
+  document.getElementById('debtAmount').value=''; document.getElementById('debtWhat').value=''; document.getElementById('debtNote').value='';
+  inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':isFilm?'Ex : Oppenheimer':'Qui te doit ? (prénom)';
   document.getElementById('recHint').textContent = isTodo? '(revient chaque fois)':'(essentiel à racheter)';
-  inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':'🎬';
+  inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':isFilm?'🎬':'🤝';
   // reset prio
   document.querySelectorAll('#todoOpts .opt').forEach(o=>o.classList.toggle('sel', o.dataset.prio==='3'));
   document.getElementById('recSw').classList.remove('on');
@@ -1658,9 +1765,9 @@ function openSheet(editItem=null, editKey=null){
 
   // ----- mode MODIFIER : on pré-remplit -----
   if(editItem){
-    inp.value = editItem.txt;
-    inpEmo.textContent = editItem.emo || (isTodo?'⭐':isShop?'🛒':'🎬');
-    document.getElementById('sheetTitle').textContent = isTodo?'Modifier la tâche ✏️':isShop?"Modifier l'article ✏️":'Modifier le film ✏️';
+    inp.value = isDebt ? (editItem.who||'') : editItem.txt;
+    inpEmo.textContent = isDebt ? '🤝' : (editItem.emo || (isTodo?'⭐':isShop?'🛒':'🎬'));
+    document.getElementById('sheetTitle').textContent = isTodo?'Modifier la tâche ✏️':isShop?"Modifier l'article ✏️":isFilm?'Modifier le film ✏️':'Modifier le prêt ✏️';
     document.getElementById('addBtn').textContent = 'Enregistrer';
     if(isTodo){
       form.tcat = editItem.cat; form.prio = editItem.prio||3; form.rec = !!editItem.rec;
@@ -1677,6 +1784,14 @@ function openSheet(editItem=null, editKey=null){
       form.cat = editItem.cat; form.qty = editItem.qty||1;
       document.getElementById('qtyVal').textContent = String(form.qty);
       syncCatPick();
+    } else if(isDebt){
+      form.debtKind = editItem.kind||'money';
+      document.querySelectorAll('#debtType button').forEach(b=>b.classList.toggle('on', b.dataset.dt===form.debtKind));
+      document.getElementById('debtMoney').style.display = form.debtKind==='money'?'block':'none';
+      document.getElementById('debtThing').style.display = form.debtKind==='thing'?'block':'none';
+      document.getElementById('debtAmount').value = editItem.amount||'';
+      document.getElementById('debtWhat').value = editItem.txt||'';
+      document.getElementById('debtNote').value = editItem.note||'';
     } else {
       form.plat = editItem.plat; syncPlatPick();
       if(editItem.poster || editItem.overview){
@@ -1701,6 +1816,7 @@ document.getElementById('topBack').onclick = ()=>goBackTodo();
 const moveBg = document.getElementById('moveBg'), moveSheet = document.getElementById('moveSheet');
 let moveTarget = null;
 function openMove(item, key){
+  if(key==='debts') return; // pas de déplacement pour les prêts
   let cats, field, cur, title;
   if(key==='shop'){ cats=S.shopCats; field='cat'; cur=item.cat; title='Déplacer « '+item.txt+' »'; }
   else if(key==='todos'){ cats=S.todoCats; field='cat'; cur=item.cat; title='Changer la catégorie'; }
@@ -1755,7 +1871,8 @@ async function onBarcode(code){
 
 inp.addEventListener('input',()=>{
   const v = inp.value.trim();
-  const m = editState ? ({todos:'todo',shop:'shop',films:'film'}[editState.key]) : tab;
+  const m = editState ? ({todos:'todo',shop:'shop',films:'film',debts:'debt'}[editState.key]) : tab;
+  if(m==='debt'){ inpEmo.textContent='🤝'; return; }
   if(!v){ inpEmo.textContent = m==='todo'?'⭐':m==='shop'?'🛒':'🎬'; return; }
   if(m==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
   else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); form.filmMeta = null; const pv=document.getElementById('filmPreview'); pv.style.display='none'; pv.innerHTML=''; scheduleFilmSearch(v); }
@@ -1768,6 +1885,12 @@ document.querySelectorAll('#todoOpts .opt').forEach(o=>{
 document.getElementById('recSw').onclick = function(){ this.classList.toggle('on'); form.rec = this.classList.contains('on'); };
 document.getElementById('qtyMinus').onclick = ()=>{ form.qty = Math.max(1,(form.qty||1)-1); document.getElementById('qtyVal').textContent = String(form.qty); };
 document.getElementById('qtyPlus').onclick  = ()=>{ form.qty = Math.min(99,(form.qty||1)+1); document.getElementById('qtyVal').textContent = String(form.qty); };
+document.querySelectorAll('#debtType button').forEach(b=>{ b.onclick=()=>{
+  form.debtKind=b.dataset.dt;
+  document.querySelectorAll('#debtType button').forEach(x=>x.classList.toggle('on', x===b));
+  document.getElementById('debtMoney').style.display = form.debtKind==='money'?'block':'none';
+  document.getElementById('debtThing').style.display = form.debtKind==='thing'?'block':'none';
+}; });
 
 /* ----- sous-tâches ----- */
 function renderSubs(){
@@ -1843,16 +1966,24 @@ function add(){
     const k = editState.key;
     const it = S[k].find(x=>x.id===editState.id);
     if(it){
-      it.txt = v;
       if(k==='todos'){
+        it.txt = v;
         it.emo = guessTodo(v); it.cat = form.tcat; it.prio = form.prio; it.rec = form.rec;
         it.due = form.due||null; it.repeat = form.repeat||'none'; it.subs = form.subs||[];
         it.notified = it.due && it.due>Date.now() ? false : it.notified;
       } else if(k==='films'){
+        it.txt = v;
         const fmt = form.filmMeta;
         it.emo = (fmt&&fmt.type==='tv')?'📺':guessFilmEmo(v); it.plat = form.plat;
         if(fmt){ it.type=fmt.type||'movie'; it.poster=fmt.poster||''; it.overview=fmt.overview||''; it.year=fmt.year||''; it.tmdbId=fmt.tmdbId||null; it.ytKey=fmt.ytKey||''; it.provName=fmt.provName||''; }
+      } else if(k==='debts'){
+        const amt = parseFloat((document.getElementById('debtAmount').value||'').replace(',','.'));
+        it.who = v; it.kind = form.debtKind;
+        it.amount = form.debtKind==='money' ? (isNaN(amt)?0:amt) : 0;
+        it.txt = form.debtKind==='thing' ? document.getElementById('debtWhat').value.trim() : '';
+        it.note = document.getElementById('debtNote').value.trim();
       } else {
+        it.txt = v;
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.qty = form.qty||1;
         learnCat(v, form.cat); // apprend la correction éventuelle
       }
@@ -1873,13 +2004,22 @@ function add(){
     const fm = form.filmMeta || {};
     S.films.unshift({id:id(),txt:v,emo:(fm.type==='tv'?'📺':guessFilmEmo(v)),plat:form.plat,done:false,rating:0,
       type:fm.type||'movie',poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||'',provName:fm.provName||''});
+  }else if(tab==='debt'){
+    const amt = parseFloat((document.getElementById('debtAmount').value||'').replace(',','.'));
+    const kind = form.debtKind;
+    if(kind==='money' && (isNaN(amt) || amt<=0)){ toast('Entre un montant 💶'); document.getElementById('debtAmount').focus(); return; }
+    const what = document.getElementById('debtWhat').value.trim();
+    if(kind==='thing' && !what){ toast('Note ce qu\'on te doit 📦'); document.getElementById('debtWhat').focus(); return; }
+    const note = document.getElementById('debtNote').value.trim();
+    S.debts.unshift({id:id(),who:v,kind,amount:kind==='money'?amt:0,txt:kind==='thing'?what:'',note,done:false,ts:Date.now()});
+    document.getElementById('debtAmount').value=''; document.getElementById('debtWhat').value=''; document.getElementById('debtNote').value='';
   }else{
     const [e] = detectShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
     learnCat(v, form.cat); // apprend le rayon choisi pour ce produit
   }
-  render(); toast('Ajouté ! '+inpEmo.textContent);
-  inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':tab==='film'?'🎬':'🛒';
+  render(); toast('Ajouté ! '+(tab==='debt'?'🤝':inpEmo.textContent));
+  inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':tab==='film'?'🎬':tab==='debt'?'🤝':'🛒';
   document.getElementById('recSw').classList.remove('on'); form.rec=false;
   // après un ajout on garde la catégorie choisie pour enchaîner
   inp.focus();
@@ -2116,6 +2256,7 @@ function ensureShape(){
   if(!Array.isArray(S.todos)) S.todos=[];
   if(!Array.isArray(S.shop)) S.shop=[];
   if(!Array.isArray(S.films)) S.films=[];
+  if(!Array.isArray(S.debts)) S.debts=[];
   if(!S.history || typeof S.history!=='object') S.history={};
   if(!S.catLearn || typeof S.catLearn!=='object') S.catLearn={};
   S.shop.forEach(i=>{ if(!i.store) i.store = S.stores[0].id; });
