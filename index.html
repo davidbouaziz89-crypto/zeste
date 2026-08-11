@@ -378,7 +378,10 @@
   .row .emo.poster img{width:100%;height:100%;object-fit:cover;border-radius:13px;display:block}
 
   /* recherche films (TMDB) */
-  .film-results{display:flex;flex-direction:column;gap:6px;margin:2px 0 10px;max-height:250px;overflow-y:auto}
+  .film-results{display:flex;flex-direction:column;gap:6px;margin:2px 0 10px;max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  /* pendant la recherche : on masque plateformes + bouton pour que la liste soit claire */
+  #sheet.film-searching #platPick,
+  #sheet.film-searching #addBtn{display:none}
   .film-results:empty{display:none}
   .film-result{display:flex;gap:10px;align-items:center;padding:6px;border-radius:12px;background:var(--panel);
     border:1.5px solid var(--line);cursor:pointer}
@@ -878,13 +881,15 @@ async function tmdbSearch(q){
     }));
   }catch(e){ console.warn('tmdb',e); return []; }
 }
+function setFilmSearching(on){ sheet.classList.toggle('film-searching', !!on); }
 function scheduleFilmSearch(q){
   if(!TMDB_KEY) return;
   clearTimeout(filmSearchT);
   const el = document.getElementById('filmResults');
-  if(!q || q.length<2){ el.innerHTML=''; return; }
+  if(!q || q.length<2){ el.innerHTML=''; setFilmSearching(false); return; }
   const seq = ++filmSearchSeq;
   el.innerHTML = `<div class="film-loading">🔎 Recherche…</div>`;
+  setFilmSearching(true);
   filmSearchT = setTimeout(async ()=>{
     const res = await tmdbSearch(q);
     if(seq!==filmSearchSeq) return;
@@ -893,7 +898,8 @@ function scheduleFilmSearch(q){
 }
 function renderFilmResults(list){
   const el = document.getElementById('filmResults');
-  if(!list.length){ el.innerHTML=''; return; }
+  if(!list.length){ el.innerHTML=''; setFilmSearching(false); return; }
+  setFilmSearching(true);
   el.innerHTML = list.map((m,i)=>`<div class="film-result" data-i="${i}">
     ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>${m.type==='tv'?'📺':'🎬'}</div>'">`:`<div class="ph">${m.type==='tv'?'📺':'🎬'}</div>`}
     <div><div class="ti">${esc(m.title)}</div><div class="yr">${m.type==='tv'?'📺 Série':'🎬 Film'}${m.year?' · '+m.year:''}</div></div></div>`).join('');
@@ -928,7 +934,8 @@ async function tmdbProviders(id, type){
 function selectFilmResult(m){
   form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId, type:m.type||'movie', ytKey:'', provName:''};
   inp.value = m.title; inpEmo.textContent = m.type==='tv'?'📺':guessFilmEmo(m.title);
-  document.getElementById('filmResults').innerHTML='';
+  document.getElementById('filmResults').innerHTML=''; setFilmSearching(false);
+  if(inp.blur) inp.blur(); // referme le clavier pour voir l'aperçu + Ajouter
   showFilmPreview(form.filmMeta, m.title);
   const same = ()=> form.filmMeta && form.filmMeta.tmdbId===m.tmdbId;
   tmdbTrailer(m.tmdbId, m.type).then(k=>{ if(same()){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, m.title); } });
@@ -1781,6 +1788,7 @@ function openSheet(editItem=null, editKey=null){
   document.getElementById('filmResults').innerHTML='';
   document.getElementById('filmPreview').style.display='none';
   document.getElementById('filmPreview').innerHTML='';
+  setFilmSearching(false);
   buildCatPick();
   buildTcatPick();
   buildPlatPick();
