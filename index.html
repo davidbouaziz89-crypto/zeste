@@ -422,7 +422,7 @@
     max-width:520px;margin:0 auto;transform:translateY(110%);
     transition:transform .3s cubic-bezier(.2,.9,.3,1), bottom .22s ease;
     box-shadow:0 -10px 40px rgba(0,0,0,.15);
-    max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    max-height:calc(92vh - var(--kb,0px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   }
   .sheet.open{transform:none}
   .grab{width:50px;height:6px;background:var(--line);border-radius:6px;margin:0 auto 12px;cursor:grab;
