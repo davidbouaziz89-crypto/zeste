@@ -308,6 +308,7 @@
   .scan-close{position:fixed;top:calc(var(--safe-t) + 16px);right:18px;z-index:98;border:none;background:rgba(255,255,255,.92);width:44px;height:44px;border-radius:50%;font-size:20px;font-weight:800;cursor:pointer}
 
   /* fenêtre de déplacement (appui long) */
+  .move-sheet{overflow-y:auto;-webkit-overflow-scrolling:touch}
   .move-sheet .cat-pick{flex-wrap:wrap;overflow:visible}
   .move-sheet .cat-pick button{min-width:0}
 
@@ -425,9 +426,10 @@
     max-width:520px;margin:0 auto;transform:translateY(110%);
     transition:transform .3s cubic-bezier(.2,.9,.3,1), bottom .22s ease;
     box-shadow:0 -10px 40px rgba(0,0,0,.15);
-    max-height:calc(92vh - var(--kb,0px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    max-height:calc(92vh - var(--kb,0px));display:flex;flex-direction:column;overscroll-behavior:contain;
   }
   .sheet.open{transform:none}
+  .sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;flex:1;padding-bottom:4px}
   .grab{width:50px;height:6px;background:var(--line);border-radius:6px;margin:0 auto 12px;cursor:grab;
     touch-action:none;padding:10px 40px;box-sizing:content-box;background-clip:content-box}
   .sheet-x{position:absolute;top:14px;right:16px;border:none;background:var(--line);color:var(--muted);
@@ -450,7 +452,7 @@
   .opt.sel{border-color:var(--purple);background:var(--soft)}
   .opt .dot{width:11px;height:11px;border-radius:50%}
   .submit{
-    width:100%;margin-top:18px;padding:16px;border-radius:18px;border:none;cursor:pointer;
+    flex:none;width:100%;margin-top:12px;padding:16px;border-radius:18px;border:none;cursor:pointer;
     background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-weight:800;font-size:17px;
     box-shadow:0 8px 20px rgba(155,107,255,.35);
   }
@@ -631,6 +633,7 @@
 <div class="sheet" id="sheet">
   <button class="sheet-x" id="sheetX" aria-label="Fermer">✕</button>
   <div class="grab"></div>
+  <div class="sheet-body">
   <h3 id="sheetTitle">Nouvelle tâche</h3>
   <div class="field-wrap">
     <input class="field" id="inp" placeholder="Ex : Sortir les poubelles" autocomplete="off" enterkeyhint="done" />
@@ -721,6 +724,7 @@
     <div class="switch" id="recSw"></div>
     <div><span id="recLabel">Récurrent</span> <span style="color:var(--muted);font-weight:600;font-size:13px" id="recHint">(revient à chaque fois)</span></div>
   </div>
+  </div><!-- /sheet-body -->
 
   <button class="submit" id="addBtn">Ajouter</button>
 </div>
