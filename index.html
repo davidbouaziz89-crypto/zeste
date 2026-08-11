@@ -415,7 +415,12 @@
     box-shadow:0 -10px 40px rgba(0,0,0,.15);
   }
   .sheet.open{transform:none}
-  .grab{width:44px;height:5px;background:var(--line);border-radius:5px;margin:2px auto 16px}
+  .grab{width:50px;height:6px;background:var(--line);border-radius:6px;margin:0 auto 12px;cursor:grab;
+    touch-action:none;padding:10px 40px;box-sizing:content-box;background-clip:content-box}
+  .sheet-x{position:absolute;top:14px;right:16px;border:none;background:var(--line);color:var(--muted);
+    width:36px;height:36px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;z-index:3;
+    display:grid;place-items:center;line-height:1}
+  .sheet-x:active{background:var(--red);color:#fff;transform:scale(.9)}
   .sheet h3{margin:0 0 14px;font-size:20px;font-weight:800}
   .field{
     width:100%;border:2.5px solid var(--line);border-radius:16px;padding:15px 16px;
@@ -611,6 +616,7 @@
 <!-- ADD SHEET -->
 <div class="sheet-bg" id="sheetBg"></div>
 <div class="sheet" id="sheet">
+  <button class="sheet-x" id="sheetX" aria-label="Fermer">✕</button>
   <div class="grab"></div>
   <h3 id="sheetTitle">Nouvelle tâche</h3>
   <div class="field-wrap">
@@ -709,6 +715,7 @@
 <!-- SETTINGS SHEET -->
 <div class="sheet-bg" id="setBg"></div>
 <div class="sheet set-sheet" id="setSheet">
+  <button class="sheet-x" id="setX" aria-label="Fermer">✕</button>
   <div class="grab"></div>
   <h3>⚙️ Réglages</h3>
 
@@ -777,6 +784,7 @@
 <!-- fenêtre déplacer (appui long) -->
 <div class="sheet-bg" id="moveBg"></div>
 <div class="sheet move-sheet" id="moveSheet">
+  <button class="sheet-x" id="moveX" aria-label="Fermer">✕</button>
   <div class="grab"></div>
   <h3 id="moveTitle">Déplacer</h3>
   <div class="cat-pick" id="movePick"></div>
@@ -2399,6 +2407,29 @@ function applyTheme(){
 document.querySelectorAll('#themeSeg button').forEach(b=>{ b.onclick=()=>{ localStorage.setItem('zeste_theme', b.dataset.th); applyTheme(); }; });
 if(window.matchMedia){ try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>applyTheme()); }catch(e){} }
 applyTheme();
+
+/* ----- Fermeture facile des fenêtres : bouton ✕ + glisser la barre vers le bas ----- */
+function enableSwipeDown(sheetEl, closeFn){
+  const grab = sheetEl.querySelector('.grab'); if(!grab) return;
+  grab.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    const startY=e.clientY; let dy=0; sheetEl.style.transition='none';
+    const move=ev=>{ dy=Math.max(0, ev.clientY-startY); sheetEl.style.transform='translateY('+dy+'px)'; };
+    const end=()=>{
+      grab.removeEventListener('pointermove',move); grab.removeEventListener('pointerup',end); grab.removeEventListener('pointercancel',end);
+      sheetEl.style.transition=''; sheetEl.style.transform='';
+      if(dy>90 || dy<6) closeFn();
+    };
+    try{ grab.setPointerCapture(e.pointerId); }catch(_){}
+    grab.addEventListener('pointermove',move); grab.addEventListener('pointerup',end); grab.addEventListener('pointercancel',end);
+  });
+}
+document.getElementById('sheetX').onclick = closeSheet;
+document.getElementById('setX').onclick   = closeSettings;
+document.getElementById('moveX').onclick  = closeMove;
+enableSwipeDown(sheet, closeSheet);
+enableSwipeDown(setSheet, closeSettings);
+enableSwipeDown(moveSheet, closeMove);
 
 /* Service worker (hors-ligne + installable) — actif uniquement en ligne (https) */
 if('serviceWorker' in navigator){
