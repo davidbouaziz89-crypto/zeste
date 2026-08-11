@@ -1,5 +1,5 @@
 /* Service Worker Zeste — hors-ligne + base pour notifications push */
-const CACHE = 'zeste-v1';
+const CACHE = 'zeste-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -24,6 +24,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // On ne gère QUE le même domaine : TMDB, YouTube, Open Food Facts, Supabase… vont direct au réseau
+  if (new URL(req.url).origin !== self.location.origin) return;
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
   if (isHTML) {
     e.respondWith(

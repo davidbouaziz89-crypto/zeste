@@ -867,7 +867,7 @@ async function tmdbSearch(q){
   if(!TMDB_KEY || !q || q.length<2) return [];
   try{
     const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_KEY}&language=fr-FR&include_adult=false&query=${encodeURIComponent(q)}`;
-    const r = await fetch(url); if(!r.ok) return [];
+    const r = await fetch(url, {cache:'no-store'}); if(!r.ok) return [];
     const j = await r.json();
     return (j.results||[]).filter(m=>m.media_type==='movie'||m.media_type==='tv').slice(0,7).map(m=>({
       tmdbId:m.id, type:m.media_type,
