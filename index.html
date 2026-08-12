@@ -2192,17 +2192,13 @@ function add(){
     if(kind==='thing' && !what){ toast('Note ce qu\'on te doit 📦'); document.getElementById('debtWhat').focus(); return; }
     const note = document.getElementById('debtNote').value.trim();
     S.debts.unshift({id:id(),who:v,kind,amount:kind==='money'?amt:0,txt:kind==='thing'?what:'',note,done:false,ts:Date.now()});
-    document.getElementById('debtAmount').value=''; document.getElementById('debtWhat').value=''; document.getElementById('debtNote').value='';
   }else{
     const [e] = detectShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
     learnCat(v, form.cat); // apprend le rayon choisi pour ce produit
   }
-  render(); toast('Ajouté ! '+(tab==='debt'?'🤝':inpEmo.textContent));
-  inp.value=''; inpEmo.textContent = tab==='todo'?'⭐':tab==='film'?'🎬':tab==='debt'?'🤝':'🛒';
-  document.getElementById('recSw').classList.remove('on'); form.rec=false;
-  // après un ajout on garde la catégorie choisie pour enchaîner
-  inp.focus();
+  const emo = tab==='debt'?'🤝':inpEmo.textContent;
+  render(); closeSheet(); toast('Ajouté ! '+emo);
 }
 
 /* ============ SETTINGS (catégories) ============ */
