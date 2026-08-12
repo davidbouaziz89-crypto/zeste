@@ -563,6 +563,23 @@
   .snack button{flex:none;border:none;background:rgba(255,255,255,.22);color:#fff;font-weight:800;padding:7px 13px;border-radius:11px;cursor:pointer}
   .snack button:active{background:rgba(255,255,255,.35)}
 
+  /* ajout rapide (IA) */
+  .magic-btn{font-size:18px}
+  .magic-ta{width:100%;resize:none;font-size:16px;line-height:1.4;padding:14px;border:2.5px solid var(--line);
+    border-radius:16px;background:var(--field);color:var(--ink);outline:none;font-family:inherit;font-weight:600}
+  .magic-ta:focus{border-color:var(--purple)}
+  .mg-h{font-weight:800;font-size:14px;color:var(--muted);margin:14px 0 8px}
+  .mg-card{display:flex;align-items:center;gap:10px;background:var(--panel);border:1.5px solid var(--line);
+    border-radius:14px;padding:8px 10px;margin-bottom:8px}
+  .mg-card .mg-type{flex:none;width:40px;height:40px;border:none;border-radius:12px;background:var(--card);
+    box-shadow:var(--shadow-s);font-size:20px;cursor:pointer}
+  .mg-card .mg-type:active{transform:scale(.9)}
+  .mg-card .mg-main{flex:1;min-width:0}
+  .mg-card .mg-txt{font-weight:800;font-size:15.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mg-card .mg-sub{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:1px}
+  .mg-card .mg-del{flex:none;border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px}
+  .mg-hint{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+
   /* barre de recherche */
   .searchbar{margin-top:10px;position:relative}
   .searchbar input{width:100%;border:2px solid var(--line);border-radius:16px;padding:11px 14px 11px 40px;
@@ -596,7 +613,10 @@
         <button class="top-back" id="topBack" aria-label="Retour aux catégories" style="display:none">←</button>
         <div class="hi" id="greet">Bonjour 👋</div>
       </div>
-      <button class="gear" id="gear" aria-label="Réglages">⚙️</button>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="gear magic-btn" id="magicBtn" aria-label="Ajout rapide">✨</button>
+        <button class="gear" id="gear" aria-label="Réglages">⚙️</button>
+      </div>
     </div>
     <div class="brand"><span class="logo">🍋</span><h1>Zeste</h1></div>
     <div class="progress">
@@ -727,6 +747,20 @@
   </div><!-- /sheet-body -->
 
   <button class="submit" id="addBtn">Ajouter</button>
+</div>
+
+<!-- AJOUT RAPIDE (langage naturel) -->
+<div class="sheet-bg" id="magicBg"></div>
+<div class="sheet" id="magicSheet">
+  <button class="sheet-x" id="magicX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body">
+    <h3>✨ Ajout rapide</h3>
+    <p class="set-hint" style="margin:2px 0 10px">Écris tout d'un coup — ou touche le 🎤 du clavier pour <b>dicter</b>. L'appli range automatiquement.</p>
+    <textarea class="field magic-ta" id="magicText" rows="3" placeholder="Ex : lait, 2 pains, appeler le dentiste demain 15h, film Interstellar" enterkeyhint="done"></textarea>
+    <div id="magicPreview"></div>
+  </div>
+  <button class="submit" id="magicAdd">✨ Analyser</button>
 </div>
 
 <!-- SETTINGS SHEET -->
@@ -1870,6 +1904,118 @@ function openMove(item, key){
 function closeMove(){ moveBg.classList.remove('open'); moveSheet.classList.remove('open'); moveTarget=null; }
 moveBg.onclick = closeMove;
 
+/* ============ AJOUT RAPIDE (langage naturel) ============ */
+const magicBg=document.getElementById('magicBg'), magicSheet=document.getElementById('magicSheet'), magicTa=document.getElementById('magicText');
+let magicItems=[], magicT=null;
+document.getElementById('magicBtn').onclick=openMagic;
+document.getElementById('magicX').onclick=closeMagic;
+magicBg.onclick=closeMagic;
+function openMagic(){
+  magicTa.value=''; magicItems=[]; document.getElementById('magicPreview').innerHTML='';
+  document.getElementById('magicAdd').textContent='✨ Analyser';
+  magicBg.classList.add('open'); magicSheet.classList.add('open');
+  setTimeout(()=>magicTa.focus(),300);
+}
+function closeMagic(){ magicBg.classList.remove('open'); magicSheet.classList.remove('open'); }
+magicTa.addEventListener('input',()=>{ clearTimeout(magicT); magicT=setTimeout(()=>{ magicItems=parseMagic(magicTa.value); renderMagicPreview(magicItems); },350); });
+document.getElementById('magicAdd').onclick=()=>{
+  if(!magicItems.length){ magicItems=parseMagic(magicTa.value); renderMagicPreview(magicItems); if(!magicItems.length) toast('Écris quelque chose 🙂'); return; }
+  addAllMagic();
+};
+
+function mgCap(s){ s=(s||'').trim(); return s? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+const WDAYS={dimanche:0,lundi:1,mardi:2,mercredi:3,jeudi:4,vendredi:5,samedi:6};
+function parseWhen(text){
+  const low=' '+text.toLowerCase().replace(/’/g,"'")+' ';
+  const removed=[]; let dayDelta=null, absDate=null, hour=null, min=0, soir=false, matin=false;
+  let tm=low.match(/(?:[àa]\s*)?(\d{1,2})\s*h\s*(\d{2})?/); if(!tm) tm=low.match(/(\d{1,2})\s*:\s*(\d{2})/);
+  if(tm){ const h=parseInt(tm[1],10); if(h<=23){ hour=h; min=tm[2]?parseInt(tm[2],10):0; removed.push(tm[0].trim()); } }
+  if(/\bce soir\b|\bsoir\b/.test(low)){ soir=true; removed.push('ce soir','soir'); }
+  if(/\bce matin\b|\bmatin\b/.test(low)){ matin=true; removed.push('ce matin','matin'); }
+  if(/\bmidi\b/.test(low)){ if(hour==null) hour=12; removed.push('midi'); }
+  if(/\baujourd'hui\b|\bauj\b/.test(low)){ dayDelta=0; removed.push("aujourd'hui","auj"); }
+  else if(/\bapr[eè]s[ -]demain\b/.test(low)){ dayDelta=2; removed.push('après-demain','apres-demain'); }
+  else if(/\bdemain\b/.test(low)){ dayDelta=1; removed.push('demain'); }
+  const dm=low.match(/\bdans\s+(\d+)\s+(jours?|semaines?|heures?)\b/);
+  if(dm){ const n=parseInt(dm[1],10),u=dm[2]; removed.push(dm[0].trim());
+    if(u.indexOf('jour')===0) dayDelta=n; else if(u.indexOf('semaine')===0) dayDelta=n*7; else absDate=new Date(Date.now()+n*3600000); }
+  for(const w in WDAYS){ if(new RegExp('\\b'+w+'\\b').test(low)){ const d=new Date(); let add=(WDAYS[w]-d.getDay()+7)%7; if(add===0) add=7; d.setDate(d.getDate()+add); absDate=absDate||d; removed.push(w); break; } }
+  let due=null;
+  const applyTime=(d)=>{ if(hour!=null) d.setHours(hour,min,0,0); else if(soir) d.setHours(19,0,0,0); else if(matin) d.setHours(9,0,0,0); else d.setHours(9,0,0,0); return d; };
+  if(absDate) due=applyTime(absDate).getTime();
+  else if(dayDelta!=null){ const d=new Date(); d.setDate(d.getDate()+dayDelta); due=applyTime(d).getTime(); }
+  else if(hour!=null||soir||matin){ const d=applyTime(new Date()); if(d.getTime()<Date.now()) d.setDate(d.getDate()+1); due=d.getTime(); }
+  let cleaned=text;
+  removed.forEach(r=>{ if(!r) return; cleaned=cleaned.replace(new RegExp(r.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'ig'),' '); });
+  cleaned=cleaned.replace(/\b[àa]\b/gi,' ').replace(/\s+/g,' ').trim();
+  return {due, cleaned};
+}
+const MAGIC_VERBS=['appel','rappel','reserv','réserv','envoy','pay','rang','nettoy','repar','répar','arros','sort','lav','recup','récup','depos','dépos','contact','relanc','sign','pren','faire','fair','ecri','écri','verif','vérif','termin','prepar','prépar','emmen','amen','cherch','redig','rédig','aller','install','confirm','annul','organis','planifi','rembours','rappeler'];
+function classifySeg(seg){
+  let s=seg.trim(); if(!s) return null;
+  const low=s.toLowerCase().replace(/’/g,"'");
+  let m=low.match(/^(films?|s[ée]ries?|regarder)\s+(.+)/);
+  if(m) return {type:'film', txt:mgCap(s.slice(s.length-m[2].length))};
+  m=s.match(/^(.+?)\s+me\s+doit\s+(.+)$/i);
+  if(m){ const who=mgCap(m[1]); const rest=m[2].trim(); const am=rest.match(/(\d+(?:[.,]\d+)?)/);
+    if(am && /(€|euro|balle|\d)/.test(rest.toLowerCase())) return {type:'debt',who,kind:'money',amount:parseFloat(am[1].replace(',','.'))};
+    return {type:'debt',who,kind:'thing',txt:mgCap(rest)}; }
+  m=low.match(/pr[eê]t[eé]\s+(\d+(?:[.,]\d+)?)\s*(?:€|euros?)?\s*[àa]\s+(.+)/);
+  if(m) return {type:'debt',who:mgCap(m[2]),kind:'money',amount:parseFloat(m[1].replace(',','.'))};
+  let forcedShop=false;
+  s=s.replace(/^\s*(acheter|racheter|prendre|achète|prends|ajouter)\s+(du |de la |des |de l'|un |une |le |la |les )?/i,()=>{ forcedShop=true; return ''; });
+  let qty=1; const q=s.match(/^(\d{1,2})\s*[x×]?\s+(.+)/); if(q){ qty=parseInt(q[1],10); s=q[2]; }
+  const w=parseWhen(s); let core=(w.cleaned||s).trim(); if(!core) core=s.trim();
+  const dd=detectShop(core); const isGrocery=dd[1]!=='au';
+  const first=core.toLowerCase().split(/\s+/)[0]||'';
+  const looksVerb=MAGIC_VERBS.some(v=>first.indexOf(v)===0) || (/(er|ir)$/.test(first)&&first.length>4&&!isGrocery);
+  const todoKw=Object.keys(TODO_DICT).some(k=>core.toLowerCase().includes(k));
+  if(!forcedShop && (w.due || looksVerb || todoKw))
+    return {type:'todo', txt:mgCap(core), due:w.due||null, cat:guessTodoCat(core)};
+  return {type:'shop', txt:mgCap(core), qty, cat:isGrocery?dd[1]:'au', emo:isGrocery?dd[0]:'🛒'};
+}
+function parseMagic(text){
+  const segs=(text||'').split(/\n|,|;|·|•|&| et | puis /i).map(s=>s.trim()).filter(Boolean);
+  const out=[]; segs.forEach(s=>{ const it=classifySeg(s); if(it && (it.txt||it.who)) out.push(it); });
+  return out;
+}
+function renderMagicPreview(items){
+  const el=document.getElementById('magicPreview');
+  const btn=document.getElementById('magicAdd');
+  if(!items.length){ el.innerHTML=''; btn.textContent='✨ Analyser'; return; }
+  const ic={todo:'✅',shop:'🛒',film:'🎬',debt:'🤝'};
+  el.innerHTML='<div class="mg-h">Compris — touche l\'icône pour changer :</div>'+items.map((it,i)=>{
+    let sub;
+    if(it.type==='shop'){ const c=S.shopCats.find(x=>x.id===it.cat)||{}; sub='Course'+(c.n?' · '+c.n:'')+(it.qty>1?' ×'+it.qty:''); }
+    else if(it.type==='film') sub='Film à voir';
+    else if(it.type==='debt') sub='Prêt · '+(it.kind==='money'?eur(it.amount):'objet')+' · '+it.who;
+    else sub='Tâche'+(it.due?' · 🔔 '+dueLabel(it.due):'');
+    return `<div class="mg-card"><button class="mg-type" data-cy="${i}">${ic[it.type]}</button>
+      <div class="mg-main"><div class="mg-txt">${esc(it.txt||it.who||'')}</div><div class="mg-sub">${esc(sub)}</div></div>
+      <button class="mg-del" data-del="${i}">✕</button></div>`;
+  }).join('');
+  el.querySelectorAll('[data-cy]').forEach(b=>b.onclick=()=>cycleMagicType(+b.dataset.cy));
+  el.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ magicItems.splice(+b.dataset.del,1); renderMagicPreview(magicItems); });
+  btn.textContent='Tout ajouter ('+items.length+')';
+}
+function cycleMagicType(i){
+  const it=magicItems[i]; const order=['todo','shop','film']; let k=order.indexOf(it.type); if(k<0)k=-1;
+  it.type=order[(k+1)%order.length];
+  if(it.type==='shop'){ const [e,c]=detectShop(it.txt); it.emo=e; it.cat=c; it.qty=it.qty||1; }
+  else if(it.type==='todo'){ it.cat=guessTodoCat(it.txt); }
+  renderMagicPreview(magicItems);
+}
+function addAllMagic(){
+  let n=0;
+  magicItems.forEach(it=>{
+    if(it.type==='shop'){ const [e,c]=detectShop(it.txt); S.shop.unshift({id:id(),txt:it.txt,emo:it.emo||e,cat:it.cat||c,store:curStore,qty:it.qty||1,done:false}); if(it.cat) learnCat(it.txt,it.cat); n++; }
+    else if(it.type==='film'){ S.films.unshift({id:id(),txt:it.txt,emo:'🎬',plat:'other',type:'movie',done:false,rating:0}); n++; }
+    else if(it.type==='debt'){ S.debts.unshift({id:id(),who:it.who,kind:it.kind||'money',amount:it.amount||0,txt:it.kind==='thing'?(it.txt||''):'',note:'',done:false,ts:Date.now()}); n++; }
+    else { S.todos.unshift({id:id(),txt:it.txt,emo:guessTodo(it.txt),cat:it.cat||guessTodoCat(it.txt),prio:3,rec:false,done:false,due:it.due||null,repeat:'none',notified:false,subs:[]}); n++; }
+  });
+  magicItems=[]; render(); closeMagic(); toast('✨ '+n+' élément'+(n>1?'s':'')+' ajouté'+(n>1?'s':'')+' !');
+}
+
 /* ----- Scanner de code-barres (ZXing chargé à la demande + Open Food Facts) ----- */
 let _zx=null;
 function loadZxing(){ return new Promise((res,rej)=>{ if(window.ZXing && ZXing.BrowserMultiFormatReader){res();return;} const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1'; s.onload=()=>res(); s.onerror=rej; document.head.appendChild(s); }); }
@@ -2456,6 +2602,7 @@ document.getElementById('moveX').onclick  = closeMove;
 enableSwipeDown(sheet, closeSheet);
 enableSwipeDown(setSheet, closeSettings);
 enableSwipeDown(moveSheet, closeMove);
+enableSwipeDown(magicSheet, closeMagic);
 
 /* Clavier iOS : les fenêtres remontent au-dessus du clavier (API visualViewport) */
 if(window.visualViewport){
