@@ -1916,7 +1916,12 @@ async function iaSuggest(){
   if(!items.length){ el.innerHTML='<div class="sugg-h">L\'IA n\'a rien trouvé — reformule ton envie 🙂</div>'; return; }
   el.innerHTML = '<div class="film-loading">🎬 Recherche des affiches…</div>';
   const results = await Promise.all(items.map(it =>
-    tmdbSearch(it.title).then(res=>{ const best=(res||[]).find(x=>x.type===(it.type||'movie'))||(res||[])[0]; if(best) best.reason=it.reason; return best; }).catch(()=>null)
+    tmdbSearch(it.title).then(res=>{
+      res=res||[]; const ty=it.type||'movie';
+      const best = res.find(x=>x.type===ty && it.year && x.year===String(it.year))
+                || res.find(x=>x.type===ty) || res[0];
+      if(best) best.reason=it.reason; return best;
+    }).catch(()=>null)
   ));
   const have = new Set((S.films||[]).map(f=>f.tmdbId).filter(Boolean));
   const out = results.filter(m=>m && m.tmdbId && !have.has(m.tmdbId));
