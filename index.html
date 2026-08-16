@@ -431,6 +431,14 @@
   .sugg-card .sc-add:active{transform:scale(.9)}
   .sugg-card .sc-add.added{background:var(--line);color:var(--green-d)}
   .sugg-h{font-weight:800;font-size:14px;color:var(--muted);margin:14px 0 8px}
+  .ia-box{margin-top:2px}
+  .ia-go{width:100%;margin-top:8px;padding:13px;border-radius:14px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;font-weight:800;font-size:15px;
+    box-shadow:0 6px 16px rgba(155,107,255,.3)}
+  .ia-go:active{transform:scale(.98)}
+  .sugg-card .sc-reason{font-size:12px;font-weight:700;color:var(--purple);margin-top:3px;line-height:1.3}
+  :root[data-theme="dark"] .sugg-card .sc-reason{color:#c3a6ff}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .sugg-card .sc-reason{color:#c3a6ff}}
 
   /* recherche films (TMDB) */
   .film-results{display:flex;flex-direction:column;gap:6px;margin:2px 0 10px;max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -826,8 +834,12 @@
   <div class="grab"></div>
   <div class="sheet-body">
     <h3>✨ Idées de films</h3>
-    <p class="set-hint" style="margin:2px 0 10px">Choisis une envie, ou « d'après ce que tu as aimé ».</p>
-    <div class="seg" id="suggKind">
+    <p class="set-hint" style="margin:2px 0 10px">Décris ton envie à l'IA, ou choisis une humeur ci-dessous.</p>
+    <div class="ia-box">
+      <textarea class="magic-ta" id="iaText" rows="2" placeholder="🤖 Dis à l'IA ce que tu veux… (ex : un thriller pas trop long pour ce soir)" enterkeyhint="search"></textarea>
+      <button class="ia-go" id="iaGo">🤖 Demander à l'IA</button>
+    </div>
+    <div class="seg" id="suggKind" style="margin-top:14px">
       <button class="on" data-k="movie">🎬 Films</button>
       <button data-k="tv">📺 Séries</button>
     </div>
@@ -1884,6 +1896,33 @@ document.getElementById('suggTaste').onclick=()=>{
   suggLastMood=null; buildMoods();
   runSugg(()=>tmdbSimilar(ref.tmdbId, ref.type), 'D\'après « '+ref.txt+' »');
 };
+document.getElementById('iaGo').onclick = iaSuggest;
+document.getElementById('iaText').addEventListener('keydown', e=>{ if(e.key==='Enter' && (e.metaKey||e.ctrlKey)){ e.preventDefault(); iaSuggest(); } });
+async function iaSuggest(){
+  const q = document.getElementById('iaText').value.trim();
+  if(!q){ toast('Écris ton envie 🙂'); document.getElementById('iaText').focus(); return; }
+  const el = document.getElementById('suggResults');
+  suggLastMood=null; buildMoods();
+  el.innerHTML = '<div class="film-loading">🤖 L\'IA réfléchit…</div>';
+  let items=[];
+  try{
+    const r = await fetch(SB_URL+'/functions/v1/zeste-suggest', {
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
+      body: JSON.stringify({ q, kind: suggKind })
+    });
+    if(!r.ok){ el.innerHTML='<div class="sugg-h">🤖 L\'IA n\'est pas encore disponible. Réessaie bientôt.</div>'; return; }
+    const j = await r.json(); items = j.items || [];
+  }catch(e){ el.innerHTML='<div class="sugg-h">Connexion à l\'IA impossible (hors-ligne ?).</div>'; return; }
+  if(!items.length){ el.innerHTML='<div class="sugg-h">L\'IA n\'a rien trouvé — reformule ton envie 🙂</div>'; return; }
+  el.innerHTML = '<div class="film-loading">🎬 Recherche des affiches…</div>';
+  const results = await Promise.all(items.map(it =>
+    tmdbSearch(it.title).then(res=>{ const best=(res||[]).find(x=>x.type===(it.type||'movie'))||(res||[])[0]; if(best) best.reason=it.reason; return best; }).catch(()=>null)
+  ));
+  const have = new Set((S.films||[]).map(f=>f.tmdbId).filter(Boolean));
+  const out = results.filter(m=>m && m.tmdbId && !have.has(m.tmdbId));
+  if(!out.length){ el.innerHTML='<div class="sugg-h">Ces films sont déjà dans ta liste, ou introuvables 🙂</div>'; return; }
+  renderSuggResults(out, '🤖 D\'après « '+q+' »');
+}
 async function runSugg(fetcher, label){
   const el=document.getElementById('suggResults');
   el.innerHTML='<div class="film-loading">🔎 Recherche d\'idées…</div>';
@@ -1901,6 +1940,7 @@ function renderSuggResults(list, label){
       ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>${m.type==='tv'?'📺':'🎬'}</div>'">`:`<div class="ph">${m.type==='tv'?'📺':'🎬'}</div>`}
       <div class="sc-main"><div class="sc-t">${esc(m.title)}</div>
         <div class="sc-meta">${m.type==='tv'?'📺 Série':'🎬 Film'}${m.year?' · '+m.year:''}${m.rating?' · ⭐ '+m.rating:''}</div>
+        ${m.reason?`<div class="sc-reason">💡 ${esc(m.reason)}</div>`:''}
         <div class="sc-o">${esc(m.overview||'')}</div></div>
       <button class="sc-add" data-add="${i}">＋</button>
     </div>`).join('');
