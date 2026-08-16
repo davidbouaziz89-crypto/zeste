@@ -346,6 +346,38 @@
   .tab.active.t-shop{background:linear-gradient(135deg,#d8fbe6,#b6f3cf)}
   .tab.active.t-film{background:linear-gradient(135deg,#ece2ff,#d6c4ff)}
   .tab.active.t-debt{background:linear-gradient(135deg,#ffe8c2,#ffd591)}
+  .tab.active.t-move{background:linear-gradient(135deg,#d7e6ff,#b7ccf5)}
+
+  /* déménagement (cartons) */
+  .add-carton{width:100%;margin:14px 0 6px;padding:15px;border-radius:16px;border:2.5px dashed var(--blue);
+    background:var(--soft);color:var(--blue);font-weight:800;font-size:16px;cursor:pointer}
+  .add-carton:active{transform:scale(.98)}
+  .carton{background:var(--card);border-radius:18px;box-shadow:var(--shadow-s);margin-top:12px;overflow:hidden;
+    position:relative;--ch:265}
+  .carton::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:hsl(var(--ch) 70% 60%)}
+  .carton-h{display:flex;align-items:center;gap:9px;padding:12px 14px 8px 18px}
+  .carton-num{font-weight:800;font-size:16px;flex:none}
+  .carton-room{border:none;background:hsl(var(--ch) var(--ts) var(--tl));color:hsl(var(--ch) 55% var(--ttl));
+    font-weight:800;font-size:13px;padding:4px 10px;border-radius:20px;cursor:pointer}
+  .carton-room:active{transform:scale(.95)}
+  .carton-n{margin-left:auto;background:var(--line);color:var(--muted);font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px}
+  .carton-del{border:none;background:none;font-size:16px;cursor:pointer;opacity:.6;padding:2px}
+  .carton-items{padding:0 14px 4px 18px;display:flex;flex-direction:column;gap:2px}
+  .carton-it{display:flex;align-items:center;gap:8px;padding:5px 2px;font-weight:600;font-size:15px;border-top:1px solid var(--line)}
+  .carton-it span{flex:1}
+  .carton-it.hit{color:var(--green-d);font-weight:800}
+  .carton-it .ci-x{border:none;background:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px}
+  .carton-add{display:flex;gap:8px;padding:8px 14px 12px 18px}
+  .carton-add input{flex:1;border:2px solid var(--line);border-radius:12px;padding:9px 12px;font-size:16px;
+    font-family:inherit;font-weight:600;background:var(--field);color:var(--ink);outline:none}
+  .carton-add input:focus{border-color:var(--blue)}
+  .carton-add button{flex:none;border:none;background:var(--soft);color:var(--blue);font-weight:800;font-size:20px;width:44px;border-radius:12px;cursor:pointer}
+
+  /* modules (réglages) */
+  .mod-row{display:flex;align-items:center;gap:12px;background:var(--field);border:2px solid var(--line);
+    border-radius:16px;padding:12px 14px;margin-top:10px}
+  .mod-row .mod-txt{flex:1;font-weight:700}
+  .mod-row .mod-txt small{display:block;color:var(--muted);font-weight:600;font-size:12.5px;margin-top:1px}
   .tab.active .ic{transform:scale(1.18) translateY(-1px)}
   .tabs-inner{padding:5px}
   .tab{font-size:11px;padding:9px 4px}
@@ -636,6 +668,7 @@
     <div class="view" id="view-shop"></div>
     <div class="view" id="view-film"></div>
     <div class="view" id="view-debt"></div>
+    <div class="view" id="view-move"></div>
   </main>
 </div>
 
@@ -646,6 +679,7 @@
   <button class="tab t-shop" data-tab="shop"><span class="ic">🛒</span>Courses</button>
   <button class="tab t-film" data-tab="film"><span class="ic">🎬</span>Films</button>
   <button class="tab t-debt" data-tab="debt"><span class="ic">🤝</span>Prêts</button>
+  <button class="tab t-move" data-tab="move" style="display:none"><span class="ic">📦</span>Cartons</button>
 </div></div>
 
 <!-- ADD SHEET -->
@@ -811,6 +845,12 @@
     <button data-th="dark">🌙 Sombre</button>
   </div>
 
+  <div class="share-h" style="margin-top:22px">🧩 Modules</div>
+  <div class="mod-row">
+    <div class="mod-txt">📦 Déménagement<small>Gérer tes cartons (contenu + pièce). Ajoute un onglet 📦.</small></div>
+    <div class="switch" id="moveSw"></div>
+  </div>
+
   <div class="share-h" style="margin-top:22px">🗂️ Mes catégories</div>
   <div class="seg" id="setSeg">
     <button class="on" data-seg="shop">🛒 Rayons</button>
@@ -885,6 +925,20 @@ const DEFAULT_SHOP_CATS = [
 const DEFAULT_STORES = [
   {id:'m1', e:'🛒', n:'Leclerc'},
   {id:'m2', e:'🏬', n:'Action'},
+];
+
+// pièces (déménagement)
+const DEFAULT_ROOMS = [
+  {id:'r_cuis', e:'🍽️', n:'Cuisine'},
+  {id:'r_salon', e:'🛋️', n:'Salon'},
+  {id:'r_chambre', e:'🛏️', n:'Chambre'},
+  {id:'r_sdb', e:'🚿', n:'Salle de bain'},
+  {id:'r_bureau', e:'💼', n:'Bureau'},
+  {id:'r_enfants', e:'🧸', n:'Enfants'},
+  {id:'r_garage', e:'🚗', n:'Garage'},
+  {id:'r_cave', e:'📦', n:'Cave / Grenier'},
+  {id:'r_entree', e:'🚪', n:'Entrée'},
+  {id:'r_autres', e:'📦', n:'Autres'},
 ];
 
 // plateformes de films
@@ -1186,6 +1240,9 @@ function load(){
     if(!d.history) d.history = {}; // migration: historique d'achats (suggestions)
     if(!d.catLearn) d.catLearn = {}; // migration: rayons appris (auto-catégorisation)
     if(!d.debts) d.debts = []; // migration: on me doit (prêts)
+    if(typeof d.moveOn!=='boolean') d.moveOn = false; // module déménagement (off par défaut)
+    if(!d.rooms) d.rooms = clone(DEFAULT_ROOMS);
+    if(!d.cartons) d.cartons = [];
     return d;
   } }catch(e){}
   return {
@@ -1213,6 +1270,9 @@ function load(){
       {id:id(),txt:'Intouchables',emo:'😂',plat:'prime',done:true,rating:5},
     ],
     debts:[],
+    moveOn:false,
+    rooms:clone(DEFAULT_ROOMS),
+    cartons:[],
     history:{},
     catLearn:{},
   };
@@ -1279,8 +1339,16 @@ function paint(){
   renderShop();
   renderFilms();
   renderDebt();
+  renderMove();
   renderProgress();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
+}
+function applyModules(){
+  const t = document.querySelector('.tab.t-move'); if(t) t.style.display = S.moveOn ? '' : 'none';
+  const sw = document.getElementById('moveSw'); if(sw) sw.classList.toggle('on', !!S.moveOn);
+  if(!S.moveOn && tab==='move'){ // module coupé alors qu'on y était → retour aux tâches
+    const b=document.querySelector('.tab.t-todo'); if(b) b.click();
+  }
 }
 function render(){ paint(); save(); }
 
@@ -1593,6 +1661,81 @@ function rowDebt(d){
   </div></div>`;
 }
 
+/* ---------- DÉMÉNAGEMENT (cartons) ---------- */
+function roomOf(id){ return (S.rooms||[]).find(r=>r.id===id) || {e:'📦',n:'—'}; }
+function renderMove(){
+  const el = document.getElementById('view-move'); if(!el) return;
+  const cartons = S.cartons || [];
+  let h = `<button class="add-carton" id="addCarton">＋ Nouveau carton</button>`;
+  // recherche : « où est mon… ? » → cartons dont le n°, la pièce ou le contenu correspond
+  let list = cartons;
+  if(searchQ) list = cartons.filter(c => matchQ('carton '+c.num) || matchQ(roomOf(c.room).n) || (c.items||[]).some(it=>matchQ(it.txt)));
+  if(!cartons.length){ el.innerHTML = h + emptyState('📦','Aucun carton','Crée ton 1ᵉʳ carton et remplis-le !'); bindMove(el); return; }
+  if(!list.length){ el.innerHTML = h + emptyState('🔍','Rien trouvé','Aucun carton ne contient ça'); bindMove(el); return; }
+  [...list].sort((a,b)=>a.num-b.num).forEach(c=>{
+    const r = roomOf(c.room), items = c.items||[];
+    h += `<div class="carton" data-cid="${c.id}" style="--ch:${catHue(c.room)}">
+      <div class="carton-h">
+        <span class="carton-num">📦 Carton ${c.num}</span>
+        <button class="carton-room" data-room="${c.id}">${r.e} ${esc(r.n)}</button>
+        <span class="carton-n">${items.length}</span>
+        <button class="carton-del" data-del="${c.id}" title="Supprimer">🗑️</button>
+      </div>
+      <div class="carton-items">
+        ${items.map(it=>`<div class="carton-it ${searchQ&&matchQ(it.txt)?'hit':''}"><span>${esc(it.txt)}</span><button class="ci-x" data-cix="${c.id}|${it.id}">✕</button></div>`).join('')}
+      </div>
+      <div class="carton-add"><input placeholder="Ajouter un objet…" data-additem="${c.id}" autocomplete="off" enterkeyhint="done" /><button data-addbtn="${c.id}">＋</button></div>
+    </div>`;
+  });
+  el.innerHTML = h; bindMove(el);
+}
+function bindMove(el){
+  const ac = el.querySelector('#addCarton'); if(ac) ac.onclick = addCarton;
+  el.querySelectorAll('[data-room]').forEach(b=> b.onclick = ()=> openRoomPicker(b.dataset.room));
+  el.querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=>{
+    const c = S.cartons.find(x=>x.id===b.dataset.del); if(!c) return;
+    if(!confirm('Supprimer le carton '+c.num+' ('+(c.items||[]).length+' objet(s)) ?')) return;
+    S.cartons = S.cartons.filter(x=>x.id!==b.dataset.del); render();
+  });
+  el.querySelectorAll('[data-cix]').forEach(b=> b.onclick = ()=>{
+    const [cid,iid]=b.dataset.cix.split('|'); const c=S.cartons.find(x=>x.id===cid); if(!c) return;
+    c.items = (c.items||[]).filter(it=>it.id!==iid); render();
+  });
+  el.querySelectorAll('[data-additem]').forEach(inp=>{
+    inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addCartonItem(inp.dataset.additem, inp.value); } });
+  });
+  el.querySelectorAll('[data-addbtn]').forEach(b=>{
+    b.onclick = ()=>{ const inp = el.querySelector('[data-additem="'+b.dataset.addbtn+'"]'); addCartonItem(b.dataset.addbtn, inp.value); };
+  });
+}
+function addCartonItem(cid, txt){
+  txt=(txt||'').trim(); if(!txt) return;
+  const c = S.cartons.find(x=>x.id===cid); if(!c) return;
+  if(!c.items) c.items=[]; c.items.push({id:id(), txt});
+  render();
+  setTimeout(()=>{ const i=document.querySelector('[data-additem="'+cid+'"]'); if(i) i.focus(); }, 30);
+}
+function addCarton(){
+  const num = (S.cartons.reduce((m,c)=>Math.max(m, c.num||0), 0)) + 1;
+  const c = { id:id(), num, room:(S.rooms[0]||{}).id, items:[], ts:Date.now() };
+  S.cartons.unshift(c); render();
+  openRoomPicker(c.id, true); // choisir la pièce tout de suite
+}
+function openRoomPicker(cid, focusAfter){
+  const c = S.cartons.find(x=>x.id===cid); if(!c) return;
+  document.getElementById('moveTitle').textContent = 'Pièce du carton '+c.num;
+  const el = document.getElementById('movePick');
+  el.innerHTML = S.rooms.map(r=>`<button data-rm="${r.id}" class="${r.id===c.room?'sel':''}"><span class="e">${r.e}</span>${esc(r.n)}</button>`).join('')
+    + `<button data-rm="__new" style="border-style:dashed">＋ Autre pièce</button>`;
+  el.querySelectorAll('button').forEach(b=> b.onclick = ()=>{
+    if(b.dataset.rm==='__new'){ const n=(prompt('Nom de la pièce :')||'').trim(); if(!n){ return; } const r={id:id(),e:'📦',n}; S.rooms.push(r); c.room=r.id; }
+    else c.room = b.dataset.rm;
+    render(); closeMove();
+    if(focusAfter) setTimeout(()=>{ const i=document.querySelector('[data-additem="'+cid+'"]'); if(i) i.focus(); }, 60);
+  });
+  moveBg.classList.add('open'); moveSheet.classList.add('open');
+}
+
 let lastDel=null, snackT=null;
 function showSnack(msg){
   const s=document.getElementById('snack'); document.getElementById('snackMsg').textContent=msg;
@@ -1698,7 +1841,7 @@ function commitReorder(key, ids){
 }
 
 function renderProgress(){
-  let list = tab==='todo'? S.todos : tab==='film'? S.films : tab==='debt'? S.debts : S.shop.filter(i=>itemStore(i)===curStore);
+  let list = tab==='todo'? S.todos : tab==='film'? S.films : tab==='debt'? S.debts : tab==='move'? [] : S.shop.filter(i=>itemStore(i)===curStore);
   if(tab==='todo' && todoCat){ const tc=S.todoCats.length?S.todoCats:[{id:'perso'}]; const f=tc[0].id; list=S.todos.filter(i=>catOrFirst(i.cat,tc,f)===todoCat); }
   const tot = list.length, done = list.filter(i=>i.done).length;
   const pct = tot? Math.round(done/tot*100):0;
@@ -1714,6 +1857,10 @@ function renderProgress(){
     const left = tot-done;
     T.textContent = '🎬 Mes films';
     D.textContent = tot? (left? `${left} film${left>1?'s':''} à voir` : 'Tout est vu ! 🍿') : 'Aucun film';
+  }else if(tab==='move'){
+    const cs = S.cartons||[]; const objs = cs.reduce((s,c)=>s+((c.items||[]).length),0);
+    T.textContent = '📦 Déménagement';
+    D.textContent = cs.length ? `${cs.length} carton${cs.length>1?'s':''} · ${objs} objet${objs>1?'s':''}` : 'Aucun carton';
   }else if(tab==='debt'){
     const dl = S.debts||[];
     const owed = dl.filter(d=>!d.done && d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
@@ -2433,6 +2580,9 @@ function ensureShape(){
   if(!Array.isArray(S.shop)) S.shop=[];
   if(!Array.isArray(S.films)) S.films=[];
   if(!Array.isArray(S.debts)) S.debts=[];
+  if(typeof S.moveOn!=='boolean') S.moveOn=false;
+  if(!S.rooms || !S.rooms.length) S.rooms=clone(DEFAULT_ROOMS);
+  if(!Array.isArray(S.cartons)) S.cartons=[];
   if(!S.history || typeof S.history!=='object') S.history={};
   if(!S.catLearn || typeof S.catLearn!=='object') S.catLearn={};
   S.shop.forEach(i=>{ if(!i.store) i.store = S.stores[0].id; });
@@ -2575,6 +2725,15 @@ function applyTheme(){
 document.querySelectorAll('#themeSeg button').forEach(b=>{ b.onclick=()=>{ localStorage.setItem('zeste_theme', b.dataset.th); applyTheme(); }; });
 if(window.matchMedia){ try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>applyTheme()); }catch(e){} }
 applyTheme();
+
+/* ----- Module Déménagement (on/off) ----- */
+document.getElementById('moveSw').onclick = function(){
+  S.moveOn = !S.moveOn; this.classList.toggle('on', S.moveOn);
+  applyModules(); save();
+  toast(S.moveOn ? '📦 Module Déménagement activé' : 'Module Déménagement désactivé');
+  if(S.moveOn){ const b=document.querySelector('.tab.t-move'); if(b) b.click(); }
+};
+applyModules();
 
 /* ----- Fermeture facile des fenêtres : bouton ✕ + glisser la barre vers le bas ----- */
 function enableSwipeDown(sheetEl, closeFn){
