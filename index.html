@@ -352,6 +352,10 @@
   .add-carton{width:100%;margin:14px 0 6px;padding:15px;border-radius:16px;border:2.5px dashed var(--blue);
     background:var(--soft);color:var(--blue);font-weight:800;font-size:16px;cursor:pointer}
   .add-carton:active{transform:scale(.98)}
+  .export-carton{width:100%;margin:0 0 4px;padding:13px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;font-weight:800;font-size:15px;cursor:pointer;
+    box-shadow:0 6px 16px rgba(61,220,132,.3)}
+  .export-carton:active{transform:scale(.98)}
   .carton{background:var(--card);border-radius:18px;box-shadow:var(--shadow-s);margin-top:12px;overflow:hidden;
     position:relative;--ch:265}
   .carton::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:hsl(var(--ch) 70% 60%)}
@@ -1667,6 +1671,7 @@ function renderMove(){
   const el = document.getElementById('view-move'); if(!el) return;
   const cartons = S.cartons || [];
   let h = `<button class="add-carton" id="addCarton">＋ Nouveau carton</button>`;
+  if(cartons.length){ h += `<button class="export-carton" id="exportCarton">📤 Exporter la liste (PDF)</button>`; if(!(window.jspdf&&window.jspdf.jsPDF)) loadJsPDF().catch(()=>{}); }
   // recherche : « où est mon… ? » → cartons dont le n°, la pièce ou le contenu correspond
   let list = cartons;
   if(searchQ) list = cartons.filter(c => matchQ('carton '+c.num) || matchQ(roomOf(c.room).n) || (c.items||[]).some(it=>matchQ(it.txt)));
@@ -1691,6 +1696,7 @@ function renderMove(){
 }
 function bindMove(el){
   const ac = el.querySelector('#addCarton'); if(ac) ac.onclick = addCarton;
+  const ex = el.querySelector('#exportCarton'); if(ex) ex.onclick = exportCartonsPDF;
   el.querySelectorAll('[data-room]').forEach(b=> b.onclick = ()=> openRoomPicker(b.dataset.room));
   el.querySelectorAll('[data-del]').forEach(b=> b.onclick = ()=>{
     const c = S.cartons.find(x=>x.id===b.dataset.del); if(!c) return;
@@ -1734,6 +1740,44 @@ function openRoomPicker(cid, focusAfter){
     if(focusAfter) setTimeout(()=>{ const i=document.querySelector('[data-additem="'+cid+'"]'); if(i) i.focus(); }, 60);
   });
   moveBg.classList.add('open'); moveSheet.classList.add('open');
+}
+/* ----- Export PDF des cartons (jsPDF chargé à la demande + partage iOS) ----- */
+function loadJsPDF(){ return new Promise((res,rej)=>{ if(window.jspdf && window.jspdf.jsPDF){res();return;} const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'; s.onload=()=>res(); s.onerror=rej; document.head.appendChild(s); }); }
+async function exportCartonsPDF(){
+  const cartons=[...(S.cartons||[])].sort((a,b)=>a.num-b.num);
+  if(!cartons.length){ toast('Aucun carton à exporter'); return; }
+  const ready = window.jspdf && window.jspdf.jsPDF;
+  if(!ready){ toast('Préparation du PDF…'); try{ await loadJsPDF(); }catch(e){ toast('Export indisponible (hors-ligne ?)'); return; } }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  const M=15, W=210, maxY=282; let y=M;
+  const put=(txt,size,bold,indent)=>{
+    doc.setFont('helvetica', bold?'bold':'normal'); doc.setFontSize(size);
+    const lines=doc.splitTextToSize(String(txt), W-2*M-(indent||0));
+    lines.forEach(ln=>{ if(y>maxY){ doc.addPage(); y=M; } doc.text(ln, M+(indent||0), y); y+=size*0.52; });
+  };
+  const now=new Date();
+  const dstr=String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
+  const totalObj=cartons.reduce((s,c)=>s+((c.items||[]).length),0);
+  put('Déménagement — Liste des cartons', 18, true); y+=1.5;
+  put(dstr+'    '+cartons.length+' cartons    '+totalObj+' objets', 11, false); y+=3;
+  cartons.forEach(c=>{
+    const r=roomOf(c.room), items=c.items||[];
+    if(y>maxY-16){ doc.addPage(); y=M; }
+    y+=2.5; put('Carton '+c.num+' — '+r.n+'   ('+items.length+' objet'+(items.length>1?'s':'')+')', 13, true);
+    if(!items.length) put('(vide)', 11, false, 6);
+    else items.forEach(it=> put('•  '+it.txt, 11, false, 6));
+  });
+  const blob=doc.output('blob');
+  const file=new File([blob], 'demenagement-cartons.pdf', {type:'application/pdf'});
+  let shared=false;
+  try{
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({ files:[file], title:'Déménagement — cartons', text:'Liste des cartons du déménagement' });
+      shared=true;
+    }
+  }catch(e){ /* annulé ou non supporté → on télécharge */ }
+  if(!shared){ try{ doc.save('demenagement-cartons.pdf'); toast('PDF téléchargé 📄'); }catch(e){ toast('Impossible de générer le PDF'); } }
 }
 
 let lastDel=null, snackT=null;
