@@ -414,6 +414,24 @@
   .row .emo.poster{padding:0;overflow:hidden;background:var(--line)}
   .row .emo.poster img{width:100%;height:100%;object-fit:cover;border-radius:13px;display:block}
 
+  /* idées de films (suggestions) */
+  .sugg-open{width:100%;margin:14px 0 4px;padding:14px;border-radius:16px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;font-weight:800;font-size:16px;
+    box-shadow:0 8px 20px rgba(155,107,255,.32)}
+  .sugg-open:active{transform:scale(.98)}
+  .sugg-card{display:flex;gap:11px;padding:8px;border-radius:14px;background:var(--panel);border:1.5px solid var(--line);margin-bottom:8px}
+  .sugg-card img{width:56px;height:84px;object-fit:cover;border-radius:8px;flex:none;background:var(--line)}
+  .sugg-card .ph{width:56px;height:84px;border-radius:8px;flex:none;display:grid;place-items:center;background:var(--line);font-size:24px}
+  .sugg-card .sc-main{flex:1;min-width:0}
+  .sugg-card .sc-t{font-weight:800;font-size:14.5px;line-height:1.2}
+  .sugg-card .sc-meta{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+  .sugg-card .sc-o{font-size:12px;color:var(--muted);font-weight:600;line-height:1.35;margin-top:4px;max-height:50px;overflow:hidden}
+  .sugg-card .sc-add{flex:none;align-self:center;border:none;width:40px;height:40px;border-radius:12px;
+    background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;font-size:22px;font-weight:800;cursor:pointer}
+  .sugg-card .sc-add:active{transform:scale(.9)}
+  .sugg-card .sc-add.added{background:var(--line);color:var(--green-d)}
+  .sugg-h{font-weight:800;font-size:14px;color:var(--muted);margin:14px 0 8px}
+
   /* recherche films (TMDB) */
   .film-results{display:flex;flex-direction:column;gap:6px;margin:2px 0 10px;max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
   /* pendant la recherche : on masque plateformes + bouton pour que la liste soit claire */
@@ -801,6 +819,28 @@
   <button class="submit" id="magicAdd">✨ Analyser</button>
 </div>
 
+<!-- IDÉES DE FILMS -->
+<div class="sheet-bg" id="suggBg"></div>
+<div class="sheet" id="suggSheet">
+  <button class="sheet-x" id="suggX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body">
+    <h3>✨ Idées de films</h3>
+    <p class="set-hint" style="margin:2px 0 10px">Choisis une envie, ou « d'après ce que tu as aimé ».</p>
+    <div class="seg" id="suggKind">
+      <button class="on" data-k="movie">🎬 Films</button>
+      <button data-k="tv">📺 Séries</button>
+    </div>
+    <div class="cat-pick" id="suggMoods" style="margin-top:12px"></div>
+    <div class="rec-toggle" id="suggWellRow" style="margin-top:12px">
+      <div class="switch on" id="suggWellSw"></div>
+      <div>⭐ Plutôt bien notés</div>
+    </div>
+    <button class="share-btn" id="suggTaste" style="margin-top:12px">🎯 D'après ce que j'ai aimé</button>
+    <div id="suggResults"></div>
+  </div>
+</div>
+
 <!-- SETTINGS SHEET -->
 <div class="sheet-bg" id="setBg"></div>
 <div class="sheet set-sheet" id="setSheet">
@@ -958,6 +998,41 @@ const FPLATMAP = Object.fromEntries(FILM_PLATS.map(p=>[p.id,p]));
 // emoji d'ambiance selon le titre/genre
 const FILM_EMO = {horreur:'👻',peur:'👻',fantome:'👻',amour:'❤️',romance:'❤️',comedie:'😂','comédie':'😂',rire:'😂',action:'💥',guerre:'🎖️',espace:'🚀',science:'🛸',fiction:'🛸',enfant:'🧸',dessin:'🧸',anime:'🎌','animé':'🎌',policier:'🕵️',enquete:'🕵️',thriller:'🔪',doc:'🎥',documentaire:'🎥',foot:'⚽',sport:'🏆',musique:'🎵',western:'🤠',super:'🦸',magie:'🪄',dragon:'🐉'};
 function guessFilmEmo(t){ t=(t||'').toLowerCase(); for(const k in FILM_EMO){ if(t.includes(k)) return FILM_EMO[k]; } return '🎬'; }
+
+// « humeurs » de suggestion (genres TMDB : m = film, t = série)
+const FILM_MOODS = [
+  {id:'feelgood', e:'😂', n:'Feel-good', m:35, t:35},
+  {id:'action',   e:'💥', n:'Action', m:28, t:10759},
+  {id:'frissons', e:'🔪', n:'Frissons', m:53, t:9648},
+  {id:'romance',  e:'❤️', n:'Romance', m:10749, t:18},
+  {id:'reflechir',e:'🧠', n:'Ça fait réfléchir', m:18, t:18},
+  {id:'famille',  e:'👨‍👩‍👧', n:'En famille', m:10751, t:10751},
+  {id:'sf',       e:'🚀', n:'Science-fiction', m:878, t:10765},
+  {id:'anime',    e:'🎌', n:'Animé', m:16, t:16},
+  {id:'horreur',  e:'😱', n:'Horreur', m:27, t:9648},
+  {id:'policier', e:'🕵️', n:'Policier', m:80, t:80},
+];
+function mapTmdbItem(m, fallbackType){
+  return { tmdbId:m.id, type:(m.media_type||fallbackType||'movie'),
+    title:m.title||m.name, year:((m.release_date||m.first_air_date)||'').slice(0,4),
+    poster:m.poster_path?'https://image.tmdb.org/t/p/w185'+m.poster_path:'',
+    overview:m.overview||'', rating:Math.round((m.vote_average||0)*10)/10 };
+}
+async function tmdbDiscover(mood, isTv, wellRated){
+  if(!TMDB_KEY) return [];
+  const kind = isTv?'tv':'movie'; const g = isTv?mood.t:mood.m;
+  let url = `https://api.themoviedb.org/3/discover/${kind}?api_key=${TMDB_KEY}&language=fr-FR&include_adult=false&with_genres=${g}&sort_by=popularity.desc&vote_count.gte=${wellRated?300:150}`;
+  if(wellRated) url += '&vote_average.gte=7';
+  try{ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) return []; const j=await r.json();
+    return (j.results||[]).slice(0,14).map(m=>mapTmdbItem(m, kind)); }catch(e){ return []; }
+}
+async function tmdbSimilar(id, type){
+  if(!TMDB_KEY||!id) return [];
+  const kind = type==='tv'?'tv':'movie';
+  try{ const r=await fetch(`https://api.themoviedb.org/3/${kind}/${id}/recommendations?api_key=${TMDB_KEY}&language=fr-FR`,{cache:'no-store'});
+    if(!r.ok) return []; const j=await r.json();
+    return (j.results||[]).filter(m=>m.media_type!=='person').slice(0,14).map(m=>mapTmdbItem(m, kind)); }catch(e){ return []; }
+}
 
 // ----- Recherche de films via TMDB (base gratuite) -----
 const TMDB_KEY = 'e8217f19f7321ad7241573ece155bc5d'; // clé API TMDB (v3, lecture seule)
@@ -1571,9 +1646,10 @@ function rowShop(t){
 function renderFilms(){
   const el = document.getElementById('view-film');
   const films = (S.films || []).filter(f=>matchQ(f.txt));
-  if(!films.length){ el.innerHTML = searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🍿','Aucun film','Ajoute un film à voir avec le bouton +'); return; }
+  const ideas = TMDB_KEY ? `<button class="sugg-open" id="suggOpen">✨ Idées de films / séries</button>` : '';
+  if(!films.length){ el.innerHTML = ideas + (searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🍿','Aucun film','Ajoute un film, ou touche ✨ Idées !')); const so=el.querySelector('#suggOpen'); if(so) so.onclick=openSugg; return; }
   const toSee = films.filter(f=>!f.done), seen = films.filter(f=>f.done);
-  let h = '';
+  let h = ideas;
   FILM_PLATS.forEach(p=>{
     const list = toSee.filter(f=>(f.plat||'other')===p.id);
     if(!list.length) return;
@@ -1587,6 +1663,7 @@ function renderFilms(){
     h += seen.map(rowFilm).join('');
   }
   el.innerHTML = h;
+  { const so=el.querySelector('#suggOpen'); if(so) so.onclick=openSugg; }
   bindRows(el,'films');
   el.querySelectorAll('.stars').forEach(st=>{
     st.querySelectorAll('.star').forEach(s=>{
@@ -1778,6 +1855,62 @@ async function exportCartonsPDF(){
     }
   }catch(e){ /* annulé ou non supporté → on télécharge */ }
   if(!shared){ try{ doc.save('demenagement-cartons.pdf'); toast('PDF téléchargé 📄'); }catch(e){ toast('Impossible de générer le PDF'); } }
+}
+
+/* ----- Idées de films (suggestions TMDB) ----- */
+const suggBg=document.getElementById('suggBg'), suggSheet=document.getElementById('suggSheet');
+let suggKind='movie', suggWell=true, suggLastMood=null, suggList=[];
+function openSugg(){
+  suggKind='movie'; suggWell=true; suggLastMood=null;
+  document.querySelectorAll('#suggKind button').forEach(b=>b.classList.toggle('on',b.dataset.k==='movie'));
+  document.getElementById('suggWellSw').classList.add('on');
+  buildMoods(); document.getElementById('suggResults').innerHTML='';
+  suggBg.classList.add('open'); suggSheet.classList.add('open');
+}
+function closeSugg(){ suggBg.classList.remove('open'); suggSheet.classList.remove('open'); }
+document.getElementById('suggX').onclick=closeSugg; suggBg.onclick=closeSugg;
+function reSugg(){ if(!suggLastMood) return; const mood=FILM_MOODS.find(x=>x.id===suggLastMood); if(mood) runSugg(()=>tmdbDiscover(mood, suggKind==='tv', suggWell)); }
+function buildMoods(){
+  const el=document.getElementById('suggMoods');
+  el.innerHTML=FILM_MOODS.map(m=>`<button data-mood="${m.id}" class="${suggLastMood===m.id?'sel':''}"><span class="e">${m.e}</span>${esc(m.n)}</button>`).join('');
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>{ suggLastMood=b.dataset.mood; buildMoods(); reSugg(); });
+}
+document.querySelectorAll('#suggKind button').forEach(b=>b.onclick=()=>{ suggKind=b.dataset.k; document.querySelectorAll('#suggKind button').forEach(x=>x.classList.toggle('on',x===b)); reSugg(); });
+document.getElementById('suggWellSw').onclick=function(){ suggWell=!suggWell; this.classList.toggle('on',suggWell); reSugg(); };
+document.getElementById('suggTaste').onclick=()=>{
+  const withId=(S.films||[]).filter(f=>f.tmdbId).sort((a,b)=>(b.rating||0)-(a.rating||0));
+  const ref = withId.find(f=>f.done && (f.rating||0)>=4) || withId[0];
+  if(!ref){ toast('Ajoute d\'abord un film que tu as aimé 🙂'); return; }
+  suggLastMood=null; buildMoods();
+  runSugg(()=>tmdbSimilar(ref.tmdbId, ref.type), 'D\'après « '+ref.txt+' »');
+};
+async function runSugg(fetcher, label){
+  const el=document.getElementById('suggResults');
+  el.innerHTML='<div class="film-loading">🔎 Recherche d\'idées…</div>';
+  let list=[]; try{ list=await fetcher(); }catch(e){}
+  const have=new Set((S.films||[]).map(f=>f.tmdbId).filter(Boolean));
+  const haveTxt=new Set((S.films||[]).map(f=>(f.txt||'').toLowerCase()));
+  list=list.filter(m=>m.title && !have.has(m.tmdbId) && !haveTxt.has(m.title.toLowerCase()));
+  renderSuggResults(list, label);
+}
+function renderSuggResults(list, label){
+  suggList=list; const el=document.getElementById('suggResults');
+  if(!list.length){ el.innerHTML='<div class="sugg-h">Rien trouvé — essaie une autre envie 🙂</div>'; return; }
+  el.innerHTML=`<div class="sugg-h">${esc(label||'Suggestions :')}</div>`+list.map((m,i)=>`
+    <div class="sugg-card">
+      ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>${m.type==='tv'?'📺':'🎬'}</div>'">`:`<div class="ph">${m.type==='tv'?'📺':'🎬'}</div>`}
+      <div class="sc-main"><div class="sc-t">${esc(m.title)}</div>
+        <div class="sc-meta">${m.type==='tv'?'📺 Série':'🎬 Film'}${m.year?' · '+m.year:''}${m.rating?' · ⭐ '+m.rating:''}</div>
+        <div class="sc-o">${esc(m.overview||'')}</div></div>
+      <button class="sc-add" data-add="${i}">＋</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{ addSuggestion(suggList[+b.dataset.add]); b.textContent='✓'; b.classList.add('added'); b.disabled=true; });
+}
+function addSuggestion(m){
+  if(!m) return;
+  S.films.unshift({id:id(),txt:m.title,emo:m.type==='tv'?'📺':'🎬',plat:'other',type:m.type||'movie',done:false,rating:0,
+    poster:m.poster||'',overview:m.overview||'',year:m.year||'',tmdbId:m.tmdbId||null,ytKey:''});
+  render(); toast('Ajouté à ta liste 🎬');
 }
 
 let lastDel=null, snackT=null;
@@ -2802,6 +2935,7 @@ enableSwipeDown(sheet, closeSheet);
 enableSwipeDown(setSheet, closeSettings);
 enableSwipeDown(moveSheet, closeMove);
 enableSwipeDown(magicSheet, closeMagic);
+enableSwipeDown(suggSheet, closeSugg);
 
 /* Clavier iOS : les fenêtres remontent au-dessus du clavier (API visualViewport) */
 if(window.visualViewport){
