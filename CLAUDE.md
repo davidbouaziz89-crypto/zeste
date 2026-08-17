@@ -96,6 +96,32 @@ mode hors-ligne.
 autre dossier ni à aucun autre logiciel de David, même si tu penses que ce
 serait utile. Si le besoin déborde sur un autre projet, dis-le et arrête-toi.
 
+## Autonomie maximale
+
+**Tout ce que tu es capable de faire toi-même, fais-le, sans me le demander.**
+Ne me demande pas de faire des choses que tu peux faire seul, et ne me demande
+pas la permission pour des actions courantes et réversibles. Réserve tes
+questions à **deux cas seulement** :
+
+- **(a)** ce que **moi seul** peux faire (créer un compte, effectuer un
+  paiement, obtenir une clé API, cliquer dans un service externe, faire un
+  choix business) ;
+- **(b)** les **validations déjà prévues dans ces règles** (proposer un plan
+  avant une tâche non triviale, et ne rien supprimer / déployer / publier sans
+  mon accord).
+
+En dehors de ces deux cas, **agis directement au lieu de me demander**.
+
+## Je suis débutant : explique-moi pas à pas
+
+Quand il y a quelque chose que **je** dois faire moi-même, pars toujours du
+principe que je suis **DÉBUTANT et non technique**. Explique-moi chaque étape,
+dans l'ordre, très précisément, **sans jargon**. Donne-moi le maximum de
+**liens directs** et dis-moi exactement où cliquer (« va sur ce lien, clique
+ici, puis là »). Ne suppose jamais que je sais faire une manipulation
+technique. Si je dois copier, choisir ou coller quelque chose, montre-moi
+exactement **quoi** et **où**.
+
 ## Avant toute modification
 
 - **Explore et comprends** le code concerné avant d'agir. Ne te base jamais sur
