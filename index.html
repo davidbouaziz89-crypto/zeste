@@ -795,7 +795,11 @@
     <div id="debtMoney" style="margin-top:12px">
       <div class="field-wrap">
         <input class="field" id="debtAmount" type="number" inputmode="decimal" step="0.01" placeholder="Montant" />
-        <span class="field-emo">€</span>
+        <span class="field-emo" id="debtCurEmo">€</span>
+      </div>
+      <div class="seg" id="debtCur" style="margin-top:10px">
+        <button type="button" class="on" data-cur="EUR">💶 Euros €</button>
+        <button type="button" data-cur="ILS">🇮🇱 Shekels ₪</button>
       </div>
     </div>
     <div id="debtThing" style="display:none;margin-top:12px">
@@ -1706,15 +1710,22 @@ function rowFilm(f){
 }
 
 /* ---------- ON ME DOIT (prêts) ---------- */
-function eur(n){ n=Math.round((+n||0)*100)/100; return n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' €'; }
+const CUR_SYM = {EUR:'€', ILS:'₪'};
+function curOf(d){ return (d && d.cur==='ILS') ? 'ILS' : 'EUR'; }
+function fmtMoney(n, cur){ n=Math.round((+n||0)*100)/100; return n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' '+(CUR_SYM[cur]||'€'); }
+function eur(n){ return fmtMoney(n,'EUR'); }
 function personKey(w){ return (w||'').trim().toLowerCase(); }
 function renderDebt(){
   const el = document.getElementById('view-debt');
   const debts = S.debts || [];
-  const owedMoney = debts.filter(d=>!d.done && d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
+  const totals = {};
+  debts.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); totals[c]=(totals[c]||0)+(+d.amount||0); });
   const thingsN = debts.filter(d=>!d.done && d.kind==='thing').length;
+  const totVal = Object.keys(totals).length
+    ? Object.keys(totals).map(c=>fmtMoney(totals[c],c)).join('  •  ')
+    : fmtMoney(0,'EUR');
   let h = `<div class="debt-total"><div class="dt-lab">💰 On te doit au total</div>
-    <div class="dt-val">${eur(owedMoney)}</div>
+    <div class="dt-val">${totVal}</div>
     <div class="dt-sub">${thingsN? '+ '+thingsN+' objet'+(thingsN>1?'s':'')+' à récupérer' : 'aucun objet en attente'}</div></div>`;
 
   const all = debts.filter(d=> matchQ(d.who) || matchQ(d.txt) || matchQ(d.note) );
@@ -1727,8 +1738,9 @@ function renderDebt(){
   active.forEach(d=>{ const k=personKey(d.who); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(d); });
   order.forEach(k=>{
     const list=groups[k], name=list[0].who||'—';
-    const sum=list.filter(d=>d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
-    h += `<div class="debt-person" style="--ch:${catHue(name)}"><span class="pp">${esc((name.trim()[0]||'?'))}</span>${esc(name)}${sum?`<span class="pt">${eur(sum)}</span>`:''}</div>`;
+    const psums={}; list.filter(d=>d.kind==='money').forEach(d=>{ const c=curOf(d); psums[c]=(psums[c]||0)+(+d.amount||0); });
+    const pt = Object.keys(psums).map(c=>fmtMoney(psums[c],c)).join(' • ');
+    h += `<div class="debt-person" style="--ch:${catHue(name)}"><span class="pp">${esc((name.trim()[0]||'?'))}</span>${esc(name)}${pt?`<span class="pt">${pt}</span>`:''}</div>`;
     h += list.map(rowDebt).join('');
   });
   if(done.length){
@@ -1743,7 +1755,7 @@ function renderDebt(){
 function rowDebt(d){
   const money = d.kind==='money';
   const label = money ? (d.note?esc(d.note):'Prêt d\'argent') : esc(d.txt||'Objet prêté');
-  const right = money ? `<span class="debt-amt">${eur(+d.amount||0)}</span>` : '';
+  const right = money ? `<span class="debt-amt">${fmtMoney(+d.amount||0, curOf(d))}</span>` : '';
   const noteThing = (!money && d.note) ? `<div class="debt-note">${esc(d.note)}</div>` : '';
   return `<div class="swipe"><div class="del">Réglé <span class="t">✅</span></div>
     <div class="row ${d.done?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
@@ -2159,7 +2171,7 @@ function openSheet(editItem=null, editKey=null){
   editState = editItem ? {id:editItem.id, key:editKey} : null;
   const mode = editItem ? ({todos:'todo',shop:'shop',films:'film',debts:'debt'}[editKey]) : tab;
   const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film', isDebt = mode==='debt';
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem, debtKind:'money'};
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem, debtKind:'money', debtCur:'EUR'};
   // dans une catégorie ouverte : nouvelle tâche = cette catégorie par défaut
   if(!editItem && isTodo && todoCat && S.todoCats.some(c=>c.id===todoCat)){ form.tcat=todoCat; form.catTouched=true; }
   document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':isFilm?'Nouveau film 🎬':'Nouveau prêt 🤝';
@@ -2175,6 +2187,8 @@ function openSheet(editItem=null, editKey=null){
   document.getElementById('debtMoney').style.display='block';
   document.getElementById('debtThing').style.display='none';
   document.getElementById('debtAmount').value=''; document.getElementById('debtWhat').value=''; document.getElementById('debtNote').value='';
+  document.querySelectorAll('#debtCur button').forEach(b=>b.classList.toggle('on', b.dataset.cur==='EUR'));
+  document.getElementById('debtCurEmo').textContent = '€';
   inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':isFilm?'Ex : Oppenheimer':'Qui te doit ? (prénom)';
   document.getElementById('recHint').textContent = isTodo? '(revient chaque fois)':'(essentiel à racheter)';
   inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':isFilm?'🎬':'🤝';
@@ -2229,6 +2243,9 @@ function openSheet(editItem=null, editKey=null){
       document.getElementById('debtAmount').value = editItem.amount||'';
       document.getElementById('debtWhat').value = editItem.txt||'';
       document.getElementById('debtNote').value = editItem.note||'';
+      form.debtCur = curOf(editItem);
+      document.querySelectorAll('#debtCur button').forEach(b=>b.classList.toggle('on', b.dataset.cur===form.debtCur));
+      document.getElementById('debtCurEmo').textContent = CUR_SYM[form.debtCur]||'€';
     } else {
       form.plat = editItem.plat; syncPlatPick();
       if(editItem.poster || editItem.overview){
@@ -2440,6 +2457,11 @@ document.querySelectorAll('#debtType button').forEach(b=>{ b.onclick=()=>{
   document.getElementById('debtMoney').style.display = form.debtKind==='money'?'block':'none';
   document.getElementById('debtThing').style.display = form.debtKind==='thing'?'block':'none';
 }; });
+document.querySelectorAll('#debtCur button').forEach(b=>{ b.onclick=()=>{
+  form.debtCur=b.dataset.cur;
+  document.querySelectorAll('#debtCur button').forEach(x=>x.classList.toggle('on', x===b));
+  document.getElementById('debtCurEmo').textContent = CUR_SYM[form.debtCur]||'€';
+}; });
 
 /* ----- sous-tâches ----- */
 function renderSubs(){
@@ -2529,6 +2551,7 @@ function add(){
         const amt = parseFloat((document.getElementById('debtAmount').value||'').replace(',','.'));
         it.who = v; it.kind = form.debtKind;
         it.amount = form.debtKind==='money' ? (isNaN(amt)?0:amt) : 0;
+        it.cur = form.debtCur||'EUR';
         it.txt = form.debtKind==='thing' ? document.getElementById('debtWhat').value.trim() : '';
         it.note = document.getElementById('debtNote').value.trim();
       } else {
@@ -2560,7 +2583,7 @@ function add(){
     const what = document.getElementById('debtWhat').value.trim();
     if(kind==='thing' && !what){ toast('Note ce qu\'on te doit 📦'); document.getElementById('debtWhat').focus(); return; }
     const note = document.getElementById('debtNote').value.trim();
-    S.debts.unshift({id:id(),who:v,kind,amount:kind==='money'?amt:0,txt:kind==='thing'?what:'',note,done:false,ts:Date.now()});
+    S.debts.unshift({id:id(),who:v,kind,amount:kind==='money'?amt:0,cur:form.debtCur||'EUR',txt:kind==='thing'?what:'',note,done:false,ts:Date.now()});
   }else{
     const [e] = detectShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
