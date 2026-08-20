@@ -167,3 +167,13 @@ exactement **quoi** et **où**.
 
 - Fais un **récapitulatif simple** : ce que tu as changé, dans quels fichiers,
   pourquoi, comment le tester, et ce qu'il reste à faire.
+
+## Exécution des tâches techniques — David n'est pas technique
+
+David ne sait pas / ne peut pas utiliser le terminal (Git Bash, commandes SQL, ouverture de fichiers de préviz).
+
+**RÈGLE :** si une étape peut être exécutée par TOI (Claude Code) — exécuter un `.sql` sur le serveur, lancer une commande, un `git`, un build, générer un aperçu — tu la **FAIS toi-même**. Tu ne demandes **JAMAIS** à David de taper quoi que ce soit dans un terminal.
+
+**Sécurité conservée :** avant une modification de base ou une publication, tu expliques et tu attends son « go » ; après un `.sql`, tu **VÉRIFIES** qu'il est appliqué et tu le confirmes simplement ; tu ne publies rien sans son accord.
+
+**David décide (oui/non), TOI tu exécutes.**
