@@ -403,6 +403,40 @@
   .debt-thing-tag{font-size:12.5px;font-weight:800;color:var(--orange);background:hsl(35 90% 92%);padding:2px 8px;border-radius:20px}
   :root[data-theme="dark"] .debt-thing-tag{background:hsl(35 50% 20%)}
   @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .debt-thing-tag{background:hsl(35 50% 20%)}}
+  /* remboursements reçus */
+  .row .debt-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+  .row .debt-rest-lab{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .row .debt-prog{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:2px}
+  .row .remb-btn{flex:none;border:none;background:var(--soft);border-radius:12px;width:38px;height:38px;
+    font-size:19px;cursor:pointer;display:grid;place-items:center}
+  .row .remb-btn:active{transform:scale(.9)}
+  .sheet.loan-sheet{z-index:53}
+  .sheet.remb-sheet{z-index:55}
+  #loanBg{z-index:52} #rembBg{z-index:54}
+  .loan-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 12px}
+  .loan-sum div{background:var(--field);border:2px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center;min-width:0}
+  .loan-sum small{display:block;font-size:11.5px;font-weight:800;color:var(--muted)}
+  .loan-sum b{display:block;font-size:16px;font-weight:800;margin-top:2px;overflow-wrap:anywhere}
+  .loan-sum .rest b{color:var(--green-d)}
+  .loan-status{display:inline-block;font-size:13px;font-weight:800;padding:4px 10px;border-radius:20px;margin-bottom:10px;
+    background:hsl(35 90% 92%);color:var(--orange)}
+  .loan-status.ok{background:hsl(145 70% 92%);color:var(--green-d)}
+  :root[data-theme="dark"] .loan-status{background:hsl(35 50% 20%)} :root[data-theme="dark"] .loan-status.ok{background:hsl(145 40% 18%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .loan-status{background:hsl(35 50% 20%)}
+    :root:not([data-theme="light"]) .loan-status.ok{background:hsl(145 40% 18%)}}
+  .remb-h{font-weight:800;font-size:15px;margin:16px 2px 8px}
+  .remb-it{display:flex;align-items:center;gap:10px;background:var(--field);border:2px solid var(--line);
+    border-radius:14px;padding:10px 12px;margin-top:8px}
+  .remb-it .ri-txt{flex:1;min-width:0}
+  .remb-it .ri-amt{font-weight:800;color:var(--green-d)}
+  .remb-it .ri-date{font-size:12.5px;font-weight:700;color:var(--muted)}
+  .remb-it .ri-note{font-size:13px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
+  .remb-it button{flex:none;border:none;background:var(--chip);border-radius:10px;width:36px;height:36px;font-size:16px;cursor:pointer}
+  .remb-it button:active{transform:scale(.9)}
+  .remb-empty{color:var(--muted);font-weight:600;font-size:14px;padding:6px 2px}
+  .remb-lab{display:block;font-size:13px;font-weight:800;color:var(--muted);margin:12px 2px 6px}
+  .remb-hint{font-size:13px;color:var(--muted);font-weight:600;margin:6px 2px 0}
+  .submit:disabled{opacity:.55}
 
   /* films */
   .plat-tag{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-flex;gap:3px;
@@ -815,6 +849,37 @@
   </div><!-- /sheet-body -->
 
   <button class="submit" id="addBtn">Ajouter</button>
+</div>
+
+<!-- DÉTAIL D'UN PRÊT D'ARGENT (remboursements reçus) -->
+<div class="sheet-bg" id="loanBg"></div>
+<div class="sheet loan-sheet" id="loanSheet">
+  <button class="sheet-x" id="loanX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body" id="loanBody"></div>
+  <button class="submit" id="loanRembBtn">💸 Enregistrer un remboursement</button>
+</div>
+
+<!-- SAISIE / MODIFICATION D'UN REMBOURSEMENT -->
+<div class="sheet-bg" id="rembBg"></div>
+<div class="sheet remb-sheet" id="rembSheet">
+  <button class="sheet-x" id="rembX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body">
+    <h3 id="rembTitle">Remboursement reçu 💸</h3>
+    <p class="set-hint" id="rembInfo" style="margin:0 2px 4px"></p>
+    <label class="remb-lab" for="rembAmount">Montant remboursé *</label>
+    <div class="field-wrap">
+      <input class="field" id="rembAmount" type="text" inputmode="decimal" placeholder="Montant (ex : 200 ou 49,90)" autocomplete="off" />
+      <span class="field-emo" id="rembCur">€</span>
+    </div>
+    <label class="remb-lab" for="rembDate">Date du remboursement *</label>
+    <input class="field" id="rembDate" type="date" />
+    <label class="remb-lab" for="rembNote">Note</label>
+    <input class="field" id="rembNote" placeholder="Facultatif (ex : virement, espèces…)" autocomplete="off" />
+    <p class="remb-hint" id="rembErr" role="alert" style="color:var(--red)"></p>
+  </div>
+  <button class="submit" id="rembSave">Enregistrer</button>
 </div>
 
 <!-- AJOUT RAPIDE (langage naturel) -->
@@ -1435,6 +1500,7 @@ function paint(){
   renderFilms();
   renderDebt();
   renderMove();
+  if(loanOpenId) renderLoanDetail(); // détail d'un prêt ouvert : soldes à jour
   renderProgress();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
 }
@@ -1715,11 +1781,25 @@ function curOf(d){ return (d && d.cur==='ILS') ? 'ILS' : 'EUR'; }
 function fmtMoney(n, cur){ n=Math.round((+n||0)*100)/100; return n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' '+(CUR_SYM[cur]||'€'); }
 function eur(n){ return fmtMoney(n,'EUR'); }
 function personKey(w){ return (w||'').trim().toLowerCase(); }
+/* remboursements reçus : d.repays = [{id, amount, date:'AAAA-MM-JJ', note, ts}]
+   Le montant initial (d.amount) n'est JAMAIS modifié : le reste dû est calculé.
+   Tous les calculs se font en centimes entiers (pas d'erreur d'arrondi). */
+function cents(n){ return Math.round((+n||0)*100); }
+function repaysOf(d){ return (d && Array.isArray(d.repays)) ? d.repays : []; }
+function loanStats(d){
+  const init = cents(d.amount), paid = repaysOf(d).reduce((s,r)=>s+cents(r.amount),0);
+  return { init, paid, rest: Math.max(0, init-paid) };
+}
+function restOf(d){ return loanStats(d).rest/100; }
+// après chaque ajout / modif / suppression de remboursement : statut recalculé
+function syncLoanStatus(d){ if(d && d.kind==='money') d.done = loanStats(d).rest<=0; }
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function frDate(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); return m ? m[3]+'/'+m[2]+'/'+m[1] : (iso||''); }
 function renderDebt(){
   const el = document.getElementById('view-debt');
   const debts = S.debts || [];
   const totals = {};
-  debts.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); totals[c]=(totals[c]||0)+(+d.amount||0); });
+  debts.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); totals[c]=(totals[c]||0)+restOf(d); });
   const thingsN = debts.filter(d=>!d.done && d.kind==='thing').length;
   const totVal = Object.keys(totals).length
     ? Object.keys(totals).map(c=>fmtMoney(totals[c],c)).join('  •  ')
@@ -1738,7 +1818,7 @@ function renderDebt(){
   active.forEach(d=>{ const k=personKey(d.who); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(d); });
   order.forEach(k=>{
     const list=groups[k], name=list[0].who||'—';
-    const psums={}; list.filter(d=>d.kind==='money').forEach(d=>{ const c=curOf(d); psums[c]=(psums[c]||0)+(+d.amount||0); });
+    const psums={}; list.filter(d=>d.kind==='money').forEach(d=>{ const c=curOf(d); psums[c]=(psums[c]||0)+restOf(d); });
     const pt = Object.keys(psums).map(c=>fmtMoney(psums[c],c)).join(' • ');
     h += `<div class="debt-person" style="--ch:${catHue(name)}"><span class="pp">${esc((name.trim()[0]||'?'))}</span>${esc(name)}${pt?`<span class="pt">${pt}</span>`:''}</div>`;
     h += list.map(rowDebt).join('');
@@ -1755,16 +1835,140 @@ function renderDebt(){
 function rowDebt(d){
   const money = d.kind==='money';
   const label = money ? (d.note?esc(d.note):'Prêt d\'argent') : esc(d.txt||'Objet prêté');
-  const right = money ? `<span class="debt-amt">${fmtMoney(+d.amount||0, curOf(d))}</span>` : '';
+  const st = money ? loanStats(d) : null, cur = curOf(d);
+  // dès qu'un remboursement existe : on affiche le reste dû, et le montant initial en dessous
+  const right = !money ? '' : st.paid
+    ? `<span class="debt-right"><span class="debt-rest-lab">Reste</span><span class="debt-amt">${fmtMoney(st.rest/100, cur)}</span></span>`
+    : `<span class="debt-amt">${fmtMoney(+d.amount||0, cur)}</span>`;
+  const prog = (money && st.paid) ? `<div class="debt-prog">Prêté ${fmtMoney(st.init/100,cur)} · remboursé ${fmtMoney(st.paid/100,cur)}</div>` : '';
   const noteThing = (!money && d.note) ? `<div class="debt-note">${esc(d.note)}</div>` : '';
+  const rembBtn = (money && st.rest>0) ? `<button class="remb-btn" data-remb title="Enregistrer un remboursement" aria-label="Enregistrer un remboursement">💸</button>` : '';
   return `<div class="swipe"><div class="del">Réglé <span class="t">✅</span></div>
     <div class="row ${d.done?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
     <div class="check" data-check>${chk()}</div>
     <span class="emo">${money?'💶':'📦'}</span>
-    <div class="label">${label}${noteThing}</div>
-    ${right}
+    <div class="label">${label}${noteThing}${prog}</div>
+    ${right}${rembBtn}
   </div></div>`;
 }
+
+/* ---------- DÉTAIL D'UN PRÊT + REMBOURSEMENTS REÇUS ---------- */
+// « var » volontaire : paint() peut lire loanOpenId avant que ce bloc soit exécuté
+var loanOpenId = null, rembForm = null, rembBusy = false;
+function loanById(lid){ return (S.debts||[]).find(d=>d.id===lid); }
+function openItem(item, key){
+  if(key==='debts' && item.kind==='money') openLoan(item.id); else openSheet(item, key);
+}
+function openLoan(lid){
+  loanOpenId = lid; renderLoanDetail(); if(!loanOpenId) return;
+  document.getElementById('loanBg').classList.add('open'); document.getElementById('loanSheet').classList.add('open');
+}
+function closeLoan(){
+  loanOpenId = null;
+  document.getElementById('loanBg').classList.remove('open'); document.getElementById('loanSheet').classList.remove('open');
+}
+function renderLoanDetail(){
+  if(!loanOpenId) return;
+  const d = loanById(loanOpenId);
+  if(!d || d.kind!=='money'){ closeLoan(); return; } // prêt supprimé (ex : depuis un autre appareil)
+  const st = loanStats(d), cur = curOf(d), f = c=>fmtMoney(c/100, cur);
+  const reps = [...repaysOf(d)].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')) || (b.ts||0)-(a.ts||0));
+  const status = st.rest<=0 ? ['ok','✅ Remboursé'] : d.done ? ['ok','✅ Marqué réglé'] : ['','⏳ En cours'];
+  let h = `<h3>🤝 ${esc(String(d.who||'—'))}</h3>`;
+  if(d.note) h += `<p class="set-hint" style="margin:-8px 2px 10px">${esc(String(d.note))}</p>`;
+  h += `<span class="loan-status ${status[0]}">${status[1]}</span>
+    <div class="loan-sum">
+      <div><small>Prêté</small><b>${f(st.init)}</b></div>
+      <div><small>Remboursé</small><b>${f(st.paid)}</b></div>
+      <div class="rest"><small>Reste dû</small><b>${f(st.rest)}</b></div>
+    </div>
+    <div class="remb-h">📜 Historique des remboursements</div>`;
+  h += reps.length ? reps.map(r=>`<div class="remb-it">
+      <div class="ri-txt"><span class="ri-amt">+ ${fmtMoney(+r.amount||0, cur)}</span> <span class="ri-date">le ${frDate(r.date)}</span>
+        ${r.note?`<div class="ri-note">${esc(String(r.note))}</div>`:''}</div>
+      <button data-redit="${esc(String(r.id))}" title="Modifier" aria-label="Modifier ce remboursement">✏️</button>
+      <button data-rdel="${esc(String(r.id))}" title="Supprimer" aria-label="Supprimer ce remboursement">🗑️</button>
+    </div>`).join('') : `<div class="remb-empty">Aucun remboursement enregistré pour l'instant.</div>`;
+  h += `<button class="share-btn" id="loanEdit" style="margin-top:16px">✏️ Modifier le prêt</button>`;
+  const body = document.getElementById('loanBody'); body.innerHTML = h;
+  body.querySelectorAll('[data-redit]').forEach(b=>{ b.onclick=()=>openRemb(d.id, b.dataset.redit); });
+  body.querySelectorAll('[data-rdel]').forEach(b=>{ b.onclick=()=>delRemb(d.id, b.dataset.rdel); });
+  document.getElementById('loanEdit').onclick = ()=>{ closeLoan(); openSheet(d, 'debts'); };
+  const rb = document.getElementById('loanRembBtn');
+  rb.style.display = st.rest>0 ? '' : 'none';
+  rb.onclick = ()=>openRemb(d.id, null);
+}
+function openRemb(lid, rid){
+  const d = loanById(lid); if(!d || d.kind!=='money') return;
+  const r = rid ? repaysOf(d).find(x=>x.id===rid) : null;
+  if(rid && !r){ toast('Ce remboursement n\'existe plus'); return; }
+  const cur = curOf(d), max = loanStats(d).rest + (r ? cents(r.amount) : 0);
+  if(!r && max<=0){ toast('Ce prêt est déjà entièrement remboursé ✅'); return; }
+  rembForm = { lid:d.id, rid: r ? r.id : null, newId: id() }; // newId : empêche un doublon (double clic)
+  document.getElementById('rembTitle').textContent = r ? 'Modifier le remboursement ✏️' : 'Remboursement reçu 💸';
+  document.getElementById('rembInfo').innerHTML = `${esc(String(d.who||'—'))} · ${r?'maximum':'reste à rembourser'} : <b>${fmtMoney(max/100, cur)}</b>`;
+  document.getElementById('rembCur').textContent = CUR_SYM[cur]||'€';
+  document.getElementById('rembAmount').value = r ? String(+r.amount||'').replace('.',',') : '';
+  const dt = document.getElementById('rembDate'); dt.max = todayISO(); dt.value = r ? (r.date||'') : todayISO();
+  document.getElementById('rembNote').value = r ? (r.note||'') : '';
+  document.getElementById('rembErr').textContent = '';
+  const sv = document.getElementById('rembSave'); sv.disabled = false; sv.textContent = r ? 'Enregistrer la modification' : 'Enregistrer';
+  document.getElementById('rembBg').classList.add('open'); document.getElementById('rembSheet').classList.add('open');
+  if(!r) setTimeout(()=>document.getElementById('rembAmount').focus(), 280);
+}
+function closeRemb(){
+  rembForm = null; document.getElementById('rembAmount').blur();
+  document.getElementById('rembBg').classList.remove('open'); document.getElementById('rembSheet').classList.remove('open');
+}
+function saveRemb(){
+  if(rembBusy || !rembForm) return; // double clic : le 2ᵉ appui ne fait rien
+  rembBusy = true; const sv = document.getElementById('rembSave'); sv.disabled = true;
+  try{
+    const errEl = document.getElementById('rembErr');
+    const fail = (msg, focusId)=>{ errEl.textContent = '⚠️ '+msg; if(focusId) document.getElementById(focusId).focus(); sv.disabled = false; };
+    const d = loanById(rembForm.lid);
+    if(!d || d.kind!=='money'){ closeRemb(); toast('Ce prêt n\'existe plus'); return; }
+    const r = rembForm.rid ? repaysOf(d).find(x=>x.id===rembForm.rid) : null;
+    if(rembForm.rid && !r){ closeRemb(); toast('Ce remboursement n\'existe plus'); return; }
+    const raw = (document.getElementById('rembAmount').value||'').replace(/[\s €₪]/g,'').replace(',','.');
+    if(!raw) return fail('Indique le montant remboursé.', 'rembAmount');
+    if(/^-/.test(raw)) return fail('Le montant doit être supérieur à 0.', 'rembAmount');
+    if(!/^\d+(\.\d{1,2})?$/.test(raw)) return fail('Montant invalide (2 chiffres après la virgule au maximum).', 'rembAmount');
+    const c = cents(parseFloat(raw));
+    if(c<=0) return fail('Le montant doit être supérieur à 0.', 'rembAmount');
+    const others = repaysOf(d).filter(x=>x!==r).reduce((s,x)=>s+cents(x.amount),0);
+    const max = cents(d.amount) - others;
+    if(c>max) return fail('Le montant dépasse le reste à rembourser ('+fmtMoney(Math.max(0,max)/100, curOf(d))+').', 'rembAmount');
+    const date = document.getElementById('rembDate').value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date+'T12:00:00'))) return fail('Indique la date du remboursement.', 'rembDate');
+    if(date > todayISO()) return fail('La date ne peut pas être dans le futur.', 'rembDate');
+    const note = document.getElementById('rembNote').value.trim().slice(0,300);
+    const wasDone = d.done;
+    if(r){ r.amount = c/100; r.date = date; r.note = note; r.edited = Date.now(); }
+    else {
+      if(!Array.isArray(d.repays)) d.repays = [];
+      if(!d.repays.some(x=>x.id===rembForm.newId)) d.repays.push({ id:rembForm.newId, amount:c/100, date, note, ts:Date.now() });
+    }
+    syncLoanStatus(d);
+    closeRemb(); render(); // render() rafraîchit la liste, les totaux et le détail ouvert
+    if(d.done && !wasDone){ toast('Prêt entièrement remboursé 🎉'); playDing(); }
+    else toast(r ? 'Remboursement modifié ✏️' : 'Remboursement enregistré 💸');
+  } finally { rembBusy = false; }
+}
+function delRemb(lid, rid){
+  const d = loanById(lid); if(!d) return;
+  const r = repaysOf(d).find(x=>x.id===rid); if(!r) return;
+  if(!confirm('Supprimer le remboursement de '+fmtMoney(+r.amount||0, curOf(d))+' du '+frDate(r.date)+' ?\nLe reste dû sera recalculé.')) return;
+  const d2 = loanById(lid); if(!d2) return; // l'état a pu être remplacé pendant la question
+  d2.repays = repaysOf(d2).filter(x=>x.id!==rid);
+  syncLoanStatus(d2); render(); toast('Remboursement supprimé 🗑️');
+}
+document.getElementById('loanBg').onclick = closeLoan;
+document.getElementById('loanX').onclick = closeLoan;
+document.getElementById('rembBg').onclick = closeRemb;
+document.getElementById('rembX').onclick = closeRemb;
+document.getElementById('rembSave').onclick = saveRemb;
+['rembAmount','rembNote'].forEach(i=>document.getElementById(i).addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); saveRemb(); } }));
 
 /* ---------- DÉMÉNAGEMENT (cartons) ---------- */
 function roomOf(id){ return (S.rooms||[]).find(r=>r.id===id) || {e:'📦',n:'—'}; }
@@ -1998,11 +2202,13 @@ function bindRows(el,key){
     if(calBtn) calBtn.onclick = (e)=>{ e.stopPropagation(); openGcal(item); };
     const trBtn = row.querySelector('[data-trailer]');
     if(trBtn) trBtn.onclick = (e)=>{ e.stopPropagation(); openTrailer(trBtn.dataset.trailer); };
+    const rbBtn = row.querySelector('[data-remb]');
+    if(rbBtn) rbBtn.onclick = (e)=>{ e.stopPropagation(); openRemb(item.id, null); };
 
     // --- gestes tactiles : glisser à gauche = supprimer, tap = modifier ---
     let sx=0, sy=0, dx=0, dragging=false, horizontal=false, decided=false, moved=false, lp=null;
     row.addEventListener('touchstart', e=>{
-      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],.stars')) return;
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],[data-remb],.stars')) return;
       const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
       dragging=true; horizontal=false; decided=false; moved=false;
       row.style.transition='';
@@ -2026,13 +2232,13 @@ function bindRows(el,key){
           setTimeout(()=>delItem(key,item.id),170); }
         else { row.style.transition='transform .2s'; row.style.transform='';
           setTimeout(()=>row.parentElement && row.parentElement.classList.remove('swiping'),200); }
-      } else if(!moved){ openSheet(item, key); }
+      } else if(!moved){ openItem(item, key); }
     });
     // clic souris (desktop) = modifier
     row.addEventListener('click', e=>{
-      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],.stars')) return;
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],[data-remb],.stars')) return;
       if('ontouchstart' in window) return;
-      openSheet(item, key);
+      openItem(item, key);
     });
 
     // --- poignée : glisser pour réordonner (pointer events) ---
@@ -2097,10 +2303,12 @@ function renderProgress(){
     D.textContent = cs.length ? `${cs.length} carton${cs.length>1?'s':''} · ${objs} objet${objs>1?'s':''}` : 'Aucun carton';
   }else if(tab==='debt'){
     const dl = S.debts||[];
-    const owed = dl.filter(d=>!d.done && d.kind==='money').reduce((s,d)=>s+(+d.amount||0),0);
+    // reste dû (montant initial − remboursements reçus), par devise
+    const owedBy = {}; dl.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); owedBy[c]=(owedBy[c]||0)+restOf(d); });
+    const owed = Object.keys(owedBy).length ? Object.keys(owedBy).map(c=>fmtMoney(owedBy[c],c)).join(' • ') : eur(0);
     const nActive = dl.filter(d=>!d.done).length;
     T.textContent = '🤝 On me doit';
-    D.textContent = dl.length ? (eur(owed) + (nActive? ` · ${nActive} en cours` : ' · tout est réglé 🎉')) : 'Rien pour l\'instant';
+    D.textContent = dl.length ? (owed + (nActive? ` · ${nActive} en cours` : ' · tout est réglé 🎉')) : 'Rien pour l\'instant';
   }else{
     const left = tot-done;
     const st = (S.stores.find(s=>s.id===curStore)||{});
@@ -2549,11 +2757,17 @@ function add(){
         if(fmt){ it.type=fmt.type||'movie'; it.poster=fmt.poster||''; it.overview=fmt.overview||''; it.year=fmt.year||''; it.tmdbId=fmt.tmdbId||null; it.ytKey=fmt.ytKey||''; it.provName=fmt.provName||''; }
       } else if(k==='debts'){
         const amt = parseFloat((document.getElementById('debtAmount').value||'').replace(',','.'));
+        const paid = loanStats(it).paid;
+        if(repaysOf(it).length){ // le montant initial ne peut pas passer sous ce qui a déjà été remboursé
+          if(form.debtKind!=='money'){ toast("Ce prêt a des remboursements : il reste un prêt d'argent 💶"); return; }
+          if(isNaN(amt) || cents(amt)<paid){ toast('Montant trop bas : '+fmtMoney(paid/100, curOf(it))+' déjà remboursés'); document.getElementById('debtAmount').focus(); return; }
+        }
         it.who = v; it.kind = form.debtKind;
         it.amount = form.debtKind==='money' ? (isNaN(amt)?0:amt) : 0;
         it.cur = form.debtCur||'EUR';
         it.txt = form.debtKind==='thing' ? document.getElementById('debtWhat').value.trim() : '';
         it.note = document.getElementById('debtNote').value.trim();
+        if(repaysOf(it).length) syncLoanStatus(it); // statut recalculé si le montant change
       } else {
         it.txt = v;
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.qty = form.qty||1;
@@ -2812,7 +3026,12 @@ async function cloudPush(){
   if(!cloud.on || !cloud.sb) return;
   try{
     const {error} = await cloud.sb.rpc('zeste_save_mine',{ p_data:S });
-    if(error){ console.warn('save',error); return; }
+    if(error){
+      console.warn('save',error);
+      // refus du contrôle serveur des remboursements : on prévient et on se réaligne sur le serveur
+      if(/Remboursement refus/.test(error.message||'')){ toast('⚠️ '+error.message); cloudPull(); }
+      return;
+    }
     if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:S}});
     syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
   }catch(e){ console.warn(e); }
@@ -3004,6 +3223,8 @@ enableSwipeDown(setSheet, closeSettings);
 enableSwipeDown(moveSheet, closeMove);
 enableSwipeDown(magicSheet, closeMagic);
 enableSwipeDown(suggSheet, closeSugg);
+enableSwipeDown(document.getElementById('loanSheet'), closeLoan);
+enableSwipeDown(document.getElementById('rembSheet'), closeRemb);
 
 /* Clavier iOS : les fenêtres remontent au-dessus du clavier (API visualViewport) */
 if(window.visualViewport){
