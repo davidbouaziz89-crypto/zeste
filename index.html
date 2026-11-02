@@ -887,6 +887,18 @@
   .or-lock b{display:block;font-size:18px;margin:8px 0 6px}
   .or-lock p{color:var(--muted);font-weight:600;font-size:14px;line-height:1.45;margin:0 0 14px}
 
+  /* onglet Or simplifié */
+  .or-hero-note{margin-top:10px;font-size:12px;font-weight:700;opacity:.82;line-height:1.4}
+  .or-add-seul{display:block;width:100%;margin-top:14px}
+  .or-type .tn{font-size:13.5px}
+  .or-d-note{font-size:13.5px;font-weight:600;color:var(--muted);margin:10px 2px 0;overflow-wrap:anywhere}
+  .or-d-vh{font-weight:800;font-size:14px;margin:16px 2px 6px}
+  .or-d-v{display:flex;align-items:center;gap:8px;background:var(--field);border:2px solid var(--line);border-radius:14px;padding:8px 10px;margin-top:6px;font-size:13.5px;font-weight:700}
+  .or-d-v span{flex:1;min-width:0}
+  .or-d-v button{flex:none;border:none;background:var(--chip);border-radius:10px;width:36px;height:36px;font-size:15px;cursor:pointer}
+  .or-d-liens{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin:18px 0 4px}
+  .or-lien{border:none;background:none;font-weight:800;font-size:14.5px;color:var(--purple);cursor:pointer;padding:10px 6px;min-height:44px}
+  .or-lien.rouge{color:var(--red)}
   /* fenêtres Or */
   #orAchatBg,#orLotBg,#orVenteBg,#orOpsBg{z-index:52}
   .sheet.or-sheet{z-index:53}
@@ -1178,7 +1190,7 @@
   <button class="sheet-x" id="orLotX" aria-label="Fermer">✕</button>
   <div class="grab"></div>
   <div class="sheet-body" id="orLotBody"></div>
-  <button class="submit" id="orLotVendre">💶 Enregistrer une vente</button>
+  <button class="submit" id="orLotVendre">✏️ Modifier l'achat</button>
 </div>
 
 <!-- OR : HISTORIQUE DES OPÉRATIONS -->
@@ -1196,8 +1208,8 @@
   <div class="grab"></div>
   <div class="sheet-body">
     <h3 id="orVenteTitre">Enregistrer une vente 💶</h3>
-    <label class="remb-lab">Pièces vendues — de quel achat ? *</label>
-    <div class="or-lotpick" id="orVenteLots"></div>
+    <div id="orVLotsBloc"><label class="remb-lab">Pièces vendues — de quel achat ? *</label>
+    <div class="or-lotpick" id="orVenteLots"></div></div>
     <div class="or-2col">
       <div><label class="remb-lab" for="orVQte">Quantité vendue *</label>
         <div class="or-step"><button type="button" id="orVQteM" aria-label="Moins">−</button><input class="field" id="orVQte" inputmode="numeric" value="1" autocomplete="off" /><button type="button" id="orVQteP" aria-label="Plus">＋</button></div></div>
@@ -1207,10 +1219,13 @@
     <div class="or-seg" id="orVMode"><button type="button" data-m="unit" class="on">Prix par pièce</button><button type="button" data-m="total">Montant total</button></div>
     <div class="field-wrap"><input class="field" id="orVPrix" inputmode="decimal" placeholder="Ex : 540" autocomplete="off" /><span class="field-emo">€</span></div>
     <p class="or-calc" id="orVCalc"></p>
+    <button type="button" class="or-more" id="orVPlus">＋ Options (frais, note)</button>
+    <div id="orVDetails" style="display:none">
     <label class="remb-lab" for="orVFrais">Frais de vente (€)</label>
     <input class="field" id="orVFrais" inputmode="decimal" placeholder="Facultatif (ex : 12)" autocomplete="off" />
-    <label class="remb-lab" for="orVComm">Commentaire</label>
+    <label class="remb-lab" for="orVComm">Note</label>
     <input class="field" id="orVComm" maxlength="1000" placeholder="Facultatif (ex : vendu au comptoir)" autocomplete="off" />
+    </div>
     <p class="or-err" id="orVenteErr" role="alert"></p>
   </div>
   <button class="submit" id="orVenteOk">Enregistrer la vente</button>
@@ -1245,7 +1260,7 @@
     <div class="or-seg" id="orMode"><button type="button" data-m="unit" class="on">Prix par pièce</button><button type="button" data-m="total">Montant total</button></div>
     <div class="field-wrap"><input class="field" id="orPrix" inputmode="decimal" placeholder="Ex : 520" autocomplete="off" /><span class="field-emo">€</span></div>
     <p class="or-calc" id="orPrixCalc"></p>
-    <button type="button" class="or-more" id="orPlus">＋ Plus de détails (frais, millésime, vendeur, photo…)</button>
+    <button type="button" class="or-more" id="orPlus">＋ Options (frais, photo, note…)</button>
     <div id="orDetails" style="display:none">
       <div class="or-2col">
         <div><label class="remb-lab" for="orFrais">Frais d'achat (€)</label><input class="field" id="orFrais" inputmode="decimal" placeholder="0" autocomplete="off" /></div>
@@ -4540,45 +4555,23 @@ function renderOr(){
     document.getElementById('orLogin').onclick = ()=>{ const w=document.getElementById('welcome'); if(w) w.classList.add('show'); else openSettings(); };
     return;
   }
-  const g = orCoursG(), P = orPortefeuille(OR.lots, OR.ventes, g), a = orActuel();
+  const g = orCoursG(), P = orPortefeuille(OR.lots, OR.ventes, g);
   const hasLots = OR.lots.length > 0;
-  let h = '';
-  // carte principale
   const plCls = P.latent==null ? '' : P.latent>=0 ? 'g' : 'p';
-  h += `<div class="or-hero"><div class="or-hero-top"><span class="or-hero-lab">🪙 Valeur métal estimée</span>
+  // récapitulatif simple : valeur estimée, gain ou perte, total investi (le détail technique n'est plus affiché)
+  let h = `<div class="or-hero"><div class="or-hero-top"><span class="or-hero-lab">🪙 Valeur estimée de mes pièces</span>
       <button class="or-refresh${OR.majCours?' spin':''}" id="orRefresh" aria-label="Actualiser le cours"><span>⟳</span></button></div>
     <div class="or-hero-val">${hasLots ? orEur(P.valeur) : orEur(0)}</div>
-    ${hasLots && P.investi>0 ? `<div class="or-hero-pl ${plCls}">${P.latent==null?'—':orEur(P.latent,true)+' · '+orPct(P.latentPct)} <small>sur le capital investi</small></div>` : ''}
-    <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span><span><b>${orG(P.poidsFin,2)} g</b> d'or fin</span></div>
-    ${(OR.alertes.length || (a && orCoursPerime())) ? `<div class="or-warn">⚠️ ${esc(OR.alertes[0] || 'Cours ancien : dernier cours connu affiché.').replace(/ ([:;!?])/g,'\u00a0$1')}${a ? ' Cours du '+orDateHeure(a.cote_le)+'.' : ''}</div>` : ''}
-    ${!a && !OR.majCours ? `<div class="or-warn">⚠️ Cours de l'or indisponible pour le moment : la valeur ne peut pas être calculée.</div>` : ''}
-    ${OR.erreur ? `<div class="or-warn">⚠️ ${esc(OR.erreur)}${OR.depuisCache?' — données gardées sur l\'appareil.':''}</div>` : ''}
-  </div>`;
-  // actions
-  const vendable = OR.lots.some(l=>orLotStats(l, OR.ventes, null).detenu>0);
-  h += `<div class="or-actions"><button class="or-btn add" id="orAdd">＋ Ajouter un achat</button>
-    <button class="or-btn sell" id="orSell" ${vendable?'':'disabled'}>💶 Enregistrer une vente</button></div>`;
-  // graphique
-  if(hasLots){
-    const per = OR.per;
-    h += `<div class="or-card"><div class="or-per" id="orPer">${[['1m','1 M'],['3m','3 M'],['6m','6 M'],['1a','1 an'],['max','Max']].map(([k,t])=>`<button data-p="${k}" class="${per===k?'on':''}">${t}</button>`).join('')}</div>
-      <div class="or-tip" id="orTip"></div><div class="or-graph" id="orGraph"></div>
-      <div class="or-leg"><span><i class="lv"></i>Valeur métal</span><span><i class="li"></i>Montant investi</span></div>
-      <div class="or-graph-note" id="orGraphNote"></div></div>`;
-  }
-  // tuiles
-  h += `<div class="or-tiles">
-    <div class="or-tile"><small>Cours de l'or</small><b>${a ? orG(a.eur_g,2)+' €/g' : '—'}</b><span>${a ? 'MAJ '+orDateHeure(a.releve_le||a.cote_le) : (OR.majCours?'Chargement…':'Indisponible')}</span></div>
-    <div class="or-tile"><small>${P.nbVentes ? 'Bilan global' : 'Rendement'}</small>
-      <b class="${orClasse(P.nbVentes?P.bilan:P.latent)}">${P.nbVentes ? orPct(P.bilanPct) : orPct(P.latentPct)}</b>
-      <span>${P.nbVentes ? orEur(P.bilan,true)+' latent + réalisé' : (hasLots ? orEur(P.latent,true)+' latent' : 'Aucune pièce')}</span></div>
-    ${P.nbVentes ? `<div class="or-tile"><small>Gains réalisés</small><b class="${orClasse(P.realise)}">${orEur(P.realise,true)}</b><span>${P.nbVentes} vente${P.nbVentes>1?'s':''}</span></div>
-    <div class="or-tile"><small>Latent (détenu)</small><b class="${orClasse(P.latent)}">${orEur(P.latent,true)}</b><span>${orPct(P.latentPct)}</span></div>` : ''}
-  </div>`;
-  // liste des lots
+    ${hasLots && P.investi>0 && P.latent!=null ? `<div class="or-hero-pl ${plCls}">${orEur(P.latent,true)} · ${orPct(P.latentPct)}</div>` : ''}
+    <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span>${P.nbVentes ? `<span>Ventes <b>${orEur(P.realise,true)}</b></span>` : ''}</div>
+    <div class="or-hero-note">${orNoteEstimation()}</div>
+    ${OR.erreur ? `<div class="or-warn">⚠️ ${esc(OR.erreur)}</div>` : ''}
+  </div>
+  <button class="or-btn add or-add-seul" id="orAdd">＋ Ajouter un achat</button>`;
+  // mes pièces : une carte par achat
   if(!hasLots){
     h += OR.chargement && !OR.charge ? `<div class="or-empty">Chargement…</div>`
-      : `<div class="or-empty"><div class="big">🪙</div><b>Aucune pièce pour l'instant</b>Ajoute ton premier achat : la valeur se calcule toute seule.</div>`;
+      : `<div class="or-empty"><div class="big">🪙</div><b>Aucune pièce pour l'instant</b>Ajoute ton premier achat : la valeur s'estime toute seule.</div>`;
   } else {
     const pl = orParLot(OR.ventes);
     const rows = OR.lots.map(l=>({ l, s: orStatsLot(l, pl[l.id]||[], g) }))
@@ -4591,25 +4584,24 @@ function renderOr(){
       const right = sold
         ? `<div class="l-val">Vendu</div><div class="l-pl ${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</div>`
         : `<div class="l-val">${orEur(s.valeur)}</div><div class="l-pl ${orClasse(s.latent)}">${s.latent==null?'—':orEur(s.latent,true)} · ${orPct(s.latentPct)}</div>`;
+      // quantité détenue et prix payé pour ces pièces : la valeur et le gain de la carte se comparent directement
       return `<button class="or-lot${sold?' sold':''}" data-lot="${esc(String(l.id))}">${orCoin(l)}
-        <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} <span class="l-q">×${s.vendu? s.detenu+'/'+s.Q : s.Q}</span></div>
-        <div class="l-sub">${frDate(l.date_achat)} · <span class="nw">payé ${orEur(s.cout)}</span></div></div>
+        <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} <span class="l-q">×${sold ? s.Q : s.detenu}</span></div>
+        <div class="l-sub">${frDate(l.date_achat)} · <span class="nw">payé ${orEur(sold ? s.cout : s.coutDetenu)}</span></div></div>
         <div class="l-right">${right}</div></button>`;
     }).join('');
-    h += `<button class="or-link" id="orOps">📜 Historique des opérations</button>`;
   }
-  h += `<p class="or-foot">ℹ️ Valeur métal = quantité × or fin par pièce × cours de l'or. Ce n'est pas un prix de revente :
-    aucune source fiable et gratuite ne publie la cotation des pièces (prime comprise) ni un prix de rachat, donc Zeste n'en affiche pas.
-    Source : ${orSourceTxt()}.</p>`;
   el.innerHTML = h;
   document.getElementById('orRefresh').onclick = ()=>{ orCours(true); };
   document.getElementById('orAdd').onclick = ()=>orOuvrirAchat(null);
-  document.getElementById('orSell').onclick = ()=>orOuvrirVente(null, null);
   el.querySelectorAll('[data-lot]').forEach(b=>{ b.onclick = ()=>orOuvrirLot(b.dataset.lot); });
-  const ops = document.getElementById('orOps'); if(ops) ops.onclick = orOuvrirOps;
-  const perEl = document.getElementById('orPer');
-  if(perEl) perEl.querySelectorAll('button').forEach(b=>{ b.onclick = ()=>{ OR.per = b.dataset.p; OR.perDefaut = false; renderOr(); }; });
-  if(hasLots) orGraphDashboard();
+}
+function orNoteEstimation(){
+  const a = orActuel();
+  if(!a) return OR.majCours ? 'Recherche du cours de l\'or…' : '⚠️ Cours de l\'or indisponible pour le moment : valeur non estimée.';
+  const src = esc(String(a.source||'').replace(/ — cours spot XAU\/EUR$/, ''));
+  const vieux = OR.alertes.length > 0 || orCoursPerime();
+  return `${vieux ? '⚠️ Dernier cours connu, du ' : 'Estimation d\'après le cours de l\'or du '}${orDateHeure(a.cote_le)} (${src}). Ce n'est pas un prix de revente garanti.`;
 }
 function orMajBoutonCours(){ const b = document.getElementById('orRefresh'); if(b) b.classList.toggle('spin', !!OR.majCours); }
 
@@ -4704,49 +4696,30 @@ function orRenderLotOuvert(){
   if(!orLotId) return;
   const l = orLot(orLotId);
   if(!l){ orLotId = null; orFermerFen('orLot'); return; }
-  const g = orCoursG(), s = orLotStats(l, OR.ventes, g), a = orActuel(), t = OR_TYPE[l.type] || OR_TYPE.autre;
+  const g = orCoursG(), s = orLotStats(l, OR.ventes, g), sold = s.detenu===0;
+  const gain = sold ? s.realise : s.latent, gainPct = sold ? s.realisePct : s.latentPct;
+  // fiche simple : 4 chiffres ; les ventes (s'il y en a) en lignes courtes, modifiables
   let h = `<div class="or-d-head">${orCoin(l,'big')}<div><h3>${esc(orNomLot(l))}</h3>
-    <small>Acheté le ${frDate(l.date_achat)}${l.vendeur?' · chez '+esc(String(l.vendeur)):''}</small></div></div>
+    <small>Acheté le ${frDate(l.date_achat)}</small></div></div>
     <div id="orLotPhoto"></div>
     <div class="or-d-sum">
-      <div><small>Pièces détenues</small><b>${s.detenu}${s.vendu?' / '+s.Q:''}</b></div>
-      <div><small>Prix payé${s.vendu?' (détenu)':''}</small><b>${orEur(s.coutDetenu)}</b></div>
-      <div><small>Valeur métal</small><b>${orEur(s.valeur)}</b></div>
-      <div><small>Plus-value latente</small><b class="${orClasse(s.latent)}">${s.detenu? orEur(s.latent,true) : '—'}</b>${s.detenu? `<i class="${orClasse(s.latent)}">${orPct(s.latentPct)}</i>` : ''}</div>
-      ${s.vendu ? `<div><small>Gains réalisés</small><b class="${orClasse(s.realise)}">${orEur(s.realise,true)}</b><i class="${orClasse(s.realise)}">${orPct(s.realisePct)}</i></div>
-      <div><small>Coût total de l'achat</small><b>${orEur(s.cout)}</b></div>` : ''}
+      <div><small>Pièces détenues</small><b>${s.detenu}</b></div>
+      <div><small>Payé</small><b>${orEur(sold ? s.cout : s.coutDetenu)}</b></div>
+      <div><small>Valeur estimée</small><b>${sold ? '—' : orEur(s.valeur)}</b></div>
+      <div><small>${sold ? 'Gain sur la vente' : 'Gain / perte'}</small><b class="${orClasse(gain)}">${gain==null ? '—' : orEur(gain,true)}</b><i class="${orClasse(gain)}">${orPct(gainPct)}</i></div>
     </div>
-    <div class="or-card" style="margin-top:12px;padding:12px">
-      <div style="font-weight:800;font-size:13.5px">📈 Valeur métal depuis l'achat</div>
-      <div class="or-tip" id="orLotTip"></div><div class="or-graph" id="orLotGraph"></div>
-      <div class="or-leg"><span><i class="lv"></i>Valeur métal (cours de l'or)</span><span><i class="li"></i>Prix payé</span></div>
-      <div class="or-graph-note" id="orLotNote"></div></div>
-    <div class="or-val3">
-      <div><div class="k">1. Valeur du métal<small>${a ? `${orG(s.poidsFin,4)} g d'or fin × ${orG(a.eur_g,2)} €/g — ${orSourceTxt()}` : 'Cours de l\'or indisponible.'}</small></div><div class="v">${orEur(s.valeur)}</div></div>
-      <div><div class="k">2. Cotation de la pièce<small>Prix de marché prime comprise : aucune source fiable et gratuite n'est disponible.</small></div><div class="v na">Non disponible</div></div>
-      <div><div class="k">3. Prix de rachat estimé<small>Aucune donnée réelle de rachat. La valeur métal n'est pas le prix auquel la pièce se revend.</small></div><div class="v na">Non disponible</div></div>
-    </div>
-    <div class="or-fiche" style="margin-top:12px">🔎 <b>Fiche</b> — ${l.poids_brut_g ? 'poids brut <b>'+orG(l.poids_brut_g)+' g</b> · ' : ''}${l.titre_millieme ? 'titre <b>'+orG(l.titre_millieme,2)+' ‰</b> · ' : ''}or fin <b>${orG(l.poids_fin_g)} g</b> par pièce${t.libre?' (saisi par toi)':''}
-      ${l.commentaire ? `<br>💬 ${esc(String(l.commentaire))}` : ''}</div>
-    <div class="remb-h">📜 Opérations</div>
-    <div class="or-op"><div class="o-txt"><b>Achat · ${s.Q} pièce${s.Q>1?'s':''}</b> le ${frDate(l.date_achat)}
-      <small>${orEur(orC(l.prix_total))}${+l.frais?' + '+orEur(orC(l.frais))+' de frais':''}</small></div></div>`;
-  h += s.ventes.map(x=>`<div class="or-op"><div class="o-txt"><b>Vente · ${x.v.quantite} pièce${x.v.quantite>1?'s':''}</b> le ${frDate(x.v.date_vente)}
-      <small>${orEur(orC(x.v.prix_total))}${+x.v.frais?' − '+orEur(orC(x.v.frais))+' de frais':''} · <span class="${orClasse(x.gain)}">${orEur(x.gain,true)} réalisé</span></small>
-      ${x.v.commentaire?`<small>💬 ${esc(String(x.v.commentaire))}</small>`:''}</div>
+    ${l.commentaire ? `<p class="or-d-note">💬 ${esc(String(l.commentaire))}</p>` : ''}`;
+  if(s.ventes.length) h += `<div class="or-d-vh">Ventes</div>` + s.ventes.map(x=>`<div class="or-d-v">
+      <span>${frDate(x.v.date_vente)} · ${x.v.quantite} pièce${x.v.quantite>1?'s':''} · ${orEur(orC(x.v.prix_total))} <b class="${orClasse(x.gain)}">${orEur(x.gain,true)}</b></span>
       <button data-vedit="${esc(String(x.v.id))}" aria-label="Modifier cette vente">✏️</button><button data-vdel="${esc(String(x.v.id))}" aria-label="Supprimer cette vente">🗑️</button></div>`).join('');
-  h += `<button class="share-btn" id="orLotEdit" style="margin-top:16px">✏️ Modifier l'achat</button>
-    <button class="share-btn danger" id="orLotDel">🗑️ Supprimer l'achat</button>`;
+  h += `<div class="or-d-liens">${s.detenu>0 ? `<button class="or-lien" id="orLotVente">Déclarer une vente</button>` : ''}<button class="or-lien rouge" id="orLotDel">Supprimer l'achat</button></div>`;
   const body = document.getElementById('orLotBody'); body.innerHTML = h;
-  document.getElementById('orLotEdit').onclick = ()=>orOuvrirAchat(l);
+  const lv = document.getElementById('orLotVente'); if(lv) lv.onclick = ()=>orOuvrirVente(l.id, null);
   document.getElementById('orLotDel').onclick = ()=>orSupprimerLot(l.id);
   body.querySelectorAll('[data-vedit]').forEach(b=>{ b.onclick = ()=>orOuvrirVente(l.id, b.dataset.vedit); });
   body.querySelectorAll('[data-vdel]').forEach(b=>{ b.onclick = ()=>orSupprimerVente(b.dataset.vdel); });
-  const vb = document.getElementById('orLotVendre'); vb.style.display = s.detenu>0 ? '' : 'none'; vb.onclick = ()=>orOuvrirVente(l.id, null);
-  // courbe du lot (ce lot seul, ses ventes seules)
-  const fin = todayISO(), vl = (OR.ventes||[]).filter(v=>v.lot_id===l.id);
-  const pts = orSerie([l], vl, orHist(), l.date_achat, fin, orPointDuJour());
-  requestAnimationFrame(()=>{ orDessiner(document.getElementById('orLotGraph'), document.getElementById('orLotTip'), pts); orNoteTrous(document.getElementById('orLotNote'), pts); });
+  // action principale de la fiche : corriger l'achat
+  const mb = document.getElementById('orLotVendre'); mb.style.display = ''; mb.onclick = ()=>orOuvrirAchat(l);
   if(l.a_photo) orChargerPhoto(l.id);
 }
 const orPhotos = {};
@@ -4832,10 +4805,11 @@ function orOuvrirAchat(l){
 function orRenderTypes(){
   const box = document.getElementById('orTypes');
   box.innerHTML = OR_TYPES.map(t=>`<button type="button" class="or-type${orF.type===t.code?' sel':''}" data-t="${t.code}">
-    <span class="or-coin">${esc(t.jeton)}</span><span><span class="tn">${esc(t.court)}</span><span class="tf" style="display:block">${t.libre ? 'poids à saisir' : orG(t.fin)+' g d\'or fin'}</span></span></button>`).join('');
+    <span class="or-coin">${esc(t.jeton)}</span><span class="tn">${esc(t.court)}</span></button>`).join('');
   box.querySelectorAll('[data-t]').forEach(b=>{ b.onclick = ()=>{ orF.type = b.dataset.t; orRenderTypes(); orCalcAchat(); }; });
   const t = OR_TYPE[orF.type];
-  document.getElementById('orFiche').innerHTML = `<div class="or-fiche${t.libre?' alert':''}">${t.libre ? '✍️' : '🔎'} ${t.libre ? '' : `<b>Fiche</b> — poids brut <b>${orG(t.brut)} g</b> · titre <b>${orG(t.titre,2)} ‰</b> · or fin <b>${orG(t.fin)} g</b> par pièce.<br>`}${esc(t.info)}</div>`;
+  // pièces connues : poids déjà connus, rien à afficher ; pièces à saisir : une ligne d'aide
+  document.getElementById('orFiche').innerHTML = t.libre ? `<p class="or-calc">✍️ Indique le poids d'or fin de ta pièce (ou son poids brut et son titre) : il sert à estimer sa valeur.</p>` : '';
   document.getElementById('orPerso').style.display = t.libre ? '' : 'none';
   document.getElementById('orNomLab').textContent = orF.type==='autre' ? 'Nom de la pièce *' : 'Précision (règne, type…)';
   document.getElementById('orNom').placeholder = orF.type==='autre' ? 'Ex : 50 pesos mexicain' : 'Ex : Louis XV aux lunettes, 1735';
@@ -4937,7 +4911,10 @@ function orOuvrirVente(lotId, venteId){
   const choisi = v ? v.lot_id : (lotId && dispo.some(x=>x.l.id===lotId) ? lotId : dispo.sort((a,b)=>String(a.l.date_achat).localeCompare(String(b.l.date_achat)))[0].l.id);
   orV = { id: v ? v.id : ((crypto && crypto.randomUUID) ? crypto.randomUUID() : null), lot: choisi, edit: !!v, mode: v ? 'total' : 'unit', fige: !!v || !!lotId };
   const $ = i=>document.getElementById(i);
-  $('orVenteTitre').textContent = v ? 'Modifier la vente ✏️' : 'Enregistrer une vente 💶';
+  const lc = orLot(choisi);
+  $('orVenteTitre').textContent = (v ? 'Modifier la vente' : 'Déclarer une vente') + (orV.fige && lc ? ' · ' + orNomLot(lc) : '');
+  $('orVLotsBloc').style.display = orV.fige ? 'none' : '';
+  const opts = !!(v && (+v.frais || v.commentaire)); $('orVDetails').style.display = opts ? '' : 'none'; $('orVPlus').style.display = opts ? 'none' : '';
   $('orVenteOk').textContent = v ? 'Enregistrer la modification' : 'Enregistrer la vente';
   $('orVQte').value = v ? v.quantite : 1;
   const dt = $('orVDate'); dt.max = todayISO(); dt.value = v ? v.date_vente : todayISO();
@@ -4971,7 +4948,7 @@ function orCalcVente(){
   const autres = (OR.ventes||[]).filter(v=>v.lot_id===l.id && v.id!==orV.id);
   const sim = { id: orV.id || 'sim', lot_id: l.id, date_vente: document.getElementById('orVDate').value || todayISO(), quantite: q, prix_total: total/100, frais: fr/100, cree_le: '9999' };
   const x = orStatsLot(l, [...autres, sim].sort(orTriVentes), null).ventes.find(y=>y.v===sim);
-  c.innerHTML = x ? `${orV.mode==='unit' && q>1 ? 'Total '+orEur(total)+' · ' : ''}gain réalisé estimé <b class="${orClasse(x.gain)}">${orEur(x.gain,true)}</b> (coût de ces pièces ${orEur(x.base)})` : '';
+  c.innerHTML = x ? `${orV.mode==='unit' && q>1 ? 'Total '+orEur(total)+' · ' : ''}gain sur cette vente : <b class="${orClasse(x.gain)}">${orEur(x.gain,true)}</b>` : '';
 }
 async function orEnregistrerVente(){
   if(orOcc || !orV) return;
@@ -5019,6 +4996,7 @@ function orProgress(T, D, ring, ringtxt){
   $('orAchatOk').onclick = orEnregistrerAchat;
   $('orVenteOk').onclick = orEnregistrerVente;
   $('orPlus').onclick = ()=>{ $('orDetails').style.display=''; $('orPlus').style.display='none'; };
+  $('orVPlus').onclick = ()=>{ $('orVDetails').style.display=''; $('orVPlus').style.display='none'; };
   document.querySelectorAll('#orMode button').forEach(b=>{ b.onclick = ()=>{ orF.mode = b.dataset.m; orSyncMode('orMode', orF.mode); orCalcAchat(); }; });
   document.querySelectorAll('#orVMode button').forEach(b=>{ b.onclick = ()=>{ orV.mode = b.dataset.m; orSyncMode('orVMode', orV.mode); orCalcVente(); }; });
   const pas = (id, d, apres)=>{ const e=$(id); const v=Math.max(1,(parseInt(e.value,10)||0)+d); e.value=v; apres(); };
