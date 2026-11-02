@@ -159,3 +159,40 @@ test('affichage : signes, vert/rouge cohérents, pas de « -0 »', () => {
   assert.equal(O.orPct(-2.04), '−2,0 %');
   assert.equal(O.orPct(null), '—');
 });
+
+test('aucun double comptage : achats multiples d\'une même pièce, frais à l\'achat et à la vente, ventes partielles', () => {
+  // deux achats de Napoléon à des dates et prix différents, chacun avec des frais ; un souverain jamais vendu
+  const a1 = { id: 'A1', type: 'napoleon20', quantite: 4, prix_total: 1600, frais: 20, poids_fin_g: 5.8064, date_achat: '2023-01-10' }; // coût 1 620 €
+  const a2 = { id: 'A2', type: 'napoleon20', quantite: 6, prix_total: 2700, frais: 30, poids_fin_g: 5.8064, date_achat: '2024-05-02' }; // coût 2 730 €
+  const a3 = { id: 'A3', type: 'souverain', quantite: 1, prix_total: 580, frais: 0, poids_fin_g: 7.3224, date_achat: '2025-01-20' };
+  const ventes = [
+    { id: 'V1', lot_id: 'A1', quantite: 1, prix_total: 520, frais: 8, date_vente: '2025-02-01', cree_le: '1' },   // net 512 − base 405 = +107
+    { id: 'V2', lot_id: 'A2', quantite: 2, prix_total: 1000, frais: 12, date_vente: '2025-06-01', cree_le: '2' }, // net 988 − base 910 = +78
+    { id: 'V3', lot_id: 'A1', quantite: 3, prix_total: 1500, frais: 0, date_vente: '2025-09-01', cree_le: '3' },  // A1 soldé : base 1 215
+  ];
+  const g = 100;
+  const lots = [a1, a2, a3], P = O.orPortefeuille(lots, ventes, g);
+  const S = Object.fromEntries(lots.map(l => [l.id, O.orLotStats(l, ventes, g)]));
+  // pièces détenues : 0 + 4 + 1
+  assert.equal(S.A1.detenu, 0); assert.equal(S.A2.detenu, 4); assert.equal(P.pieces, 5);
+  // valeur actuelle : seulement les pièces encore détenues
+  assert.equal(S.A1.valeur, 0);
+  assert.equal(P.valeur, Math.round(4 * 5.8064 * g * 100) + Math.round(7.3224 * g * 100));
+  // capital investi restant = coût d'acquisition (frais d'achat compris) des seules pièces détenues
+  assert.equal(S.A2.coutDetenu, 182000);                     // 2 730 € × 4/6
+  assert.equal(P.investi, 182000 + 58000);
+  // gain latent = valeur − capital restant
+  assert.equal(P.latent, P.valeur - P.investi);
+  // gain réalisé net = Σ(prix de vente − frais de vente) − coût d'acquisition des pièces vendues
+  assert.equal(S.A1.realise, (51200 - 40500) + (150000 - 121500));
+  assert.equal(S.A2.realise, 98800 - 91000);
+  assert.equal(P.realise, S.A1.realise + S.A2.realise);
+  // pas de double comptage : tout le coût engagé est soit encore investi, soit attribué à une vente
+  assert.equal(P.investi + P.coutVendu, P.coutTotal);
+  assert.equal(P.coutTotal, 162000 + 273000 + 58000);
+  const produitsNets = ventes.reduce((s, v) => s + Math.round(v.prix_total * 100) - Math.round(v.frais * 100), 0);
+  assert.equal(P.realise, produitsNets - P.coutVendu);
+  // les cartes s'additionnent exactement au récapitulatif
+  assert.equal(lots.reduce((s, l) => s + S[l.id].coutDetenu, 0), P.investi);
+  assert.equal(lots.reduce((s, l) => s + S[l.id].valeur, 0), P.valeur);
+});

@@ -887,6 +887,7 @@
   .or-lock b{display:block;font-size:18px;margin:8px 0 6px}
   .or-lock p{color:var(--muted);font-weight:600;font-size:14px;line-height:1.45;margin:0 0 14px}
 
+  .or-hero-sub .or-hero-real{flex-basis:100%}
   /* onglet Or simplifié */
   .or-hero-note{margin-top:10px;font-size:12px;font-weight:700;opacity:.82;line-height:1.4}
   .or-add-seul{display:block;width:100%;margin-top:14px}
@@ -4564,7 +4565,7 @@ function renderOr(){
       <button class="or-refresh${OR.majCours?' spin':''}" id="orRefresh" aria-label="Actualiser le cours"><span>⟳</span></button></div>
     <div class="or-hero-val">${hasLots ? orEur(P.valeur) : orEur(0)}</div>
     ${hasLots && P.investi>0 && P.latent!=null ? `<div class="or-hero-pl ${plCls}">${orEur(P.latent,true)} · ${orPct(P.latentPct)}</div>` : ''}
-    <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span>${P.nbVentes ? `<span>Ventes <b>${orEur(P.realise,true)}</b></span>` : ''}</div>
+    <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span>${P.nbVentes ? `<span class="or-hero-real">Gains réalisés sur ventes : <b>${orEur(P.realise,true)}</b></span>` : ''}</div>
     <div class="or-hero-note">${orNoteEstimation()}</div>
     ${OR.erreur ? `<div class="or-warn">⚠️ ${esc(OR.erreur)}</div>` : ''}
   </div>
@@ -4588,7 +4589,7 @@ function renderOr(){
       // quantité détenue et prix payé pour ces pièces : la valeur et le gain de la carte se comparent directement
       return `<button class="or-lot${sold?' sold':''}" data-lot="${esc(String(l.id))}">${orCoin(l)}
         <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} <span class="l-q">×${sold ? s.Q : s.detenu}</span></div>
-        <div class="l-sub">${frDate(l.date_achat)} · <span class="nw">payé ${orEur(sold ? s.cout : s.coutDetenu)}</span></div></div>
+        <div class="l-sub">${frDate(l.date_achat)} · <span class="nw">coût d'achat ${orEur(sold ? s.cout : s.coutDetenu)}</span></div></div>
         <div class="l-right">${right}</div></button>`;
     }).join('');
   }
@@ -4705,7 +4706,7 @@ function orRenderLotOuvert(){
     <div id="orLotPhoto"></div>
     <div class="or-d-sum">
       <div><small>Pièces détenues</small><b>${s.detenu}</b></div>
-      <div><small>Payé</small><b>${orEur(sold ? s.cout : s.coutDetenu)}</b></div>
+      <div><small>Coût d'achat</small><b>${orEur(sold ? s.cout : s.coutDetenu)}</b></div>
       <div><small>Valeur estimée</small><b>${sold ? '—' : orEur(s.valeur)}</b></div>
       <div><small>${sold ? 'Gain sur la vente' : 'Gain / perte'}</small><b class="${orClasse(gain)}">${gain==null ? '—' : orEur(gain,true)}</b><i class="${orClasse(gain)}">${orPct(gainPct)}</i></div>
     </div>
