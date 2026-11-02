@@ -1,5 +1,7 @@
 -- ============================================================
---  Zeste 🍋 — RETOUR ARRIÈRE de sql/zeste-securite.sql
+--  Zeste 🍋 — RETOUR ARRIÈRE de sql/zeste-securite.sql — ÉTAT D'AVANT LE CORRECTIF DU 02/11/2026 20 h 10
+--  ⛔ Rouvre les accès anonymes (failles). Ne plus l'utiliser sans l'accord exprès de David :
+--     depuis le correctif, le retour normal est sql/zeste-securite-retour-apres-correctif.sql.
 --  Remet les fonctions push et les droits tels qu'ils étaient en production
 --  le 02/11/2026 (y compris les accès anon, donc la faille). À n'utiliser
 --  qu'en cas de blocage grave. Aucune donnée n'est touchée. Tout ou rien.

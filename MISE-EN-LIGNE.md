@@ -4,7 +4,16 @@
 sur la base et le serveur à la fois. Branches : `integration-zeste` (version complète),
 `correctif-securite` (correctif urgent seul, partant de la version en ligne).
 
-## 0. État réel constaté (production, lecture seule, 02/11/2026 vers 19 h)
+## Déjà fait : correctif de sécurité urgent (accord écrit de David du 02/11/2026)
+
+- **20 h 10 min 46 s** : `sql/zeste-correctif-securite.sql` appliqué sous verrou (essai à blanc puis réel).
+- **20 h 12 min 59 s** : appli `correctif-securite` en ligne sur GitHub Pages (`main` = `cc2f96f`, page servie vérifiée identique).
+- Contrôlé en production : 6 appels anonymes refusés (401), un autre compte refusé (« Accès refusé »),
+  code foyer fermé même connecté, ton usage intact (tests en transactions annulées), données identiques
+  (empreinte `27ef15c9…`), autres applis opérationnelles, fonctions serveur non redémarrées.
+- Sauvegarde vérifiée avant intervention : `~/sauvegardes/zeste-20261102-190958` (serveur).
+
+## 0. État réel constaté (production, lecture seule, 02/11/2026 vers 19 h, AVANT le correctif)
 
 | Point | Constat |
 |---|---|
@@ -20,7 +29,7 @@ sur la base et le serveur à la fois. Branches : `integration-zeste` (version co
 | Verrou de déploiement | **détenu par une autre session** (« netteté PDF Notelia », jusqu'à 19 h 36 le 02/11) |
 | Fonctions serveur | `zeste-push`, `zeste-suggest` identiques à `main` ; `CRON_SECRET` posé ; le routeur crée un « worker » par requête : **une nouvelle fonction ou un code modifié est pris sans redémarrage** |
 
-## A. Option « correctif de sécurité urgent » (indépendante, publiable seule)
+## A. Option « correctif de sécurité urgent » — ✅ FAIT le 02/11/2026 (voir en tête)
 
 Ferme les failles **sans** publier les nouveautés. Testé : seul sur la base actuelle, avec l'appli en ligne,
 puis la version complète par-dessus (`tests/sync/serveur.test.mjs`), et en conditions réelles (2 appareils).
@@ -40,8 +49,8 @@ puis la version complète par-dessus (`tests/sync/serveur.test.mjs`), et en cond
 | # | Étape | Pourquoi à ce moment | Interruption | Retour arrière (réaliste) |
 |---|---|---|---|---|
 | 1 | **Sauvegarde vérifiée** : `outils/sauvegarde-zeste.sh` (serveur) puis `outils/verifier-sauvegarde.mjs` (rechargement dans une base jetable, empreintes comparées) | avant toute écriture | aucune | — |
-| 2 | **Contrôles de sécurité préalables** (lecture seule) : droits, empreintes des 3 fonctions remplacées = `4dae0c3f…`, `df91e862…`, `86aee7b2…` ; verrou libre ; aucune session longue | détecter une modification faite entre-temps par une autre session | aucune | — |
-| 3 | **Migrations** sous verrou (`outils/verrou-deploiement.sh prendre`, jeton en tête de session), essai à blanc `begin…rollback` puis réel : `zeste-sync-v2.sql` → `zeste-securite.sql` → `zeste-or.sql` | l'appli en ligne reste compatible (testé) ; failles push/foyer fermées dès ici | quelques millisecondes de verrou sur la seule table `zeste.user_data` (ajout de 2 colonnes à valeur par défaut, sans réécriture) | `zeste-or-retour.sql` → `zeste-securite-retour.sql` → `zeste-sync-v2-retour.sql` : définitions de production remises à l'identique (empreintes testées) ; les 2 colonnes et les tables `or_*` vides restent (sans effet). **Aucune perte.** |
+| 2 | **Contrôles de sécurité préalables** (lecture seule) : aucune fonction zeste pour anon ; empreintes = production après correctif (`zeste_save_mine 4dae0c3f…`, `zeste_save_sub a9ad1482…`, `zeste_sync_reminders 096bb726…`, liste complète dans `tests/sync/serveur.test.mjs`, test 12) ; verrou libre ; aucune session longue | détecter une modification faite entre-temps par une autre session | aucune | — |
+| 3 | **Migrations** sous verrou (`outils/verrou-deploiement.sh prendre`, jeton en tête de session), essai à blanc `begin…rollback` puis réel : `zeste-sync-v2.sql` → `zeste-securite.sql` (n'ajoute plus que `zeste_rev_mine`) → `zeste-or.sql` | l'appli en ligne (correctif) reste compatible (testé) | quelques millisecondes de verrou sur la seule table `zeste.user_data` (ajout de 2 colonnes à valeur par défaut, sans réécriture) | `zeste-or-retour.sql` → `zeste-securite-retour-apres-correctif.sql` → `zeste-sync-v2-retour.sql` : retour **exact** à la production actuelle, failles toujours fermées (empreintes testées) ; les 2 colonnes et les tables `or_*` restent (sans effet). **Aucune perte.** ⛔ ne plus utiliser `zeste-securite-retour.sql` (rouvrirait les failles). |
 | 4 | **Fonction serveur `zeste-or-cours`** (copie dans `volumes/functions/`) | doit exister avant l'appli pour l'onglet Or | aucune (pas de redémarrage) | supprimer le dossier : onglet Or en mode « cours indisponible » |
 | 5 | **Publication de Zeste** : fusion `integration-zeste` → `main` (GitHub Pages, ~1-2 min) | la base est prête | aucune ; chaque appareil prend la nouvelle version à sa réouverture | voir ci-dessous ⚠️ |
 | 5b | **`zeste-suggest`** (idées IA réservées aux connectés) | APRÈS l'appli (l'ancienne n'envoie pas la session) | aucune | recopier l'ancienne version (`main` d'avant) |
@@ -57,6 +66,20 @@ invisibles dans l'ancienne version.
 
 **Restauration de la sauvegarde** : uniquement en cas de données abîmées. Elle remet l'état de l'étape 1 et
 **perd tout ce qui a été saisi depuis** (pas de restauration sans perte possible dans ce cas).
+
+## Ancien canal temps réel : ce que le correctif règle et ne règle pas
+
+- Réglé : l'appli en ligne ne diffuse plus rien et n'écoute plus rien ; plus aucun accès anonyme aux fonctions.
+- **Pas réglé côté serveur** : le service temps réel (commun à toutes les applis) accepte toujours les canaux
+  publics. Une **ancienne instance** de Zeste encore ouverte (appli iPhone restée en arrière-plan, onglet
+  d'ordinateur jamais rechargé) continue d'écouter `zeste-user-<uid>`, d'y diffuser l'état complet après
+  chaque enregistrement et d'appliquer ce qu'elle y reçoit. Le journal du service ne nomme pas les canaux :
+  impossible de savoir à distance s'il en reste une.
+- Fermeture : (1) immédiate — fermer complètement Zeste sur chaque appareil (balayer l'appli, recharger les onglets) ;
+  (2) côté serveur — la synchro v2 de la publication complète refuse les enregistrements des anciennes versions
+  dès la 1re écriture à jour (`v2_only`) : une ancienne instance ne peut alors plus rien diffuser de nouveau ni
+  enregistrer une donnée injectée. Couper les canaux publics pour tout le serveur (`private_only`) n'est PAS
+  envisagé : cela casserait les autres applis.
 
 ## Risques résiduels
 

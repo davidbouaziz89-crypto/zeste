@@ -3,7 +3,7 @@
 // Lancer : PGLITE_DIR=<dossier pglite> node --test tests/sync/serveur.test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { nouvelleBase, creerUtilisateur, rpc, comme, lireSql, DEJA_EN_PROD, A_APPLIQUER } from '../or/pg-local.mjs';
+import { nouvelleBase, creerUtilisateur, rpc, comme, lireSql, DEJA_EN_PROD, AVANT_CORRECTIF, A_APPLIQUER } from '../or/pg-local.mjs';
 
 const A = 'aaaaaaaa-1111-4111-8111-111111111111';
 const B = 'bbbbbbbb-2222-4222-8222-222222222222';
@@ -128,7 +128,7 @@ test('retour arrière de l\'onglet Or : accès coupé, données conservées, ré
 });
 
 test('correctif de sécurité SEUL sur la production actuelle : failles fermées, ancienne appli intacte, suite complète applicable ensuite', async () => {
-  const d4 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql']);
+  const d4 = await nouvelleBase([...AVANT_CORRECTIF, 'zeste-correctif-securite.sql']);
   await creerUtilisateur(d4, A, 'a@t'); await creerUtilisateur(d4, B, 'b@t');
   // ce que fait l'appli en ligne (main) : tout fonctionne pour le compte connecté
   await rpc(d4, 'zeste_save_mine', { p_data: etat('appli en ligne') }, asA);
@@ -148,20 +148,39 @@ test('correctif de sécurité SEUL sur la production actuelle : failles fermées
   assert.equal((await rpc(d4, 'zeste_load_mine_v2', {}, asA)).data.todos[0].txt, 'Tâche appli en ligne');
   assert.equal((await d4.query(`select count(*)::int n from zeste.reminders`)).rows[0].n, 1);
   // et le retour arrière remet exactement l'état d'avant (failles comprises)
-  const d5 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
+  const d5 = await nouvelleBase([...AVANT_CORRECTIF, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
   assert.equal((await d5.query(`select has_function_privilege('anon','public.zeste_save_sub(uuid,jsonb)','execute') ok`)).rows[0].ok, true);
 });
 
-test('retours arrière : remettent EXACTEMENT les définitions de production (empreintes du 02/11/2026)', async () => {
+test('(historique) retours vers l\'état d\'AVANT le correctif : définitions de production du 02/11 avant 20 h 10', async () => {
   const PROD = { zeste_save_mine: '4dae0c3f6776457ec931093b7dc0ffeb', zeste_save_sub: 'df91e862944daddb1d29fd86ec28c279',
                  zeste_sync_reminders: '86aee7b211a791f2601292800e6f570d' };
-  const d6 = await nouvelleBase([...DEJA_EN_PROD, ...A_APPLIQUER, 'zeste-or-retour.sql', 'zeste-securite-retour.sql', 'zeste-sync-v2-retour.sql']);
+  const d6 = await nouvelleBase([...AVANT_CORRECTIF, ...A_APPLIQUER, 'zeste-or-retour.sql', 'zeste-securite-retour.sql', 'zeste-sync-v2-retour.sql']);
   const r = await d6.query(`select p.proname, md5(pg_get_functiondef(p.oid)) h from pg_proc p
     where p.oid in ('public.zeste_save_sub(uuid,jsonb)'::regprocedure, 'public.zeste_sync_reminders(uuid,jsonb)'::regprocedure, 'public.zeste_save_mine(jsonb)'::regprocedure)`);
   for (const x of r.rows) assert.equal(x.h, PROD[x.proname], x.proname);
   // et le correctif seul + son retour également
-  const d7 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
+  const d7 = await nouvelleBase([...AVANT_CORRECTIF, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
   const r7 = await d7.query(`select p.proname, md5(pg_get_functiondef(p.oid)) h from pg_proc p
     where p.oid in ('public.zeste_save_sub(uuid,jsonb)'::regprocedure, 'public.zeste_sync_reminders(uuid,jsonb)'::regprocedure)`);
   for (const x of r7.rows) assert.equal(x.h, PROD[x.proname], x.proname);
+});
+
+test('retour arrière de la version complète : ramène EXACTEMENT à la production actuelle (correctif compris, failles fermées)', async () => {
+  // empreintes relevées en production après le correctif (02/11/2026, 20 h 13)
+  const PROD = { zeste_load: '3762658e0a099c062a937147e8337255', zeste_load_mine: 'cf53677b95a3b23ed95fffac834de162',
+    zeste_new_space: '1c2622b80da5269855bbfdb32057ff5a', zeste_save: '80d3ab076f930fe59963d4e56f956ac5',
+    zeste_save_mine: '4dae0c3f6776457ec931093b7dc0ffeb', zeste_save_sub: 'a9ad1482d1ae67c53db14cd3aeb1d96d',
+    zeste_save_sub_mine: '4c35c849413f22a1fdbd60415c5876b4', zeste_sync_reminders: '096bb726c0207f7f122027fe78b77ce3',
+    zeste_sync_reminders_mine: 'ddb40589315b3f38b6af2cb5fc3835d4', verif_remboursements: '27e0c28975c76606aff24c925d9e6aad' };
+  const empreintes = async (d) => Object.fromEntries((await d.query(`select p.proname, md5(pg_get_functiondef(p.oid)) h from pg_proc p
+    where ((p.pronamespace='public'::regnamespace and p.proname like 'zeste%') or p.pronamespace='zeste'::regnamespace)`)).rows.map(x=>[x.proname, x.h]));
+  // 1. la base locale « production actuelle » est bien identique à la vraie
+  assert.deepEqual(await empreintes(await nouvelleBase(DEJA_EN_PROD)), PROD);
+  // 2. version complète puis retours (Or → sécurité après correctif → synchro v2) : retour à l'identique
+  const d8 = await nouvelleBase([...DEJA_EN_PROD, ...A_APPLIQUER, 'zeste-or-retour.sql', 'zeste-securite-retour-apres-correctif.sql', 'zeste-sync-v2-retour.sql']);
+  const apres = await empreintes(d8);
+  for (const [f, h] of Object.entries(PROD)) assert.equal(apres[f], h, f);
+  assert.equal((await d8.query(`select count(*)::int n from pg_proc p where p.pronamespace='public'::regnamespace and p.proname like 'zeste%'
+    and has_function_privilege('anon', p.oid, 'execute')`)).rows[0].n, 0);   // failles toujours fermées après retour
 });
