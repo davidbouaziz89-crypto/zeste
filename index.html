@@ -1438,10 +1438,10 @@ function load(){
   };
 }
 function saveLocal(){ localStorage.setItem('zeste', JSON.stringify(S)); }
-let cloudTimer=null;
+let cloudTimer=null, lastEditAt=0;
 function save(){
   saveLocal();
-  if(cloud.on && !cloud.applying){ clearTimeout(cloudTimer); cloudTimer=setTimeout(cloudPush,400); }
+  if(cloud.on && !cloud.applying){ lastEditAt = Date.now(); clearTimeout(cloudTimer); cloudTimer=setTimeout(()=>{ cloudTimer=null; cloudPush(); },400); }
 }
 function id(){ return Math.random().toString(36).slice(2,9); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
@@ -2998,16 +2998,21 @@ async function onLogin(user){
 }
 function onLogout(){
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
+  clearInterval(pollT); pollT = null;
   cloud.on=false; cloud.id=null; cloud.email=null; updateShareUI();
 }
+/* CORRECTIF DE SÉCURITÉ : plus de canal temps réel. L'ancien canal « zeste-user-<uid> » était public :
+   quiconque connaissait l'identifiant du compte pouvait y lire tout l'état, ou y injecter un faux état
+   que l'appli appliquait. Les autres appareils relisent désormais le serveur (connexion obligatoire)
+   au retour sur l'appli et toutes les 30 s quand elle est ouverte, jamais pendant une modification. */
+let pollT = null;
 function subscribeChan(){
-  if(!cloud.sb || !cloud.id) return;
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
-  cloud.chan = cloud.sb.channel('zeste-user-'+cloud.id, { config:{ broadcast:{ self:false } } });
-  cloud.chan.on('broadcast', {event:'sync'}, ({payload})=>{
-    if(payload && payload.data){ applyRemote(payload.data); }
-  });
-  cloud.chan.subscribe();
+  clearInterval(pollT);
+  pollT = setInterval(()=>{
+    // pas de relecture si une modification vient d'être faite ou attend d'être envoyée (elle serait écrasée)
+    if(cloud.on && !document.hidden && !cloudTimer && Date.now()-lastEditAt > 5000) cloudPull();
+  }, 30000);
 }
 function applyRemote(data){
   if(!data || !(data.todos||data.shop||data.films)) return;
@@ -3032,7 +3037,6 @@ async function cloudPush(){
       if(/Remboursement refus/.test(error.message||'')){ toast('⚠️ '+error.message); cloudPull(); }
       return;
     }
-    if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:S}});
     syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
   }catch(e){ console.warn(e); }
 }
