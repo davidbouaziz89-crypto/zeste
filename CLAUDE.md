@@ -28,7 +28,8 @@ framework, pas de `npm install`. Les librairies sont chargées **depuis un CDN**
 | `icon-192.png`, `icon-512.png`, `favicon-32.png`, `apple-touch-icon.png` | icônes |
 | `GOOGLE-SETUP.md`, `PUSH-SETUP.md` | procédures d'installation |
 | `sql/zeste-sync-v2.sql`, `sql/zeste-securite.sql`, `sql/zeste-or.sql` (+ `*-retour.sql`) | synchro à numéro de version, fermeture des accès anon, onglet Or — ordre et procédure : `MISE-EN-LIGNE.md` |
-| `supabase/functions/zeste-or-cours/` | cours de l'or (GoldAPI, clé serveur `GOLDAPI_KEY`, quota protégé) |
+| `supabase/functions/zeste-or-cours/` | cours de l'or (GoldAPI ; clé dans le coffre Vault, secret `zeste_goldapi`, posée par `outils/ajouter-cle-goldapi.command` — aucun redémarrage ; quota protégé) |
+| `outils/sauvegarde-zeste.sh`, `outils/verifier-sauvegarde.mjs` | sauvegarde du schéma `zeste` (lecture seule) et vérification par rechargement |
 | `tests/` | bancs de tests (voir « Vérifier son travail ») |
 
 ## Backend
