@@ -126,3 +126,28 @@ test('retour arrière de l\'onglet Or : accès coupé, données conservées, ré
   await d3.exec(lireSql('zeste-or.sql'));
   assert.equal((await rpc(d3, 'zeste_or_lire', {}, asA)).lots.length, 1);
 });
+
+test('correctif de sécurité SEUL sur la production actuelle : failles fermées, ancienne appli intacte, suite complète applicable ensuite', async () => {
+  const d4 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql']);
+  await creerUtilisateur(d4, A, 'a@t'); await creerUtilisateur(d4, B, 'b@t');
+  // ce que fait l'appli en ligne (main) : tout fonctionne pour le compte connecté
+  await rpc(d4, 'zeste_save_mine', { p_data: etat('appli en ligne') }, asA);
+  assert.equal((await rpc(d4, 'zeste_load_mine', {}, asA)).todos[0].txt, 'Tâche appli en ligne');
+  await rpc(d4, 'zeste_sync_reminders', { p_household: A, p_items: [{ todo_id: 'r', due_ms: 5, txt: 'Dentiste' }] }, asA);
+  await rpc(d4, 'zeste_save_sub', { p_household: A, p_sub: { endpoint: 'https://push.apple/a' } }, asA);
+  // failles fermées
+  await refuse(rpc(d4, 'zeste_sync_reminders', { p_household: A, p_items: [] }, anon), /permission denied/);
+  await refuse(rpc(d4, 'zeste_save_sub', { p_household: A, p_sub: { endpoint: 'https://pirate' } }, anon), /permission denied/);
+  await refuse(rpc(d4, 'zeste_sync_reminders', { p_household: A, p_items: [] }, asB), /Accès refusé/);
+  await refuse(rpc(d4, 'zeste_save_sub', { p_household: A, p_sub: { endpoint: 'https://pirate' } }, asB), /Accès refusé/);
+  await refuse(rpc(d4, 'zeste_load', { p_id: 'cccccccc-3333-4333-8333-333333333333' }, anon), /permission denied/);
+  await refuse(rpc(d4, 'zeste_load_mine', {}, anon), /permission denied/);
+  assert.equal((await d4.query(`select count(*)::int n from zeste.reminders where household_id=$1`, [A])).rows[0].n, 1);
+  // puis la version consolidée par-dessus, sans accroc
+  for (const f of A_APPLIQUER) await d4.exec(lireSql(f));
+  assert.equal((await rpc(d4, 'zeste_load_mine_v2', {}, asA)).data.todos[0].txt, 'Tâche appli en ligne');
+  assert.equal((await d4.query(`select count(*)::int n from zeste.reminders`)).rows[0].n, 1);
+  // et le retour arrière remet exactement l'état d'avant (failles comprises)
+  const d5 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
+  assert.equal((await d5.query(`select has_function_privilege('anon','public.zeste_save_sub(uuid,jsonb)','execute') ok`)).rows[0].ok, true);
+});

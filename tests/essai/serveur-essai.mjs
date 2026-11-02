@@ -6,6 +6,7 @@
 // Aucune donnée réelle, aucune requête vers la production ni vers GoldAPI.
 //
 // Lancer : PGLITE_DIR=<dossier pglite> node --experimental-strip-types tests/essai/serveur-essai.mjs [port]
+// ZESTE_BASE=correctif : base « production actuelle + correctif seul », à utiliser avec /correctif.html.
 // Pilotage (GET) : /essai/decor (remise à zéro), /essai/panne?on=1|0 (fournisseur de cours en panne),
 //   /essai/vieillir (cours relevé il y a 3 h), /essai/perdre?n=1 (la réponse des n prochains enregistrements
 //   est perdue APRÈS l'écriture), /essai/coupure?on=1|0 (serveur injoignable), /essai/journal (diffusions temps réel, écritures)
@@ -13,7 +14,7 @@ import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { nouvelleBase, creerUtilisateur, rpc, RACINE } from '../or/pg-local.mjs';
+import { nouvelleBase, creerUtilisateur, rpc, RACINE, DEJA_EN_PROD } from '../or/pg-local.mjs';
 import { traiter, ajouterJours } from '../../supabase/functions/zeste-or-cours/index.ts';
 
 const PORT = Number(process.argv[2] || 8765);
@@ -22,7 +23,9 @@ const SOURCE_ESSAI = 'Banc d\'essai — cours FICTIF';
 let panne = false, coupure = false, aPerdre = 0;
 const journal = { diffusions: 0, ecritures: [] };
 
-const db = await nouvelleBase();
+// ZESTE_BASE=correctif : base « production actuelle + correctif de sécurité seul » (pour /correctif.html)
+const MODE = process.env.ZESTE_BASE || 'complet';
+const db = MODE === 'correctif' ? await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql']) : await nouvelleBase();
 await creerUtilisateur(db, U, 'essai@zeste.local');
 
 // --- faux GoldAPI : courbe régulière fictive, sans les week-ends ---
@@ -73,8 +76,11 @@ const ENV = { SUPABASE_URL: 'http://local', ANON_KEY: 'cle-anon', SERVICE_KEY: '
 
 // --- jeu d'essai (FICTIF) : listes du 30/10 + pièces d'or ---
 async function decor(){
+  await db.exec(`delete from zeste.user_data; delete from zeste.reminders; delete from zeste.push_subs;`);
+  if (MODE === 'correctif') { journal.diffusions = 0; journal.ecritures = [];
+    await rpc(db, 'zeste_save_mine', { p_data: JSON.parse(readFileSync(path.join(RACINE, 'tests/essai/fixture-fictive.json'), 'utf8')) }, { uid: U }); return; }
   await db.exec(`delete from zeste.or_lots; delete from zeste.or_cours_jour; delete from zeste.or_cours_actuel;
-    delete from zeste.or_cours_meta; delete from zeste.or_appels_api; delete from zeste.user_data; delete from zeste.reminders; delete from zeste.push_subs;`);
+    delete from zeste.or_cours_meta; delete from zeste.or_appels_api;`);
   const fixture = JSON.parse(readFileSync(path.join(RACINE, 'tests/essai/fixture-fictive.json'), 'utf8'));
   await rpc(db, 'zeste_save_mine', { p_data: fixture }, { uid: U });   // écrit comme aujourd'hui (avant la v2)
   const lots = [
@@ -98,6 +104,7 @@ const adapter = (html) => html
   .replace("const SB_URL = 'https://api.srv.proformationplus.fr';", "const SB_URL = '';");
 const pageApp = () => adapter(readFileSync(path.join(RACINE, 'index.html'), 'utf8'));
 const pageAncienne = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/main:index.html'], { encoding: 'utf8' }));
+const pageCorrectif = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/correctif-securite:index.html'], { encoding: 'utf8' }));
 const BOUCHON = `
 window.supabase = { createClient(){
   const U = { id: '${U}', email: 'essai@zeste.local' };
@@ -130,6 +137,7 @@ http.createServer(async (req, res) => {
   try {
     if (u.pathname === '/' || u.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageApp()); }
     if (u.pathname === '/ancienne.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageAncienne()); }
+    if (u.pathname === '/correctif.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageCorrectif()); }
     if (u.pathname === '/bouchon-supabase.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'] }); return res.end(BOUCHON); }
     if (u.pathname === '/sw.js') { res.writeHead(404); return res.end(); }       // pas de cache hors-ligne pendant l'essai
     if (u.pathname === '/essai/panne') { panne = u.searchParams.get('on') === '1'; return ok(res, { panne }); }
@@ -140,7 +148,7 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/essai/diffusion') { journal.diffusions++; await lireCorps(req); return ok(res, 'ok'); }
     if (u.pathname === '/essai/abonnement') { journal.abonnements = (journal.abonnements || 0) + 1; return ok(res, 'ok'); }
     if (u.pathname === '/essai/journal') {
-      const srv = (await db.query(`select rev, v2_only, data from zeste.user_data`)).rows[0];
+      const srv = (await db.query(`select (to_jsonb(u)->>'rev')::bigint rev, (to_jsonb(u)->>'v2_only')::boolean v2_only, data from zeste.user_data u`)).rows[0];
       return ok(res, { ...journal, rev: srv && Number(srv.rev), v2_only: srv && srv.v2_only, serveur: srv && srv.data });
     }
     if (u.pathname.startsWith('/rest/v1/rpc/') || u.pathname.startsWith('/functions/v1/')) {
