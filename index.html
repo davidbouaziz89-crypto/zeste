@@ -347,7 +347,7 @@
   .tab.active.t-film{background:linear-gradient(135deg,#ece2ff,#d6c4ff)}
   .tab.active.t-debt{background:linear-gradient(135deg,#ffe8c2,#ffd591)}
   .tab.active.t-move{background:linear-gradient(135deg,#d7e6ff,#b7ccf5)}
-  .tab.active.t-or{background:linear-gradient(135deg,#fff3c4,#f6d36b)}
+  .tab.active.t-or{background:linear-gradient(135deg,#fff3c4,#f6d36b);color:#3d2900}
 
   /* déménagement (cartons) */
   .add-carton{width:100%;margin:14px 0 6px;padding:15px;border-radius:16px;border:2.5px dashed var(--blue);
@@ -706,6 +706,9 @@
   :root[data-theme="dark"]{ --or-ink:#ffd66b; --gain:#4fe39a; --perte:#ff7b7f }
   @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){ --or-ink:#ffd66b; --gain:#4fe39a; --perte:#ff7b7f }}
   .or-gain{color:var(--gain)} .or-perte{color:var(--perte)}
+  body.tab-or .fab{display:none}  /* le bouton « Ajouter un achat » est dans la page : le + flottant masquerait la courbe */
+  body.tab-or .progress .ring{background:conic-gradient(#f5b800 0 100%)}
+  body.tab-or .progress .ring span{font-size:22px;z-index:1}
   .or-hero{margin-top:14px;border-radius:24px;padding:18px 18px 16px;position:relative;overflow:hidden;color:#fff;
     background:linear-gradient(150deg,#2b2440 0%,#3b2f5c 58%,#4a3a2a 100%);box-shadow:0 14px 30px rgba(43,36,64,.35)}
   .or-hero::before{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;
@@ -741,7 +744,7 @@
   .or-tip .t-x{font-size:13px;font-weight:800}
   .or-graph{position:relative;margin:4px -4px 0;touch-action:pan-y}
   .or-graph svg{display:block;width:100%;overflow:visible}
-  .or-graph .ax{font-size:10.5px;font-weight:700;fill:var(--muted)}
+  .or-graph .ax{font-size:10.5px;font-weight:700;fill:var(--muted);paint-order:stroke;stroke:var(--card);stroke-width:4px;stroke-linejoin:round}
   .or-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;font-weight:800;color:var(--muted);margin:6px 2px 0}
   .or-leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
   .or-leg .lv{background:var(--or2)} .or-leg .li{background:repeating-linear-gradient(90deg,var(--purple) 0 4px,transparent 4px 7px)}
@@ -769,9 +772,14 @@
   .or-lot .l-mid{flex:1;min-width:0}
   .or-lot .l-name{font-weight:800;font-size:15.5px;line-height:1.2;overflow-wrap:anywhere}
   .or-lot .l-sub{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:3px}
-  .or-lot .l-right{text-align:right;flex:none;max-width:46%}
+  .or-lot .l-q{display:inline-block;white-space:nowrap;font-size:12.5px;font-weight:800;color:var(--or-ink);
+    background:hsl(45 100% 92%);padding:1px 7px;border-radius:20px;vertical-align:1px}
+  :root[data-theme="dark"] .or-lot .l-q{background:hsl(45 50% 20%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .or-lot .l-q{background:hsl(45 50% 20%)}}
+  .or-lot .nw{white-space:nowrap}
+  .or-lot .l-right{text-align:right;flex:none;max-width:44%}
   .or-lot .l-val{font-weight:800;font-size:15px}
-  .or-lot .l-pl{font-size:12.5px;font-weight:800;margin-top:2px}
+  .or-lot .l-pl{font-size:12px;font-weight:800;margin-top:2px}
   .or-coin{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;
     color:#6b4500;letter-spacing:-.3px;position:relative;
     background:radial-gradient(circle at 32% 28%,#fff6cf 0%,#ffd760 28%,#e9a800 66%,#b87d00 100%);
@@ -840,6 +848,7 @@
   .or-d-sum div{background:var(--field);border:2px solid var(--line);border-radius:14px;padding:9px 10px;min-width:0}
   .or-d-sum small{display:block;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
   .or-d-sum b{display:block;font-size:16px;font-weight:800;margin-top:2px;overflow-wrap:anywhere}
+  .or-d-sum i{display:block;font-style:normal;font-size:12.5px;font-weight:800;margin-top:1px}
   .or-val3{margin-top:12px;border:2px solid var(--line);border-radius:16px;overflow:hidden}
   .or-val3>div{padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
   .or-val3>div+div{border-top:2px solid var(--line)}
@@ -3665,7 +3674,8 @@ function orAuth(){
   if(OR && OR.uid && !uid) orOublierCaches(); // déconnexion : rien ne reste sur l'appareil
   if(uid) orOublierCaches(uid);               // caches d'un autre compte éventuel
   OR = orEtatVide(uid); OR.pret = true;
-  if(uid){ orLireCache(); renderOr(); orCharger(); orCours(false); }
+  // le cours APRÈS les achats : l'historique est rattrapé jusqu'au premier achat
+  if(uid){ orLireCache(); renderOr(); orCharger().then(()=>orCours(false)); }
   else { orFermerTout(); renderOr(); }
   if(tab==='or') renderProgress();
 }
@@ -3720,9 +3730,12 @@ async function orCours(forcer){
     }catch(e2){ alertes = ['Hors connexion : dernier cours gardé sur cet appareil.']; }
   }
   if(!OR || OR.uid !== uid) return; // déconnecté entre-temps
+  const avant = OR.cours && OR.cours.premier_jour;
   if(res){ OR.cours = res; orEcrireCache(); }
   OR.alertes = alertes; OR.coursLe = Date.now(); OR.majCours = false;
   renderOr(); orRenderLotOuvert(); if(tab==='or') renderProgress();
+  // long historique : le serveur le rattrape par paquets (≈ 3 ans par appel) → on redemande tant que ça avance
+  if(res && depuis && res.premier_jour && res.premier_jour > depuis && res.premier_jour !== avant) setTimeout(()=>orCours(false), 400);
 }
 
 function orActuel(){ const a = OR.cours && OR.cours.actuel; return (a && +a.eur_g>0) ? a : null; }
@@ -3773,10 +3786,14 @@ function renderOr(){
     <div class="or-hero-val">${hasLots ? orEur(P.valeur) : orEur(0)}</div>
     ${hasLots && P.investi>0 ? `<div class="or-hero-pl ${plCls}">${P.latent==null?'—':orEur(P.latent,true)+' · '+orPct(P.latentPct)} <small>sur le capital investi</small></div>` : ''}
     <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span><span><b>${orG(P.poidsFin,2)} g</b> d'or fin</span></div>
-    ${(OR.alertes.length || (a && orCoursPerime())) ? `<div class="or-warn">⚠️ ${esc(OR.alertes[0] || 'Cours ancien : dernier cours connu affiché.')}</div>` : ''}
+    ${(OR.alertes.length || (a && orCoursPerime())) ? `<div class="or-warn">⚠️ ${esc(OR.alertes[0] || 'Cours ancien : dernier cours connu affiché.').replace(/ ([:;!?])/g,'\u00a0$1')}${a ? ' Cours du '+orDateHeure(a.cote_le)+'.' : ''}</div>` : ''}
     ${!a && !OR.majCours ? `<div class="or-warn">⚠️ Cours de l'or indisponible pour le moment : la valeur ne peut pas être calculée.</div>` : ''}
     ${OR.erreur ? `<div class="or-warn">⚠️ ${esc(OR.erreur)}${OR.depuisCache?' — données gardées sur l\'appareil.':''}</div>` : ''}
   </div>`;
+  // actions
+  const vendable = OR.lots.some(l=>orLotStats(l, OR.ventes, null).detenu>0);
+  h += `<div class="or-actions"><button class="or-btn add" id="orAdd">＋ Ajouter un achat</button>
+    <button class="or-btn sell" id="orSell" ${vendable?'':'disabled'}>💶 Enregistrer une vente</button></div>`;
   // graphique
   if(hasLots){
     const per = OR.per;
@@ -3794,10 +3811,6 @@ function renderOr(){
     ${P.nbVentes ? `<div class="or-tile"><small>Gains réalisés</small><b class="${orClasse(P.realise)}">${orEur(P.realise,true)}</b><span>${P.nbVentes} vente${P.nbVentes>1?'s':''}</span></div>
     <div class="or-tile"><small>Latent (détenu)</small><b class="${orClasse(P.latent)}">${orEur(P.latent,true)}</b><span>${orPct(P.latentPct)}</span></div>` : ''}
   </div>`;
-  // actions
-  const vendable = OR.lots.some(l=>orLotStats(l, OR.ventes, null).detenu>0);
-  h += `<div class="or-actions"><button class="or-btn add" id="orAdd">＋ Ajouter un achat</button>
-    <button class="or-btn sell" id="orSell" ${vendable?'':'disabled'}>💶 Enregistrer une vente</button></div>`;
   // liste des lots
   if(!hasLots){
     h += OR.chargement && !OR.charge ? `<div class="or-empty">Chargement…</div>`
@@ -3815,8 +3828,8 @@ function renderOr(){
         ? `<div class="l-val">Vendu</div><div class="l-pl ${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</div>`
         : `<div class="l-val">${orEur(s.valeur)}</div><div class="l-pl ${orClasse(s.latent)}">${s.latent==null?'—':orEur(s.latent,true)} · ${orPct(s.latentPct)}</div>`;
       return `<button class="or-lot${sold?' sold':''}" data-lot="${esc(String(l.id))}">${orCoin(l)}
-        <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} ×${s.vendu? s.detenu+'/'+s.Q : s.Q}</div>
-        <div class="l-sub">${frDate(l.date_achat)} · payé ${orEur(s.cout)}</div></div>
+        <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} <span class="l-q">×${s.vendu? s.detenu+'/'+s.Q : s.Q}</span></div>
+        <div class="l-sub">${frDate(l.date_achat)} · <span class="nw">payé ${orEur(s.cout)}</span></div></div>
         <div class="l-right">${right}</div></button>`;
     }).join('');
     h += `<button class="or-link" id="orOps">📜 Historique des opérations</button>`;
@@ -3935,8 +3948,8 @@ function orRenderLotOuvert(){
       <div><small>Pièces détenues</small><b>${s.detenu}${s.vendu?' / '+s.Q:''}</b></div>
       <div><small>Prix payé${s.vendu?' (détenu)':''}</small><b>${orEur(s.coutDetenu)}</b></div>
       <div><small>Valeur métal</small><b>${orEur(s.valeur)}</b></div>
-      <div><small>Plus-value latente</small><b class="${orClasse(s.latent)}">${s.detenu? orEur(s.latent,true)+' · '+orPct(s.latentPct) : '—'}</b></div>
-      ${s.vendu ? `<div><small>Gains réalisés</small><b class="${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</b></div>
+      <div><small>Plus-value latente</small><b class="${orClasse(s.latent)}">${s.detenu? orEur(s.latent,true) : '—'}</b>${s.detenu? `<i class="${orClasse(s.latent)}">${orPct(s.latentPct)}</i>` : ''}</div>
+      ${s.vendu ? `<div><small>Gains réalisés</small><b class="${orClasse(s.realise)}">${orEur(s.realise,true)}</b><i class="${orClasse(s.realise)}">${orPct(s.realisePct)}</i></div>
       <div><small>Coût total de l'achat</small><b>${orEur(s.cout)}</b></div>` : ''}
     </div>
     <div class="or-card" style="margin-top:12px;padding:12px">
@@ -4250,6 +4263,7 @@ function orProgress(T, D, ring, ringtxt){
   ['orQte','orPrix','orBrut','orTitre','orFin'].forEach(i=>$(i).addEventListener('input', orCalcAchat));
   ['orVQte','orVPrix','orVFrais','orVDate'].forEach(i=>$(i).addEventListener('input', orCalcVente));
   // entrée dans l'onglet : cours rafraîchi s'il date de plus de 15 min, courbe redessinée à la bonne largeur
+  document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click', ()=>document.body.classList.toggle('tab-or', tab==='or')));
   document.querySelector('.tab.t-or').addEventListener('click', ()=>{
     if(cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false);
     requestAnimationFrame(()=>{ if(tab==='or') renderOr(); });
