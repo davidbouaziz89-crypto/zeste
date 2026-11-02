@@ -10,17 +10,28 @@ drop function if exists public.zeste_save_sub_mine(jsonb);
 drop function if exists public.zeste_sync_reminders_mine(jsonb);
 drop function if exists public.zeste_rev_mine();
 
--- mêmes définitions que sql/zeste-push.sql
-create or replace function public.zeste_save_sub(p_household uuid, p_sub jsonb)
-returns void language plpgsql security definer set search_path = zeste, public as $$
+-- définitions EXACTES de la production, relevées le 02/11/2026 (pg_get_functiondef ;
+-- empreintes md5 vérifiées par tests/sync/serveur.test.mjs)
+CREATE OR REPLACE FUNCTION public.zeste_save_sub(p_household uuid, p_sub jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'zeste', 'public'
+AS $function$
 begin
   insert into zeste.push_subs(household_id, endpoint, sub)
   values (p_household, p_sub->>'endpoint', p_sub)
-  on conflict (endpoint) do update set household_id = excluded.household_id, sub = excluded.sub;
+  on conflict (endpoint) do update
+    set household_id = excluded.household_id, sub = excluded.sub;
 end;
-$$;
-create or replace function public.zeste_sync_reminders(p_household uuid, p_items jsonb)
-returns void language plpgsql security definer set search_path = zeste, public as $$
+$function$;
+
+CREATE OR REPLACE FUNCTION public.zeste_sync_reminders(p_household uuid, p_items jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'zeste', 'public'
+AS $function$
 declare ids text[];
 begin
   ids := coalesce((select array_agg(x->>'todo_id') from jsonb_array_elements(coalesce(p_items,'[]'::jsonb)) x), array[]::text[]);
@@ -33,7 +44,7 @@ begin
         pushed = case when zeste.reminders.due_ms = excluded.due_ms then zeste.reminders.pushed else false end,
         due_ms = excluded.due_ms;
 end;
-$$;
+$function$;
 
 -- droits constatés en production le 02/11/2026
 do $$
