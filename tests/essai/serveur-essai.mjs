@@ -1,27 +1,31 @@
-// Serveur d'ESSAI local de l'onglet Or (captures d'écran, essais à la main).
+// Serveur d'ESSAI local de Zeste (recette, captures d'écran, deux « appareils »).
 // - sert index.html en remplaçant supabase-js par un bouchon et l'adresse du serveur par le local ;
-// - base Postgres jetable en mémoire (vrai sql/zeste-or.sql) ;
-// - VRAIE edge function zeste-or-cours, branchée sur un FAUX GoldAPI (cours fictifs).
+// - base Postgres jetable en mémoire chargée avec TOUTE la chaîne sql/ (comme après la mise en ligne) ;
+// - VRAIE edge function zeste-or-cours, branchée sur un FAUX GoldAPI (cours FICTIFS, marqués comme tels) ;
+// - /ancienne.html = la version actuellement en ligne (origin/main), pour tester les anciens appareils.
 // Aucune donnée réelle, aucune requête vers la production ni vers GoldAPI.
 //
-// Lancer : PGLITE_DIR=<dossier pglite> node --experimental-strip-types tests/or/serveur-essai.mjs [port]
-// Pilotage : GET /essai/panne?on=1|0 (fournisseur en panne), /essai/vieillir (cours relevé il y a 3 h),
-//            /essai/vide (compte sans pièce), /essai/decor (jeu d'essai remis à zéro)
+// Lancer : PGLITE_DIR=<dossier pglite> node --experimental-strip-types tests/essai/serveur-essai.mjs [port]
+// Pilotage (GET) : /essai/decor (remise à zéro), /essai/panne?on=1|0 (fournisseur de cours en panne),
+//   /essai/vieillir (cours relevé il y a 3 h), /essai/perdre?n=1 (la réponse des n prochains enregistrements
+//   est perdue APRÈS l'écriture), /essai/coupure?on=1|0 (serveur injoignable), /essai/journal (diffusions temps réel, écritures)
 import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { nouvelleBase, creerUtilisateur, rpc, RACINE } from './pg-local.mjs';
+import { nouvelleBase, creerUtilisateur, rpc, RACINE } from '../or/pg-local.mjs';
 import { traiter, ajouterJours } from '../../supabase/functions/zeste-or-cours/index.ts';
 
 const PORT = Number(process.argv[2] || 8765);
 const U = '44444444-4444-4444-8444-444444444444';
 const SOURCE_ESSAI = 'Banc d\'essai — cours FICTIF';
-let panne = false;
+let panne = false, coupure = false, aPerdre = 0;
+const journal = { diffusions: 0, ecritures: [] };
 
 const db = await nouvelleBase();
 await creerUtilisateur(db, U, 'essai@zeste.local');
 
-// --- faux GoldAPI : courbe régulière fictive (€ par once), sans les week-ends ---
+// --- faux GoldAPI : courbe régulière fictive, sans les week-ends ---
 function prixFictifG(jour){
   const t = (Date.parse(jour + 'T00:00:00Z') - Date.parse('2023-01-01T00:00:00Z')) / 86400000;
   return 54 + t * 0.042 + 2.2 * Math.sin(t / 37) + 1.1 * Math.sin(t / 9.3);   // €/g
@@ -29,7 +33,7 @@ function prixFictifG(jour){
 function fauxGoldapi(u){
   if (panne) return new Response('panne simulée', { status: 503 });
   if (u.pathname === '/api/price/XAU/EUR') {
-    const j = new Date().toISOString().slice(0, 10), g = prixFictifG(j) + 0.37;
+    const g = prixFictifG(new Date().toISOString().slice(0, 10)) + 0.37;
     return new Response(JSON.stringify({ currency: 'EUR', price: g * 31.1034768, timestamp: Math.floor(Date.now() / 1000), price_per_unit: { gram: g } }));
   }
   if (u.pathname === '/api/history/XAU/EUR') {
@@ -43,8 +47,7 @@ function fauxGoldapi(u){
   return new Response('?', { status: 404 });
 }
 const uidDe = (auth) => { const m = /^Bearer jeton-([0-9a-f-]{36})$/.exec(auth || ''); return m ? m[1] : null; };
-// le cours enregistré par l'edge function est marqué FICTIF (pas de confusion possible sur les captures)
-const marquer = (nom, args) => {
+const marquer = (nom, args) => {   // le cours enregistré par l'edge function est marqué FICTIF
   if (nom === 'zeste_or_cours_maj' && args.p) {
     if (args.p.actuel) args.p.actuel.source = SOURCE_ESSAI;
     (args.p.jours || []).forEach(j => { j.source = SOURCE_ESSAI; });
@@ -54,7 +57,6 @@ const marquer = (nom, args) => {
 async function appelRpc(nom, args, auth){
   const uid = uidDe(auth);
   const qui = auth === 'Bearer cle-service' ? { role: 'service_role' } : uid ? { uid } : { role: 'anon' };
-  if (nom.startsWith('zeste_') && !nom.startsWith('zeste_or_')) return null; // synchro des autres onglets : sans objet ici
   return rpc(db, nom, marquer(nom, args), qui);
 }
 const fauxReseau = async (url, init = {}) => {
@@ -69,11 +71,14 @@ const fauxReseau = async (url, init = {}) => {
 };
 const ENV = { SUPABASE_URL: 'http://local', ANON_KEY: 'cle-anon', SERVICE_KEY: 'cle-service', GOLDAPI_KEY: 'cle-fictive' };
 
-// --- jeu d'essai (FICTIF) ---
+// --- jeu d'essai (FICTIF) : listes du 30/10 + pièces d'or ---
 async function decor(){
-  await db.exec(`delete from zeste.or_lots; delete from zeste.or_cours_jour; delete from zeste.or_cours_actuel; delete from zeste.or_cours_meta; delete from zeste.or_appels_api;`);
+  await db.exec(`delete from zeste.or_lots; delete from zeste.or_cours_jour; delete from zeste.or_cours_actuel;
+    delete from zeste.or_cours_meta; delete from zeste.or_appels_api; delete from zeste.user_data; delete from zeste.reminders; delete from zeste.push_subs;`);
+  const fixture = JSON.parse(readFileSync(path.join(RACINE, 'tests/essai/fixture-fictive.json'), 'utf8'));
+  await rpc(db, 'zeste_save_mine', { p_data: fixture }, { uid: U });   // écrit comme aujourd'hui (avant la v2)
   const lots = [
-    { type: 'napoleon20', quantite: 10, date_achat: '2023-03-14', prix_total: 3650, frais: 25, millesime: 1912, vendeur: 'Comptoir de Paris' },
+    { type: 'napoleon20', quantite: 10, date_achat: '2023-03-14', prix_total: 3650, frais: 25, millesime: 1912, vendeur: 'Comptoir fictif' },
     { type: 'louis_xvi', quantite: 1, date_achat: '2024-02-05', prix_total: 1150, commentaire: 'Belle patine' },
     { type: 'napoleon20', quantite: 5, date_achat: '2024-06-03', prix_total: 2225, frais: 18 },
     { type: 'souverain', quantite: 2, date_achat: '2025-01-20', prix_total: 1160 },
@@ -82,23 +87,25 @@ async function decor(){
   const faits = [];
   for (const p of lots) faits.push(await rpc(db, 'zeste_or_lot_enregistrer', { p }, { uid: U }));
   await rpc(db, 'zeste_or_vente_enregistrer', { p: { lot_id: faits[0].id, quantite: 3, date_vente: '2025-04-22', prix_total: 1680, frais: 15 } }, { uid: U });
+  journal.diffusions = 0; journal.ecritures = [];
 }
 await decor();
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
-function pageApp(){
-  return readFileSync(path.join(RACINE, 'index.html'), 'utf8')
-    .replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js[^"]*"><\/script>/, '<script src="/bouchon-supabase.js"></script>')
-    .replace(/<script src="https:\/\/accounts\.google\.com\/gsi\/client"[^>]*><\/script>/, '')
-    .replace("const SB_URL = 'https://api.srv.proformationplus.fr';", "const SB_URL = '';");
-}
+const adapter = (html) => html
+  .replace(/<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js[^"]*"><\/script>/, '<script src="/bouchon-supabase.js"></script>')
+  .replace(/<script src="https:\/\/accounts\.google\.com\/gsi\/client"[^>]*><\/script>/, '')
+  .replace("const SB_URL = 'https://api.srv.proformationplus.fr';", "const SB_URL = '';");
+const pageApp = () => adapter(readFileSync(path.join(RACINE, 'index.html'), 'utf8'));
+const pageAncienne = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/main:index.html'], { encoding: 'utf8' }));
 const BOUCHON = `
 window.supabase = { createClient(){
   const U = { id: '${U}', email: 'essai@zeste.local' };
   const session = { access_token: 'jeton-' + U.id, user: U };
   const co = () => localStorage.getItem('bouchon_deconnecte') !== '1';
   const ec = [];
-  const ch = { on(){ return ch; }, subscribe(){ return ch; }, send(){} };
+  const ch = { on(){ return ch; }, subscribe(){ fetch('/essai/abonnement', {method:'POST'}); return ch; },
+               send(m){ fetch('/essai/diffusion', { method:'POST', body: JSON.stringify(m) }); } };
   return {
     auth: {
       onAuthStateChange(cb){ ec.push(cb); setTimeout(()=>cb(co()?'INITIAL_SESSION':'SIGNED_OUT', co()?session:null), 0); return { data:{ subscription:{ unsubscribe(){} } } }; },
@@ -117,21 +124,41 @@ window.supabase = { createClient(){
 } };`;
 
 const lireCorps = (req) => new Promise(r => { let b = ''; req.on('data', c => b += c); req.on('end', () => r(b)); });
+const ok = (res, txt) => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(typeof txt === 'string' ? txt : JSON.stringify(txt)); };
 http.createServer(async (req, res) => {
   const u = new URL(req.url, 'http://local');
   try {
     if (u.pathname === '/' || u.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageApp()); }
+    if (u.pathname === '/ancienne.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageAncienne()); }
     if (u.pathname === '/bouchon-supabase.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'] }); return res.end(BOUCHON); }
-    if (u.pathname === '/sw.js') { res.writeHead(404); return res.end(); } // pas de cache hors-ligne pendant l'essai
-    if (u.pathname === '/essai/panne') { panne = u.searchParams.get('on') === '1'; res.writeHead(200); return res.end('panne=' + panne); }
-    if (u.pathname === '/essai/vide') { await db.exec('delete from zeste.or_lots'); res.writeHead(200); return res.end('vide'); }
-    if (u.pathname === '/essai/decor') { await decor(); res.writeHead(200); return res.end('decor'); }
-    if (u.pathname === '/essai/vieillir') { await db.exec(`update zeste.or_cours_actuel set releve_le = releve_le - interval '3 hours', cote_le = cote_le - interval '3 hours'`); res.writeHead(200); return res.end('vieilli'); }
+    if (u.pathname === '/sw.js') { res.writeHead(404); return res.end(); }       // pas de cache hors-ligne pendant l'essai
+    if (u.pathname === '/essai/panne') { panne = u.searchParams.get('on') === '1'; return ok(res, { panne }); }
+    if (u.pathname === '/essai/coupure') { coupure = u.searchParams.get('on') === '1'; return ok(res, { coupure }); }
+    if (u.pathname === '/essai/perdre') { aPerdre = Number(u.searchParams.get('n') || 1); return ok(res, { aPerdre }); }
+    if (u.pathname === '/essai/vieillir') { await db.exec(`update zeste.or_cours_actuel set releve_le = releve_le - interval '3 hours', cote_le = cote_le - interval '3 hours'`); return ok(res, 'vieilli'); }
+    if (u.pathname === '/essai/decor') { await decor(); return ok(res, 'decor'); }
+    if (u.pathname === '/essai/diffusion') { journal.diffusions++; await lireCorps(req); return ok(res, 'ok'); }
+    if (u.pathname === '/essai/abonnement') { journal.abonnements = (journal.abonnements || 0) + 1; return ok(res, 'ok'); }
+    if (u.pathname === '/essai/journal') {
+      const srv = (await db.query(`select rev, v2_only, data from zeste.user_data`)).rows[0];
+      return ok(res, { ...journal, rev: srv && Number(srv.rev), v2_only: srv && srv.v2_only, serveur: srv && srv.data });
+    }
+    if (u.pathname.startsWith('/rest/v1/rpc/') || u.pathname.startsWith('/functions/v1/')) {
+      if (coupure) { req.socket.destroy(); return; }                              // serveur injoignable
+    }
     if (u.pathname.startsWith('/rest/v1/rpc/')) {
-      const corps = await lireCorps(req);
-      try { const r = await appelRpc(u.pathname.split('/').pop(), JSON.parse(corps || '{}'), req.headers.authorization);
-        res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(r == null ? '' : JSON.stringify(r)); }
-      catch (e) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ message: e.message })); }
+      const nom = u.pathname.split('/').pop(), corps = await lireCorps(req);
+      try {
+        const r = await appelRpc(nom, JSON.parse(corps || '{}'), req.headers.authorization);
+        if (/^zeste_save_mine/.test(nom)) {
+          journal.ecritures.push({ nom, rev: r });
+          if (aPerdre > 0) { aPerdre--; req.socket.destroy(); return; }            // écrit, mais la réponse se perd
+        }
+        return ok(res, r == null ? '' : JSON.stringify(r));
+      } catch (e) {
+        if (/^zeste_save_mine/.test(nom)) journal.ecritures.push({ nom, refus: e.message });
+        res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ message: e.message }));
+      }
     }
     if (u.pathname === '/functions/v1/zeste-or-cours') {
       const corps = await lireCorps(req);
@@ -144,4 +171,4 @@ http.createServer(async (req, res) => {
     }
     res.writeHead(404); res.end();
   } catch (e) { console.error(e); res.writeHead(500); res.end(String(e.message)); }
-}).listen(PORT, '127.0.0.1', () => console.log('Zeste Or — essai sur http://127.0.0.1:' + PORT));
+}).listen(PORT, '127.0.0.1', () => console.log('Zeste — essai sur http://127.0.0.1:' + PORT));
