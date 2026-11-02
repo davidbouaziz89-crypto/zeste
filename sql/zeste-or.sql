@@ -436,6 +436,9 @@ returns jsonb language sql stable security definer set search_path = zeste, publ
     'appels_mois', (select count(*) from zeste.or_appels_api
                     where fournisseur = p_fournisseur
                       and le >= date_trunc('month', now() at time zone 'UTC') at time zone 'UTC'),
+    'appels_jour', (select count(*) from zeste.or_appels_api
+                    where fournisseur = p_fournisseur
+                      and le >= date_trunc('day', now() at time zone 'Europe/Paris') at time zone 'Europe/Paris'),
     'dernier_echec', (select max(le) from zeste.or_appels_api where fournisseur = p_fournisseur and not ok),
     'meta', coalesce((select jsonb_object_agg(cle, valeur) from zeste.or_cours_meta), '{}'::jsonb)
   )

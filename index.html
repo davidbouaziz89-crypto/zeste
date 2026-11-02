@@ -888,6 +888,7 @@
   .or-lock p{color:var(--muted);font-weight:600;font-size:14px;line-height:1.45;margin:0 0 14px}
 
   .or-hero-sub .or-hero-real{flex-basis:100%}
+  .or-hero-val .or-indispo{font-size:24px;letter-spacing:-.2px}
   /* onglet Or simplifié */
   .or-hero-note{margin-top:10px;font-size:12px;font-weight:700;opacity:.82;line-height:1.4}
   .or-add-seul{display:block;width:100%;margin-top:14px}
@@ -4489,7 +4490,7 @@ function orPremierAchat(){ return (OR.lots||[]).reduce((m,l)=> (!m || l.date_ach
 async function orCours(forcer){
   if(!cloud.on || !cloud.sb || OR.majCours) return;
   OR.majCours = true; orMajBoutonCours();
-  const depuis = orPremierAchat(), uid = OR.uid;
+  const uid = OR.uid;
   let res = null, alertes = [];
   try{
     const sess = await cloud.sb.auth.getSession();
@@ -4497,25 +4498,23 @@ async function orCours(forcer){
     if(!jeton) throw new Error('session');
     const r = await fetch(SB_URL+'/functions/v1/zeste-or-cours', { method:'POST',
       headers:{'Content-Type':'application/json', apikey:SB_KEY, Authorization:'Bearer '+jeton},
-      body: JSON.stringify({ depuis, forcer: !!forcer }) });
+      body: JSON.stringify({ forcer: !!forcer }) });
     const j = await r.json().catch(()=>null);
     if(!r.ok || !j || !('actuel' in j)) throw new Error((j && j.erreur) || ('HTTP '+r.status));
     res = j; alertes = j.alertes || [];
   }catch(e){
     console.warn('or cours', e);
     try{
-      const {data, error} = await cloud.sb.rpc('zeste_or_cours_lire', { p_depuis: depuis });
+      const {data, error} = await cloud.sb.rpc('zeste_or_cours_lire', { p_depuis: todayISO() });
       if(error) throw error;
       res = data; alertes = ['Service du cours injoignable : dernier cours enregistré sur le serveur.'];
     }catch(e2){ alertes = ['Hors connexion : dernier cours gardé sur cet appareil.']; }
   }
   if(!OR || OR.uid !== uid) return; // déconnecté entre-temps
-  const avant = OR.cours && OR.cours.premier_jour;
   if(res){ OR.cours = res; orEcrireCache(); }
   OR.alertes = alertes; OR.coursLe = Date.now(); OR.majCours = false;
   renderOr(); orRenderLotOuvert(); if(tab==='or') renderProgress();
-  // long historique : le serveur le rattrape par paquets (≈ 3 ans par appel) → on redemande tant que ça avance
-  if(res && depuis && res.premier_jour && res.premier_jour > depuis && res.premier_jour !== avant) setTimeout(()=>orCours(false), 400);
+
 }
 
 function orActuel(){ const a = OR.cours && OR.cours.actuel; return (a && +a.eur_g>0) ? a : null; }
@@ -4563,7 +4562,7 @@ function renderOr(){
   // récapitulatif simple : valeur estimée, gain ou perte, total investi (le détail technique n'est plus affiché)
   let h = `<div class="or-hero"><div class="or-hero-top"><span class="or-hero-lab">🪙 Valeur estimée de mes pièces</span>
       <button class="or-refresh${OR.majCours?' spin':''}" id="orRefresh" aria-label="Actualiser le cours"><span>⟳</span></button></div>
-    <div class="or-hero-val">${hasLots ? orEur(P.valeur) : orEur(0)}</div>
+    <div class="or-hero-val">${!hasLots ? orEur(0) : P.valeur==null ? '<span class="or-indispo">Cours indisponible</span>' : orEur(P.valeur)}</div>
     ${hasLots && P.investi>0 && P.latent!=null ? `<div class="or-hero-pl ${plCls}">${orEur(P.latent,true)} · ${orPct(P.latentPct)}</div>` : ''}
     <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span>${P.nbVentes ? `<span class="or-hero-real">Gains réalisés sur ventes : <b>${orEur(P.realise,true)}</b></span>` : ''}</div>
     <div class="or-hero-note">${orNoteEstimation()}</div>
@@ -4585,7 +4584,8 @@ function renderOr(){
       const sold = s.detenu===0;
       const right = sold
         ? `<div class="l-val">Vendu</div><div class="l-pl ${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</div>`
-        : `<div class="l-val">${orEur(s.valeur)}</div><div class="l-pl ${orClasse(s.latent)}">${s.latent==null?'—':orEur(s.latent,true)} · ${orPct(s.latentPct)}</div>`;
+        : s.valeur==null ? `<div class="l-val">—</div>`   // pas de cours réel : rien d'estimé, rien d'inventé
+        : `<div class="l-val">${orEur(s.valeur)}</div><div class="l-pl ${orClasse(s.latent)}">${orEur(s.latent,true)} · ${orPct(s.latentPct)}</div>`;
       // quantité détenue et prix payé pour ces pièces : la valeur et le gain de la carte se comparent directement
       return `<button class="or-lot${sold?' sold':''}" data-lot="${esc(String(l.id))}">${orCoin(l)}
         <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} <span class="l-q">×${sold ? s.Q : s.detenu}</span></div>
@@ -4603,7 +4603,9 @@ function orNoteEstimation(){
   if(!a) return OR.majCours ? 'Recherche du cours de l\'or…' : '⚠️ Cours de l\'or indisponible pour le moment : valeur non estimée.';
   const src = esc(String(a.source||'').replace(/ — cours spot XAU\/EUR$/, ''));
   const vieux = OR.alertes.length > 0 || orCoursPerime();
-  return `${vieux ? '⚠️ Dernier cours connu, du ' : 'Estimation d\'après le cours de l\'or du '}${orDateHeure(a.cote_le)} (${src}). Ce n'est pas un prix de revente garanti.`;
+  const min = Math.max(0, Math.round((Date.now() - Date.parse(a.cote_le)) / 60000));
+  const age = min < 60 ? `il y a ${min} min` : min < 2880 ? `il y a ${Math.round(min/60)} h` : `il y a ${Math.round(min/1440)} jours`;
+  return `${vieux ? '⚠️ Dernier cours connu, du ' : 'Estimation d\'après le cours de l\'or du '}${orDateHeure(a.cote_le)} (${age}, ${src}). Ce n'est pas un prix de revente garanti.`;
 }
 function orMajBoutonCours(){ const b = document.getElementById('orRefresh'); if(b) b.classList.toggle('spin', !!OR.majCours); }
 

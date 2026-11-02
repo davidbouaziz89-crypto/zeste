@@ -24,8 +24,9 @@ const FOURNISSEUR = "goldapi";
 const SOURCE = "GoldAPI.io — cours spot XAU/EUR";
 const API = "https://www.goldapi.io/api";
 export const BUDGET_MOIS = 280;            // quota gratuit 300 → marge de 20
-const TTL_ACTUEL_MS = 2 * 3600_000;        // cours actuel : 1 appel / 2 h au plus
-const TTL_FORCE_MS = 15 * 60_000;          // « Actualiser » : 1 appel / 15 min au plus
+const TTL_ACTUEL_MS = 3 * 3600_000;        // cours actuel : redemandé au plus toutes les 3 h (cache serveur partagé)
+const TTL_FORCE_MS = 3600_000;             // bouton « Actualiser » : au plus 1 appel par heure
+export const MAX_APPELS_JOUR = 9;          // 280 / 31 jours : le quota mensuel ne peut pas être épuisé avant la fin du mois
 const PAUSE_ECHEC_MS = 10 * 60_000;        // après un échec, pause de 10 min
 const TRANCHE_J = 90;                      // limite du fournisseur par requête
 const MAX_TRANCHES_PASSE = 12;             // ≈ 3 ans de rattrapage par appel
@@ -67,6 +68,8 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
 
   const corps = await req.json().catch(() => ({}));
   const forcer = corps?.forcer === true;
+  // historique quotidien : seulement sur demande explicite (l'onglet Or n'a plus de graphique → aucune requête inutile)
+  const avecHistorique = corps?.historique === true;
   const aujourdhui = jourParis(maintenant);
   let depuis = estJour(corps?.depuis) ? String(corps.depuis) : null;
   if (depuis && depuis > aujourdhui) depuis = aujourdhui;
@@ -95,18 +98,24 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
     }
     const etat = await rpc("zeste_or_cours_etat", { p_fournisseur: FOURNISSEUR });
     const cle: string | undefined = env.GOLDAPI_KEY || (await rpc("zeste_or_cle_fournisseur", {}).catch(() => null)) || undefined;
-    let appels = Number(etat?.appels_mois) || 0;
+    let appels = Number(etat?.appels_mois) || 0, appelsJour = Number(etat?.appels_jour) || 0;
     const meta = (etat?.meta || {}) as Record<string, string>;
     const echecRecent = etat?.dernier_echec && maintenant - Date.parse(etat.dernier_echec) < PAUSE_ECHEC_MS;
-    const peutAppeler = () => !!cle && appels < BUDGET_MOIS && !echecRecent;
+    const peutAppeler = () => !!cle && appels < BUDGET_MOIS && appelsJour < MAX_APPELS_JOUR && !echecRecent;
     if (!cle) alertes.push("Clé du fournisseur de cours non configurée sur le serveur.");
     else if (appels >= BUDGET_MOIS) alertes.push("Quota gratuit du mois atteint : dernier cours connu affiché.");
+    else if (appelsJour >= MAX_APPELS_JOUR) alertes.push("Limite d'actualisations du jour atteinte : dernier cours connu affiché.");
     else if (echecRecent) alertes.push("Fournisseur de cours indisponible il y a peu : dernier cours connu affiché.");
 
     const appelGoldApi = async (chemin: string) => {
-      appels++;
+      appels++; appelsJour++;
       const r = await f(`${API}${chemin}`, { headers: { "x-access-token": cle!, Accept: "application/json" } });
-      if (!r.ok) throw new Error(`GoldAPI HTTP ${r.status}`);
+      if (!r.ok) {
+        // message du fournisseur (sans la clé) : distingue clé refusée et quota épuisé
+        const m = (await r.text().catch(() => "")).replace(/[^\p{L}\p{N} .,:'()-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 120);
+        const quota = /quota|limit/i.test(m) || r.status === 429;
+        throw new Error(`GoldAPI HTTP ${r.status}${quota ? " (quota)" : r.status === 401 || r.status === 403 ? " (clé refusée)" : ""}${m ? " : " + m : ""}`);
+      }
       return await r.json();
     };
 
@@ -120,8 +129,10 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
         const coteLe = Number(j.timestamp) > 0 ? new Date(Number(j.timestamp) * 1000).toISOString() : new Date(maintenant).toISOString();
         await journal({ nature: "actuel", ok: true, actuel: { eur_g: parGramme, source: SOURCE, cote_le: coteLe } });
       } catch (e) {
-        await journal({ nature: "actuel", ok: false, detail: String((e as Error).message) }).catch(() => {});
-        alertes.push("Cours actuel indisponible : dernier cours connu affiché.");
+        const msg = String((e as Error).message);
+        await journal({ nature: "actuel", ok: false, detail: msg }).catch(() => {});
+        const raison = /\(quota\)/.test(msg) ? "quota GoldAPI épuisé" : /clé refusée/.test(msg) ? "clé GoldAPI refusée" : "fournisseur indisponible";
+        alertes.push(etat?.actuel ? `Cours non actualisé (${raison}) : dernier cours connu affiché.` : `Cours indisponible (${raison}).`);
       }
     }
 
@@ -136,8 +147,8 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       return jours.reduce((m: string | null, x: { jour: string }) => (!m || x.jour < m ? x.jour : m), null);
     };
     try {
-      // 3a. vers aujourd'hui : au plus une fois par jour
-      if (meta.histo_verifie_le !== aujourdhui && peutAppeler()) {
+      // 3a. vers aujourd'hui : au plus une fois par jour, et seulement si l'historique est demandé
+      if (avecHistorique && meta.histo_verifie_le !== aujourdhui && peutAppeler()) {
         let de = etat?.dernier_jour ? String(etat.dernier_jour) : ajouterJours(aujourdhui, -(TRANCHE_J - 1));
         while (de <= aujourdhui && peutAppeler()) {
           const a = [ajouterJours(de, TRANCHE_J - 1), aujourdhui].sort()[0];
@@ -150,7 +161,7 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       const etat2 = await rpc("zeste_or_cours_etat", { p_fournisseur: FOURNISSEUR });
       const premier = etat2?.premier_jour ? String(etat2.premier_jour) : null;
       const videAvant = meta.histo_vide_avant || "0000-00-00";
-      if (depuis && premier && depuis < premier) {
+      if (avecHistorique && depuis && premier && depuis < premier) {
         let a = ajouterJours(premier, -1), n = 0, connu = premier;
         while (a >= depuis && a > videAvant && n < MAX_TRANCHES_PASSE && peutAppeler()) {
           const de = [ajouterJours(a, -(TRANCHE_J - 1)), depuis].sort().reverse()[0];

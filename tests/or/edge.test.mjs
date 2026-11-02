@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { nouvelleBase, creerUtilisateur, rpc } from './pg-local.mjs';
-import { traiter, BUDGET_MOIS, jourParis, ajouterJours } from '../../supabase/functions/zeste-or-cours/index.ts';
+import { traiter, BUDGET_MOIS, MAX_APPELS_JOUR, jourParis, ajouterJours } from '../../supabase/functions/zeste-or-cours/index.ts';
 
 const U = '33333333-3333-4333-8333-333333333333';
 const ENV = { SUPABASE_URL: 'http://kong', ANON_KEY: 'cle-anon', SERVICE_KEY: 'cle-service', GOLDAPI_KEY: 'cle-goldapi' };
@@ -60,9 +60,9 @@ test('refuse sans connexion (protège le quota)', async () => {
   assert.equal(appels.length, 0);
 });
 
-test('premier appel : cours actuel + historique rattrapé depuis le premier achat', async () => {
+test('historique sur demande explicite : rattrapé depuis la date demandée ; cache 3 h ; « Actualiser » au plus 1 fois par heure', async () => {
   const { f, appels } = reseau(db, goldapiNormal);
-  const r = await traiter(requete({ depuis: '2025-06-01' }), ENV, f, MAINTENANT);
+  const r = await traiter(requete({ depuis: '2025-06-01', historique: true }), ENV, f, MAINTENANT);
   assert.equal(r.status, 200);
   const j = await r.json();
   assert.equal(Number(j.actuel.eur_g), 100.0012);
@@ -74,26 +74,34 @@ test('premier appel : cours actuel + historique rattrapé depuis le premier acha
   assert.ok(appels.length <= 1 + 1 + 5, 'trop d\'appels : ' + appels.length);
   // deuxième ouverture juste après : aucun appel au fournisseur
   const n = appels.length;
-  await traiter(requete({ depuis: '2025-06-01' }), ENV, f, MAINTENANT + 60_000);
+  await traiter(requete({ depuis: '2025-06-01', historique: true }), ENV, f, MAINTENANT + 60_000);
   assert.equal(appels.length, n);
-  // « Actualiser » avant 15 min : rien ; après 15 min : un seul appel (cours actuel)
-  await traiter(requete({ forcer: true }), ENV, f, MAINTENANT + 10 * 60_000);
+  // « Actualiser » avant 1 h : rien ; après 1 h : un seul appel (cours actuel)
+  await traiter(requete({ forcer: true }), ENV, f, MAINTENANT + 50 * 60_000);
   assert.equal(appels.length, n);
-  await traiter(requete({ forcer: true }), ENV, f, MAINTENANT + 20 * 60_000);
+  await traiter(requete({ forcer: true }), ENV, f, MAINTENANT + 70 * 60_000);
   assert.equal(appels.length, n + 1);
   assert.equal(appels.at(-1), '/api/price/XAU/EUR');
 });
 
 test('historique absent chez le fournisseur : mémorisé, plus jamais redemandé', async () => {
-  const { f, appels } = reseau(db, goldapiNormal);
-  await traiter(requete({ depuis: '2020-01-01' }), ENV, f, MAINTENANT);
+  // le faux fournisseur n'a de données que depuis 150 jours (le plafond de 9 requêtes/jour suffit pour l'atteindre)
+  const debutDonnees = ajouterJours(jourParis(MAINTENANT), -150);
+  const court = (u) => {
+    if (u.pathname !== '/api/history/XAU/EUR') return goldapiNormal(u);
+    const de = u.searchParams.get('from'), a = u.searchParams.get('to'), prices = [];
+    for (let j = de; j <= a; j = ajouterJours(j, 1)) if (j >= debutDonnees) prices.push({ date: j, price: 31.1034768 * 90 });
+    return OK({ metal: 'XAU', currency: 'EUR', from: de, to: a, prices });
+  };
+  const { f, appels } = reseau(db, court);
+  await traiter(requete({ depuis: '2020-01-01', historique: true }), ENV, f, MAINTENANT);
   const etat = await rpc(db, 'zeste_or_cours_etat', { p_fournisseur: 'goldapi' }, { role: 'service_role' });
-  assert.equal(etat.premier_jour, '2024-01-01');
-  assert.ok(etat.meta.histo_vide_avant < '2024-01-01');
+  assert.equal(etat.premier_jour, debutDonnees);
+  assert.ok(etat.meta.histo_vide_avant < debutDonnees);
   const n = appels.length;
-  await vieillir(3);
-  await traiter(requete({ depuis: '2020-01-01' }), ENV, f, MAINTENANT);
-  assert.deepEqual([...appels.slice(n)], ['/api/price/XAU/EUR']); // seulement le cours actuel (TTL 2 h dépassé)
+  await vieillir(4);
+  await traiter(requete({ depuis: '2020-01-01', historique: true }), ENV, f, MAINTENANT);
+  assert.deepEqual([...appels.slice(n)], ['/api/price/XAU/EUR']); // seulement le cours actuel (cache de 3 h dépassé)
 });
 
 test('panne du fournisseur : dernier cours connu + alerte, puis pause de 10 min', async () => {
@@ -101,7 +109,7 @@ test('panne du fournisseur : dernier cours connu + alerte, puis pause de 10 min'
   const { f, appels } = reseau(db, u => panne ? new Response('erreur', { status: 500 }) : goldapiNormal(u));
   await traiter(requete({}), ENV, f, MAINTENANT);
   panne = true;
-  await vieillir(3);
+  await vieillir(4);
   const r = await traiter(requete({ forcer: true }), ENV, f, MAINTENANT);
   assert.equal(r.status, 200);
   const j = await r.json();
@@ -148,7 +156,7 @@ test('appels simultanés (plusieurs appareils) : un seul appel au fournisseur', 
   const j = await Promise.all(rs.map(r => r.json()));
   assert.ok(j.every(x => Number(x.actuel.eur_g) === 100.0012));     // tous reçoivent le cours enregistré
   // verrou rendu : un appel suivant (cours périmé) peut actualiser
-  await vieillir(3);
+  await vieillir(4);
   await traiter(requete({}), ENV, f, MAINTENANT);
   assert.equal(appels.filter(a => a === '/api/price/XAU/EUR').length, 2);
 });
@@ -165,4 +173,47 @@ test('clé lue dans le coffre-fort (Vault) quand la variable d\'environnement es
   // la clé n'est lisible ni par un compte connecté ni sans connexion
   await assert.rejects(rpc(db, 'zeste_or_cle_fournisseur', {}, { uid: U }), /permission denied/);
   await assert.rejects(rpc(db, 'zeste_or_cle_fournisseur', {}, { role: 'anon' }), /permission denied/);
+});
+
+
+test('sans demande d\'historique (onglet Or simplifié) : une seule requête, le cours actuel', async () => {
+  const { f, appels } = reseau(db, goldapiNormal);
+  const j = await (await traiter(requete({ depuis: '2020-01-01' }), ENV, f, MAINTENANT)).json();
+  assert.deepEqual([...appels], ['/api/price/XAU/EUR']);
+  assert.equal(Number(j.actuel.eur_g), 100.0012);
+  assert.deepEqual([...j.historique], []);
+});
+
+test('plafond journalier : jamais plus de ' + MAX_APPELS_JOUR + ' requêtes par jour (le quota mensuel tient jusqu\'au bout)', async () => {
+  for (let i = 0; i < MAX_APPELS_JOUR; i++) {
+    await db.query(`insert into zeste.or_appels_api (le, fournisseur, nature, ok) values (now(), 'goldapi', 'actuel', true)`);
+  }
+  const { f, appels } = reseau(db, goldapiNormal);
+  const j = await (await traiter(requete({ forcer: true }), ENV, f, MAINTENANT)).json();
+  assert.equal(appels.length, 0);
+  assert.ok(j.alertes.some(a => /Limite d'actualisations du jour/.test(a)));
+});
+
+test('clé refusée par GoldAPI (invalide) : aucun cours inventé, alerte, la clé n\'apparaît nulle part', async () => {
+  const CLE = 'cle-goldapi';
+  const { f } = reseau(db, () => new Response('{"error":"Invalid API Key"}', { status: 403 }));
+  const r = await traiter(requete({}), ENV, f, MAINTENANT);
+  const texte = await r.text(), j = JSON.parse(texte);
+  assert.equal(j.actuel, null);                                       // « Cours indisponible » côté écran
+  assert.ok(j.alertes.length > 0);
+  assert.ok(!texte.includes(CLE));                                    // ni dans la réponse au navigateur…
+  const journal = (await db.query(`select string_agg(coalesce(detail,''), ' ') t from zeste.or_appels_api`)).rows[0].t || '';
+  assert.ok(!journal.includes(CLE));                                  // …ni dans le journal en base
+  assert.match(journal, /403 \(clé refusée\)/);
+  assert.ok(j.alertes.some(x => /Cours indisponible \(clé GoldAPI refusée\)/.test(x)));
+});
+
+test('quota épuisé chez GoldAPI (réponse 403 « quota ») : message clair, dernier cours réel conservé', async () => {
+  const { f } = reseau(db, goldapiNormal);
+  await traiter(requete({}), ENV, f, MAINTENANT);                       // un vrai cours est d'abord relevé
+  await vieillir(4);
+  const { f: f2 } = reseau(db, () => new Response('{"error":"Monthly API quota exceeded. Upgrade to Pro or Business"}', { status: 403 }));
+  const j = await (await traiter(requete({}), ENV, f2, MAINTENANT)).json();
+  assert.equal(Number(j.actuel.eur_g), 100.0012);                       // dernier cours réel, pas de valeur inventée
+  assert.ok(j.alertes.some(x => /quota GoldAPI épuisé/.test(x)));
 });

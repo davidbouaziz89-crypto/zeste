@@ -55,7 +55,7 @@ puis la version complète par-dessus (`tests/sync/serveur.test.mjs`), et en cond
 | 5 | **Publication de Zeste** : fusion `integration-zeste` → `main` (GitHub Pages, ~1-2 min) | la base est prête | aucune ; chaque appareil prend la nouvelle version à sa réouverture | voir ci-dessous ⚠️ |
 | 5c | **Verrouillage des anciennes versions** : `sql/zeste-verrou-anciennes-versions.sql` (drapeau `v2_only` pour chaque compte), sous verrou, **dès que la nouvelle appli est en ligne** | ferme côté serveur l'ancien canal public : une ancienne instance (y compris le correctif du 02/11) ne peut plus enregistrer, donc plus rien diffuser (seul envoi = après enregistrement réussi), et un état falsifié reçu par ce canal ne peut plus être enregistré | les appareils encore sur l'ancienne version affichent « version périmée, ferme et rouvre l'appli » ; rien n'est enregistré tant qu'ils ne sont pas rouverts | `update zeste.user_data set v2_only = false` (réautorise les anciennes versions, rouvre l'exposition) |
 | 5b | **`zeste-suggest`** (idées IA réservées aux connectés) | APRÈS l'appli (l'ancienne n'envoie pas la session) | aucune | recopier l'ancienne version (`main` d'avant) |
-| 6 | **Clé GoldAPI** : David double-clique `outils/ajouter-cle-goldapi.command` → coffre-fort Vault | possible dès l'étape 4 | **aucune** (pas de redémarrage, autres applis non touchées) | `delete from vault.secrets where name='zeste_goldapi'` : retour au dernier cours connu |
+| 6 | **Clé GoldAPI** : David double-clique `outils/ajouter-cle-goldapi.command` (version PRODUCTION : il doit taper `PRODUCTION` pour confirmer) → coffre-fort Vault de la production | possible dès l'étape 4 | **aucune** (pas de redémarrage, autres applis non touchées). Une nouvelle version de code de fonction est prise en compte en ≤ 6 min (durée de vie des « workers ») | `delete from vault.secrets where name='zeste_goldapi'` : « Cours indisponible » / dernier cours réel connu |
 | 7 | **Recette de la version publiée** (non destructive) : page servie contient `zeste_rev_mine` ; appels anonymes refusés ; David : connexion, « Synchronisé », un remboursement, Films, onglet Or (source GoldAPI) ; `v2_only` passe à vrai après sa 1re modification | | aucune | — |
 | 8 | **Autres applis** : conteneur des fonctions non redémarré (même heure de démarrage qu'avant) ; une fonction témoin répond ; portail accessible ; verrou rendu ; aucune session bloquée | | aucune | — |
 
@@ -93,3 +93,16 @@ invisibles dans l'ancienne version.
 - Les 2 foyers de juillet restent en base, fermés (suppression possible plus tard, sur demande).
 - GoldAPI gratuit : CGU sans durée limite (lues le 02/11/2026) ; mention « for evaluation » dans leur doc technique
   (option temps réel). Quota protégé à 280/300 ; au-delà : dernier cours connu, jamais de facturation.
+
+## Cours de l'or (GoldAPI) — réglages retenus (testés sur l'environnement de test)
+
+- Source : GoldAPI.io, `GET /api/price/XAU/EUR` (cours spot de l'or pur en euros, champ `price_per_unit.gram` ;
+  à défaut `price` ÷ 31,1034768). Aucune conversion de devise côté Zeste.
+- Cache serveur partagé : cours redemandé au plus toutes les **3 h** ; bouton ⟳ : au plus **1 fois par heure** ;
+  **9 requêtes par jour au maximum** et **280 par mois** (offre gratuite : 300) ; verrou contre les appels simultanés.
+- Aucune requête d'historique par défaut (plus de graphique) : seulement sur demande explicite (`historique: true`).
+- Sans cours réel : « Cours indisponible » ; fournisseur en panne / quota / clé refusée : dernier cours réel avec sa date
+  et son ancienneté, motif affiché. Jamais de valeur inventée.
+- Environnement de test : fonctions servies par le conteneur `zt-functions` (même image que la production),
+  clé dans le coffre de la base de TEST (`outils/ajouter-cle-goldapi-test.command`), contrôles par
+  `tests/or/test-cours-reel.sh` (la clé n'est jamais affichée).
