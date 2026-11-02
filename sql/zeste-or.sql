@@ -478,6 +478,26 @@ begin
   end if;
 end $$;
 
+-- Verrou partagé : un seul rafraîchissement du cours à la fois, même si plusieurs
+-- appareils ouvrent l'onglet au même instant (sinon deux appels au fournisseur).
+-- Bail de p_secondes : s'il n'est pas rendu (fonction coupée), il expire seul.
+create or replace function public.zeste_or_cours_reserver(p_secondes int)
+returns boolean language plpgsql security definer set search_path = zeste, public as $$
+declare ok boolean;
+begin
+  insert into zeste.or_cours_meta (cle, valeur, maj) values ('verrou', 'pris', clock_timestamp())
+  on conflict (cle) do update set valeur = 'pris', maj = clock_timestamp()
+    where zeste.or_cours_meta.valeur <> 'pris'
+       or zeste.or_cours_meta.maj < clock_timestamp() - make_interval(secs => greatest(p_secondes, 5))
+  returning true into ok;
+  return coalesce(ok, false);
+end $$;
+
+create or replace function public.zeste_or_cours_liberer()
+returns void language sql security definer set search_path = zeste, public as $$
+  update zeste.or_cours_meta set valeur = 'libre', maj = clock_timestamp() where cle = 'verrou'
+$$;
+
 -- ============================================================
 --  Droits : rien pour anon ; utilisateurs connectés = leurs données ;
 --  écriture du cours = service_role seulement.
@@ -491,7 +511,8 @@ begin
     'public.zeste_or_lire()', 'public.zeste_or_lot_enregistrer(jsonb)', 'public.zeste_or_lot_supprimer(uuid,boolean)',
     'public.zeste_or_vente_enregistrer(jsonb)', 'public.zeste_or_vente_supprimer(uuid)',
     'public.zeste_or_photo_lire(uuid)', 'public.zeste_or_photo_enregistrer(uuid,text)',
-    'public.zeste_or_cours_lire(date)', 'public.zeste_or_cours_etat(text)', 'public.zeste_or_cours_maj(jsonb)'
+    'public.zeste_or_cours_lire(date)', 'public.zeste_or_cours_etat(text)', 'public.zeste_or_cours_maj(jsonb)',
+    'public.zeste_or_cours_reserver(integer)', 'public.zeste_or_cours_liberer()'
   ] loop
     execute format('revoke all on function %s from public', f);
     begin
@@ -511,4 +532,6 @@ do $$ begin
   grant execute on function public.zeste_or_cours_lire(date)               to authenticated;
   grant execute on function public.zeste_or_cours_etat(text)               to service_role;
   grant execute on function public.zeste_or_cours_maj(jsonb)               to service_role;
+  grant execute on function public.zeste_or_cours_reserver(integer)        to service_role;
+  grant execute on function public.zeste_or_cours_liberer()                to service_role;
 exception when undefined_object then null; end $$;

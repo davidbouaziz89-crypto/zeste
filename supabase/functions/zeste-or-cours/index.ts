@@ -27,6 +27,7 @@ const TTL_FORCE_MS = 15 * 60_000;          // « Actualiser » : 1 appel / 15 mi
 const PAUSE_ECHEC_MS = 10 * 60_000;        // après un échec, pause de 10 min
 const TRANCHE_J = 90;                      // limite du fournisseur par requête
 const MAX_TRANCHES_PASSE = 12;             // ≈ 3 ans de rattrapage par appel
+export const ATTENTE_VERROU_MS = 1500;     // un autre appel actualise : on patiente avant de lire
 
 type Env = { SUPABASE_URL: string; ANON_KEY: string; SERVICE_KEY: string; GOLDAPI_KEY?: string };
 type Fetch = typeof fetch;
@@ -81,7 +82,15 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
   const journal = (p: Record<string, unknown>) => rpc("zeste_or_cours_maj", { p: { fournisseur: FOURNISSEUR, ...p } });
 
   const alertes: string[] = [];
+  let verrou = false;
   try {
+    // un seul rafraîchissement à la fois (plusieurs appareils / onglets au même instant)
+    verrou = await rpc("zeste_or_cours_reserver", { p_secondes: 60 }) === true;
+    if (!verrou) {
+      await new Promise((r) => setTimeout(r, ATTENTE_VERROU_MS)); // l'autre appel est en train d'actualiser
+      const lu = await rpc("zeste_or_cours_lire", { p_depuis: depuis }, env.ANON_KEY, jeton);
+      return json({ ...lu, alertes });
+    }
     const etat = await rpc("zeste_or_cours_etat", { p_fournisseur: FOURNISSEUR });
     let appels = Number(etat?.appels_mois) || 0;
     const meta = (etat?.meta || {}) as Record<string, string>;
@@ -164,6 +173,8 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
   } catch (e) {
     console.error("zeste-or-cours", e);
     return json({ erreur: "cours indisponible", alertes }, 502);
+  } finally {
+    if (verrou) await rpc("zeste_or_cours_liberer", {}).catch(() => {});
   }
 }
 

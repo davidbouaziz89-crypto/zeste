@@ -370,13 +370,13 @@
     font-weight:800;font-size:12px;transition:.25s;
   }
   .tab .ic{font-size:23px;transition:.25s}
-  .tab.active{color:var(--ink)}
+  .tab.active{color:#2b2440} /* fonds pastel clairs dans les deux thèmes : texte toujours foncé (lisible en mode sombre) */
   .tab.active.t-todo{background:linear-gradient(135deg,#fff0c2,#ffe08a)}
   .tab.active.t-shop{background:linear-gradient(135deg,#d8fbe6,#b6f3cf)}
   .tab.active.t-film{background:linear-gradient(135deg,#ece2ff,#d6c4ff)}
   .tab.active.t-debt{background:linear-gradient(135deg,#ffe8c2,#ffd591)}
   .tab.active.t-move{background:linear-gradient(135deg,#d7e6ff,#b7ccf5)}
-  .tab.active.t-or{background:linear-gradient(135deg,#fff3c4,#f6d36b);color:#3d2900}
+  .tab.active.t-or{background:linear-gradient(135deg,#fff3c4,#f6d36b)}
 
   /* déménagement (cartons) */
   .add-carton{width:100%;margin:14px 0 6px;padding:15px;border-radius:16px;border:2.5px dashed var(--blue);
@@ -2784,10 +2784,14 @@ async function iaSuggest(){
   el.innerHTML = '<div class="film-loading">🤖 L\'IA réfléchit…</div>';
   let items=[];
   try{
+    // jeton de session : la fonction est réservée aux comptes connectés (sinon quota Mistral ouvert à tous)
+    const sess = cloud.sb ? await cloud.sb.auth.getSession() : null;
+    const jeton = sess && sess.data && sess.data.session ? sess.data.session.access_token : SB_KEY;
     const r = await fetch(SB_URL+'/functions/v1/zeste-suggest', {
-      method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
+      method:'POST', headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+jeton},
       body: JSON.stringify({ q, kind: suggKind })
     });
+    if(r.status===401){ el.innerHTML='<div class="sugg-h">🔒 Connecte-toi (⚙️ Réglages) pour utiliser les idées IA.</div>'; return; }
     if(!r.ok){ el.innerHTML='<div class="sugg-h">🤖 L\'IA n\'est pas encore disponible. Réessaie bientôt.</div>'; return; }
     const j = await r.json(); items = j.items || [];
   }catch(e){ el.innerHTML='<div class="sugg-h">Connexion à l\'IA impossible (hors-ligne ?).</div>'; return; }
@@ -3743,22 +3747,31 @@ async function onLogin(user){
 }
 function onLogout(){
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
+  clearInterval(pollT); pollT = null;
   cloud.on=false; cloud.id=null; cloud.email=null; updateShareUI(); setSyncState();
   if(typeof orAuth==='function') orAuth(); // onglet Or : on vide l'écran et le cache de l'appareil
 }
+/* Plus de canal temps réel : l'ancien canal « zeste-user-<uid> » était PUBLIC (quiconque connaissait
+   l'identifiant du compte pouvait y lire tout l'état, ou y injecter un faux état que l'appli appliquait).
+   Désormais l'appareil demande au serveur, connexion obligatoire, s'il y a une version plus récente
+   (zeste_rev_mine : un simple numéro), et ne relit l'état complet que si c'est le cas. */
 function subscribeChan(){
-  if(!cloud.sb || !cloud.id) return;
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
-  cloud.chan = cloud.sb.channel('zeste-user-'+cloud.id, { config:{ broadcast:{ self:false } } });
-  cloud.chan.on('broadcast', {event:'sync'}, ({payload})=>{
-    if(!payload || !hasContent(payload.data)) return;
-    const rh = hashState(payload.data);
-    if(rh===hashState(S)){ setSyncMeta({hash:rh, rev:payload.rev??syncMeta().rev}); return; }
-    // modifications locales pas encore confirmées : on n'écrase rien, on signale le conflit
-    if(isPending()){ enterConflict(payload.data, payload.rev??null, rh); return; }
-    applyRemote(payload.data, payload.rev??null, rh);
-  });
-  cloud.chan.subscribe();
+  clearInterval(pollT); pollT = setInterval(pollRev, POLL_MS);
+}
+const POLL_MS = 20000;            // appli ouverte : vérification toutes les 20 s
+let pollT = null, pollFullAt = 0;
+async function pollRev(){
+  if(!cloud.on || !cloud.sb || document.hidden || cloud.conflict || pushing || pulling) return;
+  if(cloud.noRev || cloud.v2===false){
+    // serveur pas encore à jour (zeste_rev_mine absente) : relecture complète, au plus toutes les 60 s
+    if(Date.now() - pollFullAt < 60000) return;
+    pollFullAt = Date.now(); return cloudPull();
+  }
+  const r = await cloud.sb.rpc('zeste_rev_mine');
+  if(r.error){ if(isMissingFn(r.error)) cloud.noRev = true; return; }
+  const rev = r.data && r.data.rev;
+  if(rev!=null && rev!==syncMeta().rev) cloudPull();
 }
 
 /* ============ FIABILITÉ DE LA SYNCHRO ============
@@ -3904,7 +3917,6 @@ async function pushOnce(){
     setSyncMeta({hash:h, rev:newRev});
     if(hashState(S)===h) clearPending(); // rien n'a changé pendant l'envoi
     syncFail = null; retryN = 0; setSyncState();
-    if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:snap, rev:newRev}});
     syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
     return null;
   }catch(e){

@@ -1,9 +1,20 @@
 // Zeste 🍋 — Edge function : suggestions de films/séries en langage naturel.
 // Reçoit une demande libre et renvoie ~8 titres réels via Mistral (mistral-small-latest, gratuit).
-// Appelée depuis le navigateur (github.io) avec l'entête apikey = clé anon.
-// Pas de vérification JWT (FUNCTIONS_VERIFY_JWT=false côté serveur), comme zeste-push.
+// Appelée depuis le navigateur avec la session de l'utilisateur connecté (vérifiée ici :
+// FUNCTIONS_VERIFY_JWT=false côté serveur, la fonction contrôle elle-même le jeton).
 
 const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+// Réservé aux comptes connectés : sans ça, n'importe qui pouvait consommer
+// le quota Mistral de David avec la clé anon publique de la page.
+async function utilisateurConnecte(req: Request): Promise<boolean> {
+  const jeton = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!jeton || jeton === ANON_KEY) return false;
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: { apikey: ANON_KEY, Authorization: `Bearer ${jeton}` } });
+  return r.ok;
+}
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +47,7 @@ function extractJsonArray(raw: string): unknown[] {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ items: [] }, 405);
+  if (!(await utilisateurConnecte(req))) return json({ items: [], erreur: "connexion requise" }, 401);
 
   try {
     const body = await req.json().catch(() => ({}));
