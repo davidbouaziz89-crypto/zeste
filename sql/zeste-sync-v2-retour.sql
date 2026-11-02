@@ -11,9 +11,14 @@ begin;
 drop function if exists public.zeste_load_mine_v2();
 drop function if exists public.zeste_save_mine_v2(jsonb, bigint);
 
--- même définition que sql/zeste-remboursements.sql
-create or replace function public.zeste_save_mine(p_data jsonb)
-returns void language plpgsql security definer set search_path = zeste, public as $$
+-- définition EXACTE de la production, relevée le 02/11/2026 (pg_get_functiondef ;
+-- empreinte md5 vérifiée par tests/sync/serveur.test.mjs)
+CREATE OR REPLACE FUNCTION public.zeste_save_mine(p_data jsonb)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'zeste', 'public'
+AS $function$
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
   perform zeste.verif_remboursements(p_data);
@@ -21,7 +26,7 @@ begin
   values (auth.uid(), p_data, now())
   on conflict (user_id) do update set data = excluded.data, updated_at = now();
 end;
-$$;
+$function$;
 
 commit;
 

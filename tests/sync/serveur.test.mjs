@@ -151,3 +151,17 @@ test('correctif de sécurité SEUL sur la production actuelle : failles fermées
   const d5 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
   assert.equal((await d5.query(`select has_function_privilege('anon','public.zeste_save_sub(uuid,jsonb)','execute') ok`)).rows[0].ok, true);
 });
+
+test('retours arrière : remettent EXACTEMENT les définitions de production (empreintes du 02/11/2026)', async () => {
+  const PROD = { zeste_save_mine: '4dae0c3f6776457ec931093b7dc0ffeb', zeste_save_sub: 'df91e862944daddb1d29fd86ec28c279',
+                 zeste_sync_reminders: '86aee7b211a791f2601292800e6f570d' };
+  const d6 = await nouvelleBase([...DEJA_EN_PROD, ...A_APPLIQUER, 'zeste-or-retour.sql', 'zeste-securite-retour.sql', 'zeste-sync-v2-retour.sql']);
+  const r = await d6.query(`select p.proname, md5(pg_get_functiondef(p.oid)) h from pg_proc p
+    where p.oid in ('public.zeste_save_sub(uuid,jsonb)'::regprocedure, 'public.zeste_sync_reminders(uuid,jsonb)'::regprocedure, 'public.zeste_save_mine(jsonb)'::regprocedure)`);
+  for (const x of r.rows) assert.equal(x.h, PROD[x.proname], x.proname);
+  // et le correctif seul + son retour également
+  const d7 = await nouvelleBase([...DEJA_EN_PROD, 'zeste-correctif-securite.sql', 'zeste-securite-retour.sql']);
+  const r7 = await d7.query(`select p.proname, md5(pg_get_functiondef(p.oid)) h from pg_proc p
+    where p.oid in ('public.zeste_save_sub(uuid,jsonb)'::regprocedure, 'public.zeste_sync_reminders(uuid,jsonb)'::regprocedure)`);
+  for (const x of r7.rows) assert.equal(x.h, PROD[x.proname], x.proname);
+});
