@@ -120,7 +120,8 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
         .filter((p: { date?: string; price?: number }) => estJour(p?.date) && Number(p?.price) > 0)
         .map((p: { date: string; price: number }) => ({ jour: p.date, eur_g: Number(p.price) / ONCE_G, source: SOURCE }));
       await journal({ nature: "historique", ok: true, detail: `${de}..${a} : ${jours.length} jours`, jours });
-      return jours.length;
+      // plus ancien jour renvoyé (null si la tranche est vide)
+      return jours.reduce((m: string | null, x: { jour: string }) => (!m || x.jour < m ? x.jour : m), null);
     };
     try {
       // 3a. vers aujourd'hui : au plus une fois par jour
@@ -138,12 +139,17 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       const premier = etat2?.premier_jour ? String(etat2.premier_jour) : null;
       const videAvant = meta.histo_vide_avant || "0000-00-00";
       if (depuis && premier && depuis < premier) {
-        let a = ajouterJours(premier, -1), n = 0;
+        let a = ajouterJours(premier, -1), n = 0, connu = premier;
         while (a >= depuis && a > videAvant && n < MAX_TRANCHES_PASSE && peutAppeler()) {
           const de = [ajouterJours(a, -(TRANCHE_J - 1)), depuis].sort().reverse()[0];
-          const nb = await tranche(de, a);
+          const plusAncien = await tranche(de, a);
           n++;
-          if (nb === 0) { await journal({ sans_appel: true, meta: { histo_vide_avant: a } }); break; }
+          if (!plusAncien) {
+            // tranche vide : le fournisseur n'a rien avant le plus ancien jour connu → on ne redemandera plus
+            await journal({ sans_appel: true, meta: { histo_vide_avant: ajouterJours(connu, -1) } });
+            break;
+          }
+          if (plusAncien < connu) connu = plusAncien;
           a = ajouterJours(de, -1);
         }
       }
