@@ -53,6 +53,7 @@ puis la version complète par-dessus (`tests/sync/serveur.test.mjs`), et en cond
 | 3 | **Migrations** sous verrou (`outils/verrou-deploiement.sh prendre`, jeton en tête de session), essai à blanc `begin…rollback` puis réel : `zeste-sync-v2.sql` → `zeste-securite.sql` (n'ajoute plus que `zeste_rev_mine`) → `zeste-or.sql` | l'appli en ligne (correctif) reste compatible (testé) | quelques millisecondes de verrou sur la seule table `zeste.user_data` (ajout de 2 colonnes à valeur par défaut, sans réécriture) | `zeste-or-retour.sql` → `zeste-securite-retour-apres-correctif.sql` → `zeste-sync-v2-retour.sql` : retour **exact** à la production actuelle, failles toujours fermées (empreintes testées) ; les 2 colonnes et les tables `or_*` restent (sans effet). **Aucune perte.** ⛔ ne plus utiliser `zeste-securite-retour.sql` (rouvrirait les failles). |
 | 4 | **Fonction serveur `zeste-or-cours`** (copie dans `volumes/functions/`) | doit exister avant l'appli pour l'onglet Or | aucune (pas de redémarrage) | supprimer le dossier : onglet Or en mode « cours indisponible » |
 | 5 | **Publication de Zeste** : fusion `integration-zeste` → `main` (GitHub Pages, ~1-2 min) | la base est prête | aucune ; chaque appareil prend la nouvelle version à sa réouverture | voir ci-dessous ⚠️ |
+| 5c | **Verrouillage des anciennes versions** : `sql/zeste-verrou-anciennes-versions.sql` (drapeau `v2_only` pour chaque compte), sous verrou, **dès que la nouvelle appli est en ligne** | ferme côté serveur l'ancien canal public : une ancienne instance (y compris le correctif du 02/11) ne peut plus enregistrer, donc plus rien diffuser (seul envoi = après enregistrement réussi), et un état falsifié reçu par ce canal ne peut plus être enregistré | les appareils encore sur l'ancienne version affichent « version périmée, ferme et rouvre l'appli » ; rien n'est enregistré tant qu'ils ne sont pas rouverts | `update zeste.user_data set v2_only = false` (réautorise les anciennes versions, rouvre l'exposition) |
 | 5b | **`zeste-suggest`** (idées IA réservées aux connectés) | APRÈS l'appli (l'ancienne n'envoie pas la session) | aucune | recopier l'ancienne version (`main` d'avant) |
 | 6 | **Clé GoldAPI** : David double-clique `outils/ajouter-cle-goldapi.command` → coffre-fort Vault | possible dès l'étape 4 | **aucune** (pas de redémarrage, autres applis non touchées) | `delete from vault.secrets where name='zeste_goldapi'` : retour au dernier cours connu |
 | 7 | **Recette de la version publiée** (non destructive) : page servie contient `zeste_rev_mine` ; appels anonymes refusés ; David : connexion, « Synchronisé », un remboursement, Films, onglet Or (source GoldAPI) ; `v2_only` passe à vrai après sa 1re modification | | aucune | — |
@@ -75,11 +76,15 @@ invisibles dans l'ancienne version.
   d'ordinateur jamais rechargé) continue d'écouter `zeste-user-<uid>`, d'y diffuser l'état complet après
   chaque enregistrement et d'appliquer ce qu'elle y reçoit. Le journal du service ne nomme pas les canaux :
   impossible de savoir à distance s'il en reste une.
+- Démontré en simulation (base identique à la production, version d'avant le correctif) : une ancienne instance
+  diffuse l'état complet à chaque enregistrement (lisible par un inconnu), applique un faux état reçu, puis
+  l'enregistre — la base l'accepte aujourd'hui. Aucun message n'est conservé en base (`realtime.messages` vide) :
+  rien n'est lisible après coup.
 - Fermeture : (1) immédiate — fermer complètement Zeste sur chaque appareil (balayer l'appli, recharger les onglets) ;
-  (2) côté serveur — la synchro v2 de la publication complète refuse les enregistrements des anciennes versions
-  dès la 1re écriture à jour (`v2_only`) : une ancienne instance ne peut alors plus rien diffuser de nouveau ni
-  enregistrer une donnée injectée. Couper les canaux publics pour tout le serveur (`private_only`) n'est PAS
-  envisagé : cela casserait les autres applis.
+  (2) côté serveur — étape 5c (`zeste-verrou-anciennes-versions.sql`) : démontré en simulation, plus aucune diffusion,
+  le faux état n'est plus enregistré. Ne peut pas être appliquée AVANT la publication complète : l'appli en ligne
+  (correctif) utilise le même enregistrement que les anciennes versions et serait bloquée aussi.
+  Couper les canaux publics pour tout le serveur (`private_only`) n'est PAS envisagé : cela casserait les autres applis.
 
 ## Risques résiduels
 

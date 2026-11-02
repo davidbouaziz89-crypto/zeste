@@ -1,0 +1,18 @@
+-- ============================================================
+--  Zeste 🍋 — VERROUILLAGE DES ANCIENNES VERSIONS (neutralise l'ancien canal temps réel)
+--
+--  ⚠️ PRÉPARÉ, NON APPLIQUÉ. Nécessite sql/zeste-sync-v2.sql (colonne v2_only) et SURTOUT
+--     que la nouvelle appli (synchro v2) soit DÉJÀ EN LIGNE : à exécuter juste après la
+--     publication complète (étape 5c de MISE-EN-LIGNE.md), avec l'accord de David.
+--
+--  Effet : zeste_save_mine (l'enregistrement de TOUTES les anciennes versions, y compris le
+--  correctif du 02/11) refuse désormais d'écrire pour chaque compte, sans attendre la 1re
+--  modification faite avec la nouvelle appli. Or une ancienne version ne diffuse sur le canal
+--  public « zeste-user-<uid> » qu'APRÈS un enregistrement réussi (seul appel à send() du code
+--  d'avant le correctif) : elle ne peut donc plus rien y publier de nouveau, et un état falsifié
+--  reçu par ce canal ne peut plus être enregistré sur le serveur. Elle affiche « version de Zeste
+--  périmée : ferme complètement l'appli et rouvre-la » et passe à la nouvelle version en se rouvrant.
+--  La nouvelle appli (zeste_save_mine_v2) n'est pas concernée. Aucune donnée modifiée hors du drapeau.
+--  Retour arrière : update zeste.user_data set v2_only = false;  (réautorise les anciennes versions)
+-- ============================================================
+update zeste.user_data set v2_only = true where not v2_only;

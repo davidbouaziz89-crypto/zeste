@@ -14,7 +14,7 @@ import http from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { nouvelleBase, creerUtilisateur, rpc, RACINE, DEJA_EN_PROD } from '../or/pg-local.mjs';
+import { nouvelleBase, creerUtilisateur, rpc, RACINE, DEJA_EN_PROD, lireSql } from '../or/pg-local.mjs';
 import { traiter, ajouterJours } from '../../supabase/functions/zeste-or-cours/index.ts';
 
 const PORT = Number(process.argv[2] || 8765);
@@ -22,6 +22,7 @@ const U = '44444444-4444-4444-8444-444444444444';
 const SOURCE_ESSAI = 'Banc d\'essai — cours FICTIF';
 let panne = false, coupure = false, aPerdre = 0;
 const journal = { diffusions: 0, ecritures: [] };
+const messages = [];   // relais du faux canal temps réel : { n, de, sujet, event, payload }
 
 // ZESTE_BASE=correctif : base « production actuelle + correctif de sécurité seul » (pour /correctif.html)
 const MODE = process.env.ZESTE_BASE || 'complet';
@@ -105,14 +106,24 @@ const adapter = (html) => html
 const pageApp = () => adapter(readFileSync(path.join(RACINE, 'index.html'), 'utf8'));
 const pageAncienne = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/main:index.html'], { encoding: 'utf8' }));
 const pageCorrectif = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/correctif-securite:index.html'], { encoding: 'utf8' }));
+// version d'AVANT le correctif de sécurité (celle qu'une ancienne instance peut encore exécuter)
+const pageAvantCorrectif = () => adapter(execFileSync('git', ['-C', RACINE, 'show', '9b8ed9a:index.html'], { encoding: 'utf8' }));
 const BOUCHON = `
 window.supabase = { createClient(){
   const U = { id: '${U}', email: 'essai@zeste.local' };
   const session = { access_token: 'jeton-' + U.id, user: U };
   const co = () => localStorage.getItem('bouchon_deconnecte') !== '1';
   const ec = [];
-  const ch = { on(){ return ch; }, subscribe(){ fetch('/essai/abonnement', {method:'POST'}); return ch; },
-               send(m){ fetch('/essai/diffusion', { method:'POST', body: JSON.stringify(m) }); } };
+  const moi = Math.random().toString(36).slice(2), ecoute = [];
+  let vu = 0, minuteur = null;
+  const ch = { sujet: '',
+    on(type, filtre, cb){ ecoute.push({ event: filtre && filtre.event, cb }); return ch; },
+    subscribe(){ fetch('/essai/abonnement', {method:'POST'});
+      minuteur = setInterval(async ()=>{ const l = await (await fetch('/essai/canal?apres='+vu)).json();
+        l.forEach(m=>{ vu = Math.max(vu, m.n); if(m.de===moi || m.sujet!==ch.sujet) return; ecoute.filter(e=>e.event===m.event).forEach(e=>e.cb({ payload: m.payload })); }); }, 300);
+      return ch; },
+    send(m){ fetch('/essai/diffusion', { method:'POST', body: JSON.stringify(m) });
+      fetch('/essai/canal', { method:'POST', body: JSON.stringify({ de: moi, sujet: ch.sujet, event: m.event, payload: m.payload }) }); } };
   return {
     auth: {
       onAuthStateChange(cb){ ec.push(cb); setTimeout(()=>cb(co()?'INITIAL_SESSION':'SIGNED_OUT', co()?session:null), 0); return { data:{ subscription:{ unsubscribe(){} } } }; },
@@ -126,7 +137,7 @@ window.supabase = { createClient(){
         return r.ok ? { data:j, error:null } : { data:null, error: j || { message:'HTTP '+r.status } };
       }catch(e){ return { data:null, error:{ message: e.message } }; }
     },
-    channel(){ return ch; }, removeChannel(){},
+    channel(nom){ ch.sujet = nom; return ch; }, removeChannel(){},
   };
 } };`;
 
@@ -138,6 +149,12 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/' || u.pathname === '/index.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageApp()); }
     if (u.pathname === '/ancienne.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageAncienne()); }
     if (u.pathname === '/correctif.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageCorrectif()); }
+    if (u.pathname === '/avant-correctif.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageAvantCorrectif()); }
+    if (u.pathname === '/essai/canal' && req.method === 'POST') {   // n'importe qui (clé publique) diffuse sur un sujet
+      const m = JSON.parse(await lireCorps(req) || '{}'); m.n = messages.length + 1; messages.push(m); return ok(res, { n: m.n }); }
+    if (u.pathname === '/essai/canal') { const apres = Number(u.searchParams.get('apres') || 0); return ok(res, messages.filter(m => m.n > apres)); }
+    if (u.pathname === '/essai/verrou-anciennes') {   // = sql/zeste-verrou-anciennes-versions.sql
+      await db.exec(lireSql('zeste-verrou-anciennes-versions.sql')); return ok(res, 'anciennes versions verrouillées'); }
     if (u.pathname === '/bouchon-supabase.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'] }); return res.end(BOUCHON); }
     if (u.pathname === '/sw.js') { res.writeHead(404); return res.end(); }       // pas de cache hors-ligne pendant l'essai
     if (u.pathname === '/essai/panne') { panne = u.searchParams.get('on') === '1'; return ok(res, { panne }); }

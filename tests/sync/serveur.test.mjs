@@ -184,3 +184,18 @@ test('retour arrière de la version complète : ramène EXACTEMENT à la product
   assert.equal((await d8.query(`select count(*)::int n from pg_proc p where p.pronamespace='public'::regnamespace and p.proname like 'zeste%'
     and has_function_privilege('anon', p.oid, 'execute')`)).rows[0].n, 0);   // failles toujours fermées après retour
 });
+
+test('verrouillage des anciennes versions (après publication complète) : plus aucun enregistrement par l\'ancien chemin, nouvelle appli intacte', async () => {
+  const d9 = await nouvelleBase(DEJA_EN_PROD);
+  await creerUtilisateur(d9, A, 'a@t');
+  await rpc(d9, 'zeste_save_mine', { p_data: etat('appli actuelle') }, asA);              // état de départ réel
+  for (const f of A_APPLIQUER) await d9.exec(lireSql(f));
+  await rpc(d9, 'zeste_save_mine', { p_data: etat('encore accepté') }, asA);              // sans verrou : l'ancien chemin passe encore
+  const h0 = (await d9.query(`select md5(data::text) h from zeste.user_data`)).rows[0].h;
+  await d9.exec(lireSql('zeste-verrou-anciennes-versions.sql'));
+  assert.equal((await d9.query(`select md5(data::text) h from zeste.user_data`)).rows[0].h, h0); // aucune donnée modifiée
+  await refuse(rpc(d9, 'zeste_save_mine', { p_data: etat('état falsifié') }, asA), /version de Zeste périmée/);
+  const lu = await rpc(d9, 'zeste_load_mine_v2', {}, asA);
+  assert.equal(lu.data.todos[0].txt, 'Tâche encore accepté');                              // le faux n'est pas enregistré
+  await rpc(d9, 'zeste_save_mine_v2', { p_data: etat('nouvelle appli'), p_base_rev: lu.rev }, asA); // la nouvelle appli enregistre
+});
