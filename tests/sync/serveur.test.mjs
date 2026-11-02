@@ -115,3 +115,14 @@ test('ordre inverse (Or avant sécurité) : les droits Or restent corrects', asy
   await refuse(rpc(d2, 'zeste_or_lire', {}, anon), /permission denied/);
   await refuse(rpc(d2, 'zeste_or_cours_maj', { p: {} }, asA), /permission denied/);
 });
+
+test('retour arrière de l\'onglet Or : accès coupé, données conservées, réactivable', async () => {
+  const d3 = await nouvelleBase();
+  await creerUtilisateur(d3, A, 'a@t');
+  await rpc(d3, 'zeste_or_lot_enregistrer', { p: { type: 'souverain', quantite: 1, date_achat: '2025-01-01', prix_total: 500 } }, asA);
+  await d3.exec(lireSql('zeste-or-retour.sql'));
+  await refuse(rpc(d3, 'zeste_or_lire', {}, asA), /permission denied/);
+  assert.equal((await d3.query(`select count(*)::int n from zeste.or_lots`)).rows[0].n, 1);
+  await d3.exec(lireSql('zeste-or.sql'));
+  assert.equal((await rpc(d3, 'zeste_or_lire', {}, asA)).lots.length, 1);
+});

@@ -27,6 +27,9 @@ framework, pas de `npm install`. Les librairies sont chargées **depuis un CDN**
 | `supabase/functions/zeste-push/index.ts` | edge function d'envoi des rappels push |
 | `icon-192.png`, `icon-512.png`, `favicon-32.png`, `apple-touch-icon.png` | icônes |
 | `GOOGLE-SETUP.md`, `PUSH-SETUP.md` | procédures d'installation |
+| `sql/zeste-sync-v2.sql`, `sql/zeste-securite.sql`, `sql/zeste-or.sql` (+ `*-retour.sql`) | synchro à numéro de version, fermeture des accès anon, onglet Or — ordre et procédure : `MISE-EN-LIGNE.md` |
+| `supabase/functions/zeste-or-cours/` | cours de l'or (GoldAPI, clé serveur `GOLDAPI_KEY`, quota protégé) |
+| `tests/` | bancs de tests (voir « Vérifier son travail ») |
 
 ## Backend
 
@@ -79,11 +82,23 @@ l'ancienne version.
 
 ## Vérifier son travail
 
-Pas de suite de tests. Avant de pousser :
+Avant de pousser :
 
 ```bash
-~/.bun/bin/bun build index.html   # vérifie la syntaxe JS
+~/.bun/bin/bun build index.html                     # syntaxe JS
+node --test tests/or/calculs.test.mjs               # calculs de l'onglet Or (sans dépendance)
+# bases locales jetables : pglite 0.5.9 installé HORS du dépôt, dossier passé dans PGLITE_DIR, lancer avec node
+PGLITE_DIR=… node --test tests/or/sql.test.mjs tests/sync/serveur.test.mjs
+PGLITE_DIR=… node --experimental-strip-types --test tests/or/edge.test.mjs
+PGLITE_DIR=… node --experimental-strip-types tests/essai/serveur-essai.mjs 8766   # appli complète en local, 2 appareils
 ```
+
+Environnement de TEST isolé sur le serveur (base, auth, API à part, données fictives, non indexé) :
+`~/zeste-test` → https://zeste-test.srv.proformationplus.fr (pas de temps réel ni de fonctions serveur).
+`tests/sync/test-acces-reel.sh` y vérifie les refus d'accès entre deux comptes sur la vraie pile.
+
+⚠️ La synchro n'utilise plus de canal temps réel (l'ancien canal `zeste-user-<uid>` était public) :
+n'en réintroduis jamais un sans canal privé autorisé côté serveur.
 
 Puis contrôle réel **sur iPhone** (c'est la cible) : installation PWA, clavier,
 mode hors-ligne.
