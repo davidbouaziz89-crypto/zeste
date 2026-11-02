@@ -40,12 +40,17 @@ const PRELUDE = `
   grant usage on schema zeste to anon, authenticated, service_role;
 `;
 
-export async function nouvelleBase(){
+// Scripts dans l'ordre de la production : déjà appliqués (état constaté le 02/11/2026), puis à venir.
+export const DEJA_EN_PROD = ['zeste-setup.sql', 'zeste-push.sql', 'zeste-auth.sql', 'zeste-remboursements.sql'];
+export const A_APPLIQUER = ['zeste-sync-v2.sql', 'zeste-securite.sql', 'zeste-or.sql'];
+export const lireSql = (f) => readFileSync(path.join(RACINE, 'sql', f), 'utf8');
+
+// etapes : liste de scripts sql/ à charger (par défaut : toute la chaîne, comme après la mise en ligne)
+export async function nouvelleBase(etapes = [...DEJA_EN_PROD, ...A_APPLIQUER]){
   const PGlite = await chargerPGlite();
   const db = new PGlite();
   await db.exec(PRELUDE);
-  const sql = readFileSync(path.join(RACINE, 'sql/zeste-or.sql'), 'utf8');
-  await db.exec(sql);
+  for (const f of etapes) await db.exec(lireSql(f));
   return db;
 }
 

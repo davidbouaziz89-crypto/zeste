@@ -139,3 +139,16 @@ test('réponse fournisseur incohérente : refusée, rien d\'enregistré', async 
   assert.equal(j.actuel, null);
   assert.ok(j.alertes.length > 0);
 });
+
+test('appels simultanés (plusieurs appareils) : un seul appel au fournisseur', async () => {
+  const { f, appels } = reseau(db, async (u) => { await new Promise(r => setTimeout(r, 300)); return goldapiNormal(u); });
+  const rs = await Promise.all([1, 2, 3].map(() => traiter(requete({}), ENV, f, MAINTENANT)));
+  assert.deepEqual(rs.map(r => r.status), [200, 200, 200]);
+  assert.equal(appels.filter(a => a === '/api/price/XAU/EUR').length, 1);
+  const j = await Promise.all(rs.map(r => r.json()));
+  assert.ok(j.every(x => Number(x.actuel.eur_g) === 100.0012));     // tous reçoivent le cours enregistré
+  // verrou rendu : un appel suivant (cours périmé) peut actualiser
+  await vieillir(3);
+  await traiter(requete({}), ENV, f, MAINTENANT);
+  assert.equal(appels.filter(a => a === '/api/price/XAU/EUR').length, 2);
+});
