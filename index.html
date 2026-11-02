@@ -330,7 +330,7 @@
     display:flex;justify-content:center;gap:0;pointer-events:none;
   }
   .tabs-inner{
-    pointer-events:auto;width:100%;max-width:340px;border-radius:28px;
+    pointer-events:auto;width:100%;max-width:380px;border-radius:28px;
     box-shadow:0 10px 34px rgba(80,60,120,.22);display:flex;padding:6px;
     background:var(--tabs-bg);backdrop-filter:saturate(1.5) blur(14px);
     -webkit-backdrop-filter:saturate(1.5) blur(14px);border:1.5px solid var(--line);
@@ -347,6 +347,7 @@
   .tab.active.t-film{background:linear-gradient(135deg,#ece2ff,#d6c4ff)}
   .tab.active.t-debt{background:linear-gradient(135deg,#ffe8c2,#ffd591)}
   .tab.active.t-move{background:linear-gradient(135deg,#d7e6ff,#b7ccf5)}
+  .tab.active.t-or{background:linear-gradient(135deg,#fff3c4,#f6d36b)}
 
   /* déménagement (cartons) */
   .add-carton{width:100%;margin:14px 0 6px;padding:15px;border-radius:16px;border:2.5px dashed var(--blue);
@@ -699,6 +700,160 @@
     background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 8px 20px rgba(155,107,255,.35)}
   .welcome .wskip{border:none;background:none;color:var(--muted);font-weight:700;font-size:14px;cursor:pointer;padding:8px}
   .welcome .werr{color:var(--red);font-weight:700;font-size:13px;text-align:center;min-height:16px}
+
+  /* ---------- ONGLET OR (pièces d'or) ---------- */
+  :root{ --or1:#ffe7a3; --or2:#f5b800; --or3:#c98a00; --or-ink:#7a5200; --gain:#1fa463; --perte:#e5484d }
+  :root[data-theme="dark"]{ --or-ink:#ffd66b; --gain:#4fe39a; --perte:#ff7b7f }
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){ --or-ink:#ffd66b; --gain:#4fe39a; --perte:#ff7b7f }}
+  .or-gain{color:var(--gain)} .or-perte{color:var(--perte)}
+  .or-hero{margin-top:14px;border-radius:24px;padding:18px 18px 16px;position:relative;overflow:hidden;color:#fff;
+    background:linear-gradient(150deg,#2b2440 0%,#3b2f5c 58%,#4a3a2a 100%);box-shadow:0 14px 30px rgba(43,36,64,.35)}
+  .or-hero::before{content:"";position:absolute;right:-50px;top:-60px;width:190px;height:190px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,210,63,.42),transparent 68%)}
+  .or-hero::after{content:"";position:absolute;left:-40px;bottom:-70px;width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,159,69,.22),transparent 70%)}
+  .or-hero>*{position:relative}
+  .or-hero-top{display:flex;align-items:center;gap:8px}
+  .or-hero-lab{font-size:13.5px;font-weight:800;opacity:.85;flex:1}
+  .or-refresh{border:none;background:rgba(255,255,255,.14);color:#fff;width:36px;height:36px;border-radius:12px;
+    font-size:17px;cursor:pointer;display:grid;place-items:center;flex:none}
+  .or-refresh:active{transform:scale(.9)} .or-refresh.spin span{display:inline-block;animation:orspin 1s linear infinite}
+  @keyframes orspin{to{transform:rotate(360deg)}}
+  .or-hero-val{font-size:35px;font-weight:800;letter-spacing:-.8px;margin-top:2px;line-height:1.1;
+    background:linear-gradient(100deg,#fff1c1,#ffd23f 45%,#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .or-hero-pl{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:5px 11px;border-radius:20px;
+    font-weight:800;font-size:14px;background:rgba(255,255,255,.12)}
+  .or-hero-pl.g{color:#6ff2ae} .or-hero-pl.p{color:#ff9a9d}
+  .or-hero-pl small{font-size:12px;opacity:.8;font-weight:700;color:#fff}
+  .or-hero-sub{display:flex;gap:6px 14px;flex-wrap:wrap;margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.14);
+    font-size:13px;font-weight:700;opacity:.92}
+  .or-hero-sub b{font-weight:800}
+  .or-warn{margin-top:10px;font-size:12.5px;font-weight:700;background:rgba(255,159,69,.18);color:#ffd2a6;padding:7px 10px;border-radius:12px;line-height:1.35}
+
+  .or-card{background:var(--card);border-radius:22px;box-shadow:var(--shadow-s);padding:14px 14px 12px;margin-top:12px;border:1.5px solid var(--line)}
+  .or-per{display:flex;gap:4px;background:var(--line);border-radius:13px;padding:3px}
+  .or-per button{flex:1;border:none;background:none;padding:8px 0;border-radius:10px;font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;min-width:0}
+  .or-per button.on{background:var(--chip);color:var(--ink);box-shadow:var(--shadow-s)}
+  .or-tip{display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap;margin:12px 2px 2px;min-height:38px}
+  .or-tip .t-d{font-size:12px;font-weight:800;color:var(--muted);width:100%}
+  .or-tip .t-v{font-size:17px;font-weight:800;color:var(--or-ink)}
+  .or-tip .t-i{font-size:13px;font-weight:800;color:var(--purple)}
+  .or-tip .t-x{font-size:13px;font-weight:800}
+  .or-graph{position:relative;margin:4px -4px 0;touch-action:pan-y}
+  .or-graph svg{display:block;width:100%;overflow:visible}
+  .or-graph .ax{font-size:10.5px;font-weight:700;fill:var(--muted)}
+  .or-leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;font-weight:800;color:var(--muted);margin:6px 2px 0}
+  .or-leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .or-leg .lv{background:var(--or2)} .or-leg .li{background:repeating-linear-gradient(90deg,var(--purple) 0 4px,transparent 4px 7px)}
+  .or-graph-note{font-size:12px;font-weight:700;color:var(--muted);margin:6px 2px 0;line-height:1.35}
+
+  .or-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+  .or-tile{background:var(--card);border-radius:18px;box-shadow:var(--shadow-s);padding:12px 13px;min-width:0;border:1.5px solid var(--line)}
+  .or-tile small{display:block;font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .or-tile b{display:block;font-size:18px;font-weight:800;margin-top:3px;overflow-wrap:anywhere}
+  .or-tile span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-top:2px;line-height:1.3}
+
+  .or-actions{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:10px;margin-top:14px}
+  .or-btn{border:none;border-radius:17px;padding:15px 10px;font-weight:800;font-size:15.5px;cursor:pointer;line-height:1.15}
+  .or-btn:active{transform:scale(.97)}
+  .or-btn.add{color:#4a3200;background:linear-gradient(135deg,#ffe08a,#f5b800);box-shadow:0 8px 20px rgba(245,184,0,.38)}
+  .or-btn.sell{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:var(--shadow-s)}
+  .or-btn:disabled{opacity:.45}
+
+  .or-h{display:flex;align-items:center;gap:8px;margin:22px 2px 10px;font-weight:800;font-size:16px}
+  .or-h .n{margin-left:auto;background:var(--line);color:var(--muted);font-size:12px;padding:3px 9px;border-radius:20px}
+  .or-lot{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:12px 13px;margin-bottom:9px;
+    box-shadow:var(--shadow-s);cursor:pointer;border:none;width:100%;text-align:left;color:var(--ink);font-family:inherit}
+  .or-lot:active{transform:scale(.98)}
+  .or-lot.sold{opacity:.62}
+  .or-lot .l-mid{flex:1;min-width:0}
+  .or-lot .l-name{font-weight:800;font-size:15.5px;line-height:1.2;overflow-wrap:anywhere}
+  .or-lot .l-sub{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:3px}
+  .or-lot .l-right{text-align:right;flex:none;max-width:46%}
+  .or-lot .l-val{font-weight:800;font-size:15px}
+  .or-lot .l-pl{font-size:12.5px;font-weight:800;margin-top:2px}
+  .or-coin{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:900;
+    color:#6b4500;letter-spacing:-.3px;position:relative;
+    background:radial-gradient(circle at 32% 28%,#fff6cf 0%,#ffd760 28%,#e9a800 66%,#b87d00 100%);
+    box-shadow:inset 0 0 0 3px rgba(255,255,255,.35),inset 0 -3px 6px rgba(120,70,0,.35),0 4px 10px rgba(201,138,0,.35)}
+  .or-coin.big{width:56px;height:56px;font-size:14px}
+  .or-coin.argent{background:radial-gradient(circle at 32% 28%,#fff 0%,#e3e3ea 35%,#b9b9c6 75%,#8c8c9c 100%);color:#4b4b5a}
+  .or-empty{text-align:center;padding:26px 16px 10px;color:var(--muted);font-weight:600}
+  .or-empty .big{font-size:52px}
+  .or-empty b{display:block;font-size:17px;color:var(--ink);margin:6px 0 4px}
+  .or-foot{font-size:12px;font-weight:600;color:var(--muted);margin:14px 4px 0;line-height:1.45}
+  .or-link{border:none;background:none;color:var(--purple);font-weight:800;font-size:14px;cursor:pointer;padding:10px 4px;width:100%}
+  .or-lock{text-align:center;padding:34px 18px;margin-top:14px;background:var(--card);border-radius:22px;box-shadow:var(--shadow-s)}
+  .or-lock .big{font-size:52px}
+  .or-lock b{display:block;font-size:18px;margin:8px 0 6px}
+  .or-lock p{color:var(--muted);font-weight:600;font-size:14px;line-height:1.45;margin:0 0 14px}
+
+  /* fenêtres Or */
+  #orAchatBg,#orLotBg,#orVenteBg,#orOpsBg{z-index:52}
+  .sheet.or-sheet{z-index:53}
+  #orVenteBg{z-index:56} .sheet.or-vente{z-index:57}
+  #orAchatBg{z-index:58} .sheet.or-achat{z-index:59}
+  .or-types{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .or-type{display:flex;align-items:center;gap:9px;border:2px solid var(--line);background:var(--chip);border-radius:15px;
+    padding:9px 9px;cursor:pointer;text-align:left;color:var(--ink);font-family:inherit;min-width:0}
+  .or-type .or-coin{width:34px;height:34px;font-size:10px}
+  .or-type .tn{font-weight:800;font-size:13px;line-height:1.15;overflow-wrap:anywhere}
+  .or-type .tf{font-size:11px;font-weight:700;color:var(--muted);margin-top:2px}
+  .or-type.sel{border-color:var(--or2);background:hsl(45 100% 94%)}
+  :root[data-theme="dark"] .or-type.sel{background:hsl(45 50% 18%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .or-type.sel{background:hsl(45 50% 18%)}}
+  .or-fiche{font-size:12.5px;font-weight:700;color:var(--muted);background:var(--field);border:2px solid var(--line);
+    border-radius:13px;padding:9px 11px;margin-top:8px;line-height:1.45}
+  .or-fiche b{color:var(--ink)}
+  .or-fiche.alert{border-color:hsl(35 90% 75%)}
+  .or-2col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .or-3col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .or-sheet .field,.or-vente .field,.or-achat .field{font-size:16px;padding:13px 14px;min-width:0}
+  .or-step{display:flex;align-items:center;gap:6px}
+  .or-step button{flex:none;width:46px;height:50px;border:2px solid var(--line);background:var(--chip);border-radius:14px;
+    font-size:22px;font-weight:800;color:var(--ink);cursor:pointer}
+  .or-step button:active{background:var(--yellow)}
+  .or-step input{text-align:center;flex:1}
+  .or-seg{display:flex;background:var(--line);border-radius:12px;padding:3px;margin-bottom:8px}
+  .or-seg button{flex:1;border:none;background:none;padding:8px 4px;border-radius:9px;font-weight:800;font-size:13px;color:var(--muted);cursor:pointer}
+  .or-seg button.on{background:var(--chip);color:var(--ink);box-shadow:var(--shadow-s)}
+  .or-calc{font-size:13px;font-weight:700;color:var(--muted);margin:6px 2px 0;min-height:17px}
+  .or-more{border:none;background:none;color:var(--purple);font-weight:800;font-size:14.5px;cursor:pointer;padding:14px 2px 4px;text-align:left}
+  .or-photo-in{display:flex;align-items:center;gap:10px}
+  .or-photo-in img{width:64px;height:64px;object-fit:cover;border-radius:14px;border:2px solid var(--line)}
+  .or-photo-in label{border:2px dashed var(--line);border-radius:14px;padding:12px 14px;font-weight:800;font-size:14px;color:var(--purple);cursor:pointer;flex:1;text-align:center}
+  .or-photo-in button{border:none;background:var(--line);border-radius:12px;padding:10px 12px;font-weight:800;cursor:pointer;color:var(--ink)}
+  .or-lotpick{display:flex;flex-direction:column;gap:7px}
+  .or-lotpick button{display:flex;align-items:center;gap:10px;border:2px solid var(--line);background:var(--chip);border-radius:14px;
+    padding:9px 11px;cursor:pointer;text-align:left;color:var(--ink);font-family:inherit}
+  .or-lotpick button.sel{border-color:var(--or2);background:hsl(45 100% 94%)}
+  :root[data-theme="dark"] .or-lotpick button.sel{background:hsl(45 50% 18%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .or-lotpick button.sel{background:hsl(45 50% 18%)}}
+  .or-lotpick .or-coin{width:32px;height:32px;font-size:10px}
+  .or-lotpick .lp{flex:1;min-width:0;font-weight:800;font-size:14px}
+  .or-lotpick .lp small{display:block;font-size:12px;color:var(--muted);font-weight:700}
+  .or-d-head{display:flex;align-items:center;gap:12px;margin:0 44px 12px 0}
+  .or-d-head h3{margin:0;font-size:19px;line-height:1.2}
+  .or-d-head small{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-top:3px}
+  .or-d-photo{width:100%;max-height:220px;object-fit:contain;border-radius:16px;background:var(--field);margin-bottom:10px}
+  .or-d-sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .or-d-sum div{background:var(--field);border:2px solid var(--line);border-radius:14px;padding:9px 10px;min-width:0}
+  .or-d-sum small{display:block;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .or-d-sum b{display:block;font-size:16px;font-weight:800;margin-top:2px;overflow-wrap:anywhere}
+  .or-val3{margin-top:12px;border:2px solid var(--line);border-radius:16px;overflow:hidden}
+  .or-val3>div{padding:10px 12px;display:flex;gap:10px;align-items:flex-start}
+  .or-val3>div+div{border-top:2px solid var(--line)}
+  .or-val3 .k{flex:1;min-width:0;font-weight:800;font-size:13.5px}
+  .or-val3 .k small{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:2px;line-height:1.35}
+  .or-val3 .v{flex:none;font-weight:800;font-size:14.5px;text-align:right;max-width:45%}
+  .or-val3 .v.na{color:var(--muted);font-size:13px}
+  .or-op{display:flex;align-items:center;gap:10px;background:var(--field);border:2px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px}
+  .or-op .o-txt{flex:1;min-width:0;font-size:13.5px;font-weight:700;line-height:1.35}
+  .or-op .o-txt b{font-weight:800}
+  .or-op .o-txt small{display:block;color:var(--muted);font-weight:700;font-size:12px}
+  .or-op button{flex:none;border:none;background:var(--chip);border-radius:10px;width:36px;height:36px;font-size:16px;cursor:pointer}
+  .or-err{color:var(--red);font-weight:700;font-size:13.5px;margin:8px 2px 0;min-height:18px}
+  .or-sheet .submit,.or-vente .submit,.or-achat .submit{background:linear-gradient(135deg,#ffcf4a,#e9a000);color:#3d2900;box-shadow:0 8px 20px rgba(233,160,0,.35)}
 </style>
 </head>
 <body>
@@ -732,6 +887,7 @@
     <div class="view" id="view-shop"></div>
     <div class="view" id="view-film"></div>
     <div class="view" id="view-debt"></div>
+    <div class="view" id="view-or"></div>
     <div class="view" id="view-move"></div>
   </main>
 </div>
@@ -743,6 +899,7 @@
   <button class="tab t-shop" data-tab="shop"><span class="ic">🛒</span>Courses</button>
   <button class="tab t-film" data-tab="film"><span class="ic">🎬</span>Films</button>
   <button class="tab t-debt" data-tab="debt"><span class="ic">🤝</span>Prêts</button>
+  <button class="tab t-or" data-tab="or"><span class="ic">🪙</span>Or</button>
   <button class="tab t-move" data-tab="move" style="display:none"><span class="ic">📦</span>Cartons</button>
 </div></div>
 
@@ -880,6 +1037,97 @@
     <p class="remb-hint" id="rembErr" role="alert" style="color:var(--red)"></p>
   </div>
   <button class="submit" id="rembSave">Enregistrer</button>
+</div>
+
+<!-- OR : DÉTAIL D'UN ACHAT -->
+<div class="sheet-bg" id="orLotBg"></div>
+<div class="sheet or-sheet" id="orLotSheet">
+  <button class="sheet-x" id="orLotX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body" id="orLotBody"></div>
+  <button class="submit" id="orLotVendre">💶 Enregistrer une vente</button>
+</div>
+
+<!-- OR : HISTORIQUE DES OPÉRATIONS -->
+<div class="sheet-bg" id="orOpsBg"></div>
+<div class="sheet or-sheet" id="orOpsSheet">
+  <button class="sheet-x" id="orOpsX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body" id="orOpsBody"></div>
+</div>
+
+<!-- OR : SAISIE / MODIFICATION D'UNE VENTE -->
+<div class="sheet-bg" id="orVenteBg"></div>
+<div class="sheet or-vente" id="orVenteSheet">
+  <button class="sheet-x" id="orVenteX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body">
+    <h3 id="orVenteTitre">Enregistrer une vente 💶</h3>
+    <label class="remb-lab">Pièces vendues — de quel achat ? *</label>
+    <div class="or-lotpick" id="orVenteLots"></div>
+    <div class="or-2col">
+      <div><label class="remb-lab" for="orVQte">Quantité vendue *</label>
+        <div class="or-step"><button type="button" id="orVQteM" aria-label="Moins">−</button><input class="field" id="orVQte" inputmode="numeric" value="1" autocomplete="off" /><button type="button" id="orVQteP" aria-label="Plus">＋</button></div></div>
+      <div><label class="remb-lab" for="orVDate">Date de vente *</label><input class="field" id="orVDate" type="date" /></div>
+    </div>
+    <label class="remb-lab">Prix de vente *</label>
+    <div class="or-seg" id="orVMode"><button type="button" data-m="unit" class="on">Prix par pièce</button><button type="button" data-m="total">Montant total</button></div>
+    <div class="field-wrap"><input class="field" id="orVPrix" inputmode="decimal" placeholder="Ex : 540" autocomplete="off" /><span class="field-emo">€</span></div>
+    <p class="or-calc" id="orVCalc"></p>
+    <label class="remb-lab" for="orVFrais">Frais de vente (€)</label>
+    <input class="field" id="orVFrais" inputmode="decimal" placeholder="Facultatif (ex : 12)" autocomplete="off" />
+    <label class="remb-lab" for="orVComm">Commentaire</label>
+    <input class="field" id="orVComm" maxlength="1000" placeholder="Facultatif (ex : vendu au comptoir)" autocomplete="off" />
+    <p class="or-err" id="orVenteErr" role="alert"></p>
+  </div>
+  <button class="submit" id="orVenteOk">Enregistrer la vente</button>
+</div>
+
+<!-- OR : SAISIE / MODIFICATION D'UN ACHAT -->
+<div class="sheet-bg" id="orAchatBg"></div>
+<div class="sheet or-achat" id="orAchatSheet">
+  <button class="sheet-x" id="orAchatX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body">
+    <h3 id="orAchatTitre">Nouvel achat 🪙</h3>
+    <label class="remb-lab">Type de pièce *</label>
+    <div class="or-types" id="orTypes"></div>
+    <div id="orFiche"></div>
+    <div id="orPerso" style="display:none">
+      <label class="remb-lab" for="orNom" id="orNomLab">Nom de la pièce *</label>
+      <input class="field" id="orNom" maxlength="80" placeholder="Ex : 50 pesos mexicain" autocomplete="off" />
+      <div class="or-3col">
+        <div><label class="remb-lab" for="orBrut">Poids brut (g)</label><input class="field" id="orBrut" inputmode="decimal" placeholder="8,16" autocomplete="off" /></div>
+        <div><label class="remb-lab" for="orTitre">Titre (‰)</label><input class="field" id="orTitre" inputmode="decimal" placeholder="917" autocomplete="off" /></div>
+        <div><label class="remb-lab" for="orFin">Or fin (g) *</label><input class="field" id="orFin" inputmode="decimal" placeholder="7,48" autocomplete="off" /></div>
+      </div>
+      <p class="or-calc" id="orFinCalc"></p>
+    </div>
+    <div class="or-2col">
+      <div><label class="remb-lab" for="orQte">Quantité *</label>
+        <div class="or-step"><button type="button" id="orQteM" aria-label="Moins">−</button><input class="field" id="orQte" inputmode="numeric" value="1" autocomplete="off" /><button type="button" id="orQteP" aria-label="Plus">＋</button></div></div>
+      <div><label class="remb-lab" for="orDate">Date d'achat *</label><input class="field" id="orDate" type="date" /></div>
+    </div>
+    <label class="remb-lab">Prix payé *</label>
+    <div class="or-seg" id="orMode"><button type="button" data-m="unit" class="on">Prix par pièce</button><button type="button" data-m="total">Montant total</button></div>
+    <div class="field-wrap"><input class="field" id="orPrix" inputmode="decimal" placeholder="Ex : 520" autocomplete="off" /><span class="field-emo">€</span></div>
+    <p class="or-calc" id="orPrixCalc"></p>
+    <button type="button" class="or-more" id="orPlus">＋ Plus de détails (frais, millésime, vendeur, photo…)</button>
+    <div id="orDetails" style="display:none">
+      <div class="or-2col">
+        <div><label class="remb-lab" for="orFrais">Frais d'achat (€)</label><input class="field" id="orFrais" inputmode="decimal" placeholder="0" autocomplete="off" /></div>
+        <div><label class="remb-lab" for="orMil">Millésime</label><input class="field" id="orMil" inputmode="numeric" maxlength="4" placeholder="Ex : 1910" autocomplete="off" /></div>
+      </div>
+      <label class="remb-lab" for="orVendeur">Vendeur</label>
+      <input class="field" id="orVendeur" maxlength="120" placeholder="Facultatif" autocomplete="off" />
+      <label class="remb-lab">Photo de la pièce</label>
+      <div class="or-photo-in" id="orPhotoIn"></div>
+      <label class="remb-lab" for="orComm">Commentaire</label>
+      <textarea class="field" id="orComm" rows="2" maxlength="1000" placeholder="Facultatif"></textarea>
+    </div>
+    <p class="or-err" id="orAchatErr" role="alert"></p>
+  </div>
+  <button class="submit" id="orAchatOk">Enregistrer l'achat</button>
 </div>
 
 <!-- AJOUT RAPIDE (langage naturel) -->
@@ -1500,6 +1748,7 @@ function paint(){
   renderFilms();
   renderDebt();
   renderMove();
+  if(tab==='or' && typeof renderOr==='function') renderOr(); // onglet Or (script séparé, données serveur)
   if(loanOpenId) renderLoanDetail(); // détail d'un prêt ouvert : soldes à jour
   renderProgress();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
@@ -2301,6 +2550,8 @@ function renderProgress(){
     const cs = S.cartons||[]; const objs = cs.reduce((s,c)=>s+((c.items||[]).length),0);
     T.textContent = '📦 Déménagement';
     D.textContent = cs.length ? `${cs.length} carton${cs.length>1?'s':''} · ${objs} objet${objs>1?'s':''}` : 'Aucun carton';
+  }else if(tab==='or'){
+    if(typeof orProgress==='function') orProgress(T, D, ring, document.getElementById('ringtxt'));
   }else if(tab==='debt'){
     const dl = S.debts||[];
     // reste dû (montant initial − remboursements reçus), par devise
@@ -2470,7 +2721,7 @@ function openSheet(editItem=null, editKey=null){
   if(!editItem) setTimeout(()=>inp.focus(),300);
 }
 function closeSheet(){ bg.classList.remove('open'); sheet.classList.remove('open'); inp.blur(); editState=null; }
-document.getElementById('fab').onclick = ()=>openSheet();
+document.getElementById('fab').onclick = ()=>{ if(tab==='or' && typeof orOuvrirAchat==='function') return orOuvrirAchat(null); openSheet(); };
 bg.onclick = closeSheet;
 document.getElementById('topBack').onclick = ()=>goBackTodo();
 
@@ -2995,10 +3246,12 @@ async function onLogin(user){
   await cloudPull();
   updateShareUI();
   subscribePush(); syncReminders();
+  if(typeof orAuth==='function') orAuth(); // onglet Or : chargement des données du compte
 }
 function onLogout(){
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
   cloud.on=false; cloud.id=null; cloud.email=null; updateShareUI();
+  if(typeof orAuth==='function') orAuth(); // onglet Or : on vide l'écran et le cache de l'appareil
 }
 function subscribeChan(){
   if(!cloud.sb || !cloud.id) return;
@@ -3241,6 +3494,771 @@ if(window.visualViewport){
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
 }
+</script>
+
+<script>
+/* ================================================================
+   ONGLET « OR » — suivi des pièces d'or
+   Données : tables zeste.or_* sur le serveur (sql/zeste-or.sql), lues et
+   écrites UNIQUEMENT par des fonctions RPC filtrées sur le compte connecté.
+   Rien n'est mis dans S (le blob synchronisé des autres onglets).
+   Cours : edge function zeste-or-cours (GoldAPI.io, clé côté serveur).
+   ================================================================ */
+
+// ==== OR-CALCUL-DEBUT (fonctions pures, sans DOM — testées par tests/or/calculs.test.mjs) ====
+// Fiches des pièces : DOIVENT rester identiques à zeste.or_types (sql/zeste-or.sql) — vérifié par le test.
+const OR_TYPES = [
+  { code:'napoleon20',   nom:'Napoléon 20 francs', court:'Napoléon 20 F', jeton:'20F', brut:6.4516, titre:900, fin:5.8064,
+    info:'France, 1803-1914 (Napoléon Ier, Napoléon III, Génie, Cérès…). Souvent appelé « louis » dans le langage courant : ce n\'est pas un Louis d\'or historique.' },
+  { code:'francs10',     nom:'10 francs or', court:'10 francs or', jeton:'10F', brut:3.2258, titre:900, fin:2.9032,
+    info:'France, 1850-1914 (Napoléon III, Cérès, Marianne Coq).' },
+  { code:'marianne_coq', nom:'Marianne Coq 20 francs', court:'Marianne Coq 20 F', jeton:'Coq', brut:6.4516, titre:900, fin:5.8064,
+    info:'France, 1899-1914. Mêmes caractéristiques que le Napoléon 20 F.' },
+  { code:'louis_xvi',    nom:'Louis d\'or Louis XVI au buste (1785-1792)', court:'Louis d\'or Louis XVI', jeton:'XVI', brut:7.649, titre:917, fin:7.0141,
+    info:'Monnaie royale « au buste », frappée de 1785 à 1792. À ne pas confondre avec le Napoléon 20 F, souvent appelé « louis ».' },
+  { code:'louis_autre',  nom:'Louis d\'or historique — autre type', court:'Louis d\'or historique', jeton:'L', libre:true,
+    info:'Le poids d\'un Louis d\'or dépend du règne et du type (ex. Louis XV « aux lunettes », environ 8,16 g à 917 ‰). Indique les caractéristiques de ta pièce : rien n\'est deviné.' },
+  { code:'souverain',    nom:'Souverain britannique', court:'Souverain', jeton:'£', brut:7.9881, titre:916.67, fin:7.3224,
+    info:'Royaume-Uni, or 22 carats (916,7 ‰).' },
+  { code:'vreneli20',    nom:'20 francs suisse (Vreneli)', court:'20 F suisse Vreneli', jeton:'CH', brut:6.4516, titre:900, fin:5.8064,
+    info:'Suisse, 1897-1949.' },
+  { code:'autre',        nom:'Autre pièce', court:'Autre pièce', jeton:'?', libre:true,
+    info:'Indique le nom de la pièce et son poids d\'or fin (ou son poids brut et son titre).' },
+];
+const OR_TYPE = Object.fromEntries(OR_TYPES.map(t=>[t.code,t]));
+
+function orC(n){ return Math.round((+n||0)*100); }                  // euros → centimes entiers
+function orJ1(j, n){ const d=new Date(j+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+(n==null?1:n)); return d.toISOString().slice(0,10); }
+function orEcart(a, b){ return Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000); }
+function orMoisAvant(j, m){ const d=new Date(j+'T00:00:00Z'); const jour=d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-m);
+  const dernier=new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 0)).getUTCDate(); d.setUTCDate(Math.min(jour,dernier)); return d.toISOString().slice(0,10); }
+function orTriVentes(a, b){ return String(a.date_vente).localeCompare(String(b.date_vente)) || String(a.cree_le||'').localeCompare(String(b.cree_le||'')) || String(a.id).localeCompare(String(b.id)); }
+function orParLot(ventes){ const m={}; (ventes||[]).forEach(v=>{ (m[v.lot_id]=m[v.lot_id]||[]).push(v); }); for(const k in m) m[k].sort(orTriVentes); return m; }
+
+/* Un lot (un achat). Coût = prix payé + frais d'achat.
+   Le coût des pièces vendues est pris au prorata, arrondi sur le CUMUL des
+   quantités vendues : quand tout est vendu, la somme des parts retombe
+   exactement sur le coût total (aucun centime perdu ou créé).
+   coursG = € par gramme d'or fin (null = inconnu → valeur inconnue, jamais inventée).
+   jusquau = 'AAAA-MM-JJ' : ne compte que les ventes faites jusqu'à ce jour (courbes). */
+function orStatsLot(lot, ventesTriees, coursG, jusquau){
+  const Q = lot.quantite|0, cout = orC(lot.prix_total) + orC(lot.frais);
+  let cumQ=0, cumBase=0; const vs=[];
+  for(const v of (ventesTriees||[])){
+    if(jusquau && v.date_vente > jusquau) continue;
+    cumQ += v.quantite|0;
+    const base = (Q ? Math.round(cout*Math.min(cumQ,Q)/Q) : 0) - cumBase;
+    cumBase += base;
+    const net = orC(v.prix_total) - orC(v.frais);
+    vs.push({ v, base, net, gain: net-base, pct: base>0 ? (net-base)/base*100 : null });
+  }
+  const detenu = Math.max(0, Q-cumQ), coutDetenu = cout - cumBase;
+  const poidsFin = detenu * (+lot.poids_fin_g||0);
+  const valeur = detenu===0 ? 0 : (coursG>0 ? Math.round(poidsFin*coursG*100) : null);
+  const latent = valeur==null ? null : valeur - coutDetenu;
+  const realise = vs.reduce((s,x)=>s+x.gain, 0);
+  return { Q, cout, vendu:cumQ, detenu, coutDetenu, coutVendu:cumBase, poidsFin, valeur, latent,
+    latentPct: (latent==null || coutDetenu<=0 || detenu===0) ? null : latent/coutDetenu*100,
+    realise, realisePct: cumBase>0 ? realise/cumBase*100 : null, ventes: vs };
+}
+function orLotStats(lot, ventes, coursG, jusquau){ return orStatsLot(lot, orParLot(ventes)[lot.id]||[], coursG, jusquau); }
+
+/* Portefeuille complet : capital encore investi, valeur métal, latent / réalisé / bilan. */
+function orPortefeuille(lots, ventes, coursG){
+  const pl = orParLot(ventes);
+  const r = { pieces:0, investi:0, valeur:0, poidsFin:0, realise:0, coutTotal:0, coutVendu:0, nbVentes:0, nbLots:(lots||[]).length };
+  let inconnu = false;
+  for(const l of (lots||[])){
+    const s = orStatsLot(l, pl[l.id]||[], coursG);
+    r.pieces += s.detenu; r.investi += s.coutDetenu; r.poidsFin += s.poidsFin; r.realise += s.realise;
+    r.coutTotal += s.cout; r.coutVendu += s.coutVendu; r.nbVentes += s.ventes.length;
+    if(s.valeur==null) inconnu = true; else r.valeur += s.valeur;
+  }
+  if(inconnu) r.valeur = null;
+  r.latent = r.valeur==null ? null : r.valeur - r.investi;
+  r.latentPct = (r.latent==null || r.investi<=0) ? null : r.latent/r.investi*100;
+  r.bilan = r.latent==null ? null : r.latent + r.realise;                    // latent + réalisé
+  r.bilanPct = (r.bilan==null || r.coutTotal<=0) ? null : r.bilan/r.coutTotal*100; // sur tout le capital engagé
+  return r;
+}
+
+/* Cours d'un jour : celui du jour, sinon le dernier coté dans les 5 jours
+   précédents (week-end, jour férié). Au-delà : null — jamais inventé. */
+const OR_REPORT_MAX = 5;
+
+/* Courbes « investi » et « valeur métal » de debut à fin (AAAA-MM-JJ).
+   hist = [[jour, €/g], …] trié ; actuel = {jour, eur_g} (cours du jour) facultatif.
+   Chaque achat ne compte qu'à partir de SA date ; chaque vente à partir de SA date.
+   Points : chaque jour si ≤ maxPts, sinon échantillonnés (+ jours d'achat/vente). */
+function orSerie(lots, ventes, hist, debut, fin, actuel, maxPts){
+  const pl = orParLot(ventes), h = hist||[], out = [];
+  if(!debut || !fin || debut > fin) return out;
+  const total = orEcart(debut, fin) + 1, pas = Math.max(1, Math.ceil(total/(maxPts||320)));
+  const evts = new Set(); (lots||[]).forEach(l=>evts.add(l.date_achat)); (ventes||[]).forEach(v=>evts.add(v.date_vente));
+  let k = 0, dernier = null;
+  for(let i=0, j=debut; j<=fin; i++, j=orJ1(j)){
+    while(k<h.length && h[k][0]<=j){ dernier = h[k]; k++; }
+    if(!(i%pas===0 || j===fin || evts.has(j))) continue;
+    let g = (dernier && orEcart(dernier[0], j) <= OR_REPORT_MAX) ? +dernier[1] : null;
+    if(actuel && actuel.eur_g>0 && j===actuel.jour) g = +actuel.eur_g;
+    let investi = 0, valeur = 0, inconnu = false;
+    for(const l of (lots||[])){
+      if(l.date_achat > j) continue;
+      const s = orStatsLot(l, pl[l.id]||[], g, j);
+      investi += s.coutDetenu;
+      if(s.valeur==null) inconnu = true; else valeur += s.valeur;
+    }
+    out.push({ j, investi, valeur: inconnu ? null : valeur, g });
+  }
+  return out;
+}
+function orDebutPeriode(per, fin, premierAchat){
+  const m = {'1m':1,'3m':3,'6m':6,'1a':12}[per];
+  const d = m ? orMoisAvant(fin, m) : (premierAchat || fin);
+  return (premierAchat && d < premierAchat) ? premierAchat : d;
+}
+
+/* Saisie : « 1 234,56 » / « 1234.5 » → centimes ; NaN si invalide ou > 2 décimales. */
+function orLireEur(s){
+  const t = String(s==null?'':s).replace(/[\s  €]/g,'').replace(',', '.');
+  if(!t) return null;
+  if(!/^\d+(\.\d{1,2})?$/.test(t)) return NaN;
+  return Math.round(parseFloat(t)*100);
+}
+function orLireNb(s){
+  const t = String(s==null?'':s).replace(/[\s  ]/g,'').replace(',', '.');
+  if(!t) return null;
+  if(!/^\d+(\.\d+)?$/.test(t)) return NaN;
+  return parseFloat(t);
+}
+/* Affichage */
+function orEur(c, signe){
+  if(c==null) return '—';
+  const v = c/100, s = Math.abs(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+  return (v<0 ? '−' : (signe && v>0 ? '+' : '')) + s;
+}
+function orPct(p){
+  if(p==null || !isFinite(p)) return '—';
+  return (p<0 ? '−' : p>0 ? '+' : '') + Math.abs(p).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %';
+}
+function orG(n, dec){ return (+n||0).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:dec==null?4:dec}); }
+// ==== OR-CALCUL-FIN ====
+
+/* ---------- état du module ---------- */
+var OR = null;  // « var » : paint() peut appeler renderOr avant la fin de ce script
+function orEtatVide(uid){ return { uid, lots:[], ventes:[], cours:null, alertes:[], charge:false, chargement:false,
+  erreur:null, majCours:false, coursLe:0, per:'1a', depuisCache:false, perDefaut:true }; }
+OR = orEtatVide(null);
+
+function orCleCache(uid){ return 'zeste_or_'+uid; }
+function orEcrireCache(){ if(!OR.uid) return; try{ localStorage.setItem(orCleCache(OR.uid), JSON.stringify({lots:OR.lots, ventes:OR.ventes, cours:OR.cours, at:Date.now()})); }catch(e){} }
+function orLireCache(){
+  try{ const c = JSON.parse(localStorage.getItem(orCleCache(OR.uid))||'null');
+    if(c){ OR.lots=c.lots||[]; OR.ventes=c.ventes||[]; OR.cours=c.cours||null; OR.depuisCache=true; OR.charge=true; } }catch(e){}
+}
+function orOublierCaches(sauf){ try{ Object.keys(localStorage).filter(k=>k.indexOf('zeste_or_')===0 && (!sauf || k!==orCleCache(sauf))).forEach(k=>localStorage.removeItem(k)); }catch(e){} }
+
+// appelé par onLogin / onLogout (et au chargement de ce script)
+function orAuth(){
+  const uid = (cloud && cloud.on) ? cloud.id : null;
+  if(OR && OR.pret && uid === OR.uid) return;
+  if(OR && OR.uid && !uid) orOublierCaches(); // déconnexion : rien ne reste sur l'appareil
+  if(uid) orOublierCaches(uid);               // caches d'un autre compte éventuel
+  OR = orEtatVide(uid); OR.pret = true;
+  if(uid){ orLireCache(); renderOr(); orCharger(); orCours(false); }
+  else { orFermerTout(); renderOr(); }
+  if(tab==='or') renderProgress();
+}
+
+function orMsg(e){
+  const m = String((e && (e.message || e.error_description || e.error)) || e || '');
+  if(/Failed to fetch|NetworkError|Load failed|network/i.test(m) || (typeof navigator!=='undefined' && navigator.onLine===false))
+    return 'Pas de connexion internet : rien n\'a été enregistré.';
+  if(/Could not find the function|does not exist|PGRST202/i.test(m)) return 'Le serveur n\'est pas encore prêt pour l\'onglet Or (installation à faire).';
+  const t = m.replace(/^Or : /,'');
+  return t ? t.charAt(0).toUpperCase()+t.slice(1) : 'Erreur inconnue';
+}
+
+async function orCharger(){
+  if(!cloud.on || !cloud.sb) return;
+  OR.chargement = true;
+  try{
+    const {data, error} = await cloud.sb.rpc('zeste_or_lire');
+    if(error) throw error;
+    OR.lots = (data && data.lots) || []; OR.ventes = (data && data.ventes) || [];
+    OR.charge = true; OR.erreur = null; OR.depuisCache = false; orEcrireCache();
+  }catch(e){ OR.erreur = orMsg(e); console.warn('or lire', e); }
+  OR.chargement = false;
+  renderOr(); orRenderLotOuvert(); if(tab==='or') renderProgress();
+}
+
+function orPremierAchat(){ return (OR.lots||[]).reduce((m,l)=> (!m || l.date_achat<m) ? l.date_achat : m, null); }
+
+/* Cours : 1) edge function (rafraîchit si besoin) ; 2) secours : dernier cours en base ;
+   3) hors connexion : dernier cours gardé sur l'appareil. */
+async function orCours(forcer){
+  if(!cloud.on || !cloud.sb || OR.majCours) return;
+  OR.majCours = true; orMajBoutonCours();
+  const depuis = orPremierAchat(), uid = OR.uid;
+  let res = null, alertes = [];
+  try{
+    const sess = await cloud.sb.auth.getSession();
+    const jeton = sess && sess.data && sess.data.session && sess.data.session.access_token;
+    if(!jeton) throw new Error('session');
+    const r = await fetch(SB_URL+'/functions/v1/zeste-or-cours', { method:'POST',
+      headers:{'Content-Type':'application/json', apikey:SB_KEY, Authorization:'Bearer '+jeton},
+      body: JSON.stringify({ depuis, forcer: !!forcer }) });
+    const j = await r.json().catch(()=>null);
+    if(!r.ok || !j || !('actuel' in j)) throw new Error((j && j.erreur) || ('HTTP '+r.status));
+    res = j; alertes = j.alertes || [];
+  }catch(e){
+    console.warn('or cours', e);
+    try{
+      const {data, error} = await cloud.sb.rpc('zeste_or_cours_lire', { p_depuis: depuis });
+      if(error) throw error;
+      res = data; alertes = ['Service du cours injoignable : dernier cours enregistré sur le serveur.'];
+    }catch(e2){ alertes = ['Hors connexion : dernier cours gardé sur cet appareil.']; }
+  }
+  if(!OR || OR.uid !== uid) return; // déconnecté entre-temps
+  if(res){ OR.cours = res; orEcrireCache(); }
+  OR.alertes = alertes; OR.coursLe = Date.now(); OR.majCours = false;
+  renderOr(); orRenderLotOuvert(); if(tab==='or') renderProgress();
+}
+
+function orActuel(){ const a = OR.cours && OR.cours.actuel; return (a && +a.eur_g>0) ? a : null; }
+function orCoursG(){ const a = orActuel(); return a ? +a.eur_g : null; }
+// cours du jour pour la courbe : seulement s'il est récent (sinon le dernier point reste celui de l'historique)
+function orPointDuJour(){
+  const a = orActuel(); if(!a) return null;
+  const jc = todayISO(), dc = new Date(a.cote_le); if(isNaN(dc)) return null;
+  const jcote = dc.getFullYear()+'-'+pad2(dc.getMonth()+1)+'-'+pad2(dc.getDate());
+  return orEcart(jcote, jc) <= OR_REPORT_MAX ? { jour: jc, eur_g: +a.eur_g } : null;
+}
+function orHist(){ return (OR.cours && Array.isArray(OR.cours.historique)) ? OR.cours.historique : []; }
+function orDateHeure(iso){ const d = new Date(iso); if(isNaN(d)) return '—';
+  return pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear()+' à '+pad2(d.getHours())+':'+pad2(d.getMinutes()); }
+function orCoursPerime(){ const a = orActuel(); return !a || (Date.now() - Date.parse(a.releve_le || a.cote_le)) > 6*3600e3; }
+function orSourceTxt(){ const a = orActuel(); return a ? (esc(String(a.source||'Source inconnue'))+' · coté le '+orDateHeure(a.cote_le)) : 'Aucun cours disponible'; }
+
+function orNomLot(l){
+  const t = OR_TYPE[l.type] || OR_TYPE.autre;
+  let n = l.type==='autre' ? (l.nom || 'Pièce') : (t.court + (l.nom ? ' — '+l.nom : ''));
+  return n + (l.millesime ? ' ('+l.millesime+')' : '');
+}
+function orJeton(l){
+  const t = OR_TYPE[l.type] || OR_TYPE.autre;
+  if(l.type==='autre' && l.nom){ return l.nom.trim().split(/\s+/).map(w=>w[0]).join('').slice(0,3).toUpperCase() || '?'; }
+  return t.jeton;
+}
+function orCoin(l, cls){ return `<span class="or-coin ${cls||''}">${esc(String(orJeton(l)))}</span>`; }
+function orClasse(c){ return c==null ? '' : c>0 ? 'or-gain' : c<0 ? 'or-perte' : ''; }
+
+/* ---------- ÉCRAN PRINCIPAL ---------- */
+function renderOr(){
+  const el = document.getElementById('view-or'); if(!el || !OR) return;
+  if(!cloud.on){
+    el.innerHTML = `<div class="or-lock"><div class="big">🔒🪙</div><b>Ton or reste privé</b>
+      <p>Connecte-toi avec ton compte Zeste pour suivre tes pièces d'or. Elles sont gardées sur le serveur, visibles par toi seul — jamais dans la synchro des autres listes.</p>
+      <button class="share-btn primary" id="orLogin">Se connecter</button></div>`;
+    document.getElementById('orLogin').onclick = ()=>{ const w=document.getElementById('welcome'); if(w) w.classList.add('show'); else openSettings(); };
+    return;
+  }
+  const g = orCoursG(), P = orPortefeuille(OR.lots, OR.ventes, g), a = orActuel();
+  const hasLots = OR.lots.length > 0;
+  let h = '';
+  // carte principale
+  const plCls = P.latent==null ? '' : P.latent>=0 ? 'g' : 'p';
+  h += `<div class="or-hero"><div class="or-hero-top"><span class="or-hero-lab">🪙 Valeur métal estimée</span>
+      <button class="or-refresh${OR.majCours?' spin':''}" id="orRefresh" aria-label="Actualiser le cours"><span>⟳</span></button></div>
+    <div class="or-hero-val">${hasLots ? orEur(P.valeur) : orEur(0)}</div>
+    ${hasLots && P.investi>0 ? `<div class="or-hero-pl ${plCls}">${P.latent==null?'—':orEur(P.latent,true)+' · '+orPct(P.latentPct)} <small>sur le capital investi</small></div>` : ''}
+    <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span><span><b>${orG(P.poidsFin,2)} g</b> d'or fin</span></div>
+    ${(OR.alertes.length || (a && orCoursPerime())) ? `<div class="or-warn">⚠️ ${esc(OR.alertes[0] || 'Cours ancien : dernier cours connu affiché.')}</div>` : ''}
+    ${!a && !OR.majCours ? `<div class="or-warn">⚠️ Cours de l'or indisponible pour le moment : la valeur ne peut pas être calculée.</div>` : ''}
+    ${OR.erreur ? `<div class="or-warn">⚠️ ${esc(OR.erreur)}${OR.depuisCache?' — données gardées sur l\'appareil.':''}</div>` : ''}
+  </div>`;
+  // graphique
+  if(hasLots){
+    const per = OR.per;
+    h += `<div class="or-card"><div class="or-per" id="orPer">${[['1m','1 M'],['3m','3 M'],['6m','6 M'],['1a','1 an'],['max','Max']].map(([k,t])=>`<button data-p="${k}" class="${per===k?'on':''}">${t}</button>`).join('')}</div>
+      <div class="or-tip" id="orTip"></div><div class="or-graph" id="orGraph"></div>
+      <div class="or-leg"><span><i class="lv"></i>Valeur métal</span><span><i class="li"></i>Montant investi</span></div>
+      <div class="or-graph-note" id="orGraphNote"></div></div>`;
+  }
+  // tuiles
+  h += `<div class="or-tiles">
+    <div class="or-tile"><small>Cours de l'or</small><b>${a ? orG(a.eur_g,2)+' €/g' : '—'}</b><span>${a ? 'MAJ '+orDateHeure(a.releve_le||a.cote_le) : (OR.majCours?'Chargement…':'Indisponible')}</span></div>
+    <div class="or-tile"><small>${P.nbVentes ? 'Bilan global' : 'Rendement'}</small>
+      <b class="${orClasse(P.nbVentes?P.bilan:P.latent)}">${P.nbVentes ? orPct(P.bilanPct) : orPct(P.latentPct)}</b>
+      <span>${P.nbVentes ? orEur(P.bilan,true)+' latent + réalisé' : (hasLots ? orEur(P.latent,true)+' latent' : 'Aucune pièce')}</span></div>
+    ${P.nbVentes ? `<div class="or-tile"><small>Gains réalisés</small><b class="${orClasse(P.realise)}">${orEur(P.realise,true)}</b><span>${P.nbVentes} vente${P.nbVentes>1?'s':''}</span></div>
+    <div class="or-tile"><small>Latent (détenu)</small><b class="${orClasse(P.latent)}">${orEur(P.latent,true)}</b><span>${orPct(P.latentPct)}</span></div>` : ''}
+  </div>`;
+  // actions
+  const vendable = OR.lots.some(l=>orLotStats(l, OR.ventes, null).detenu>0);
+  h += `<div class="or-actions"><button class="or-btn add" id="orAdd">＋ Ajouter un achat</button>
+    <button class="or-btn sell" id="orSell" ${vendable?'':'disabled'}>💶 Enregistrer une vente</button></div>`;
+  // liste des lots
+  if(!hasLots){
+    h += OR.chargement && !OR.charge ? `<div class="or-empty">Chargement…</div>`
+      : `<div class="or-empty"><div class="big">🪙</div><b>Aucune pièce pour l'instant</b>Ajoute ton premier achat : la valeur se calcule toute seule.</div>`;
+  } else {
+    const pl = orParLot(OR.ventes);
+    const rows = OR.lots.map(l=>({ l, s: orStatsLot(l, pl[l.id]||[], g) }))
+      .filter(x=> matchQ(orNomLot(x.l)) || matchQ(x.l.vendeur) || matchQ(x.l.commentaire))
+      .sort((x,y)=> (y.s.detenu>0) - (x.s.detenu>0) || String(y.l.date_achat).localeCompare(String(x.l.date_achat)));
+    h += `<div class="or-h">Mes pièces<span class="n">${OR.lots.length} achat${OR.lots.length>1?'s':''}</span></div>`;
+    if(!rows.length) h += `<div class="or-empty">🔍 Aucun résultat</div>`;
+    h += rows.map(({l,s})=>{
+      const sold = s.detenu===0;
+      const right = sold
+        ? `<div class="l-val">Vendu</div><div class="l-pl ${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</div>`
+        : `<div class="l-val">${orEur(s.valeur)}</div><div class="l-pl ${orClasse(s.latent)}">${s.latent==null?'—':orEur(s.latent,true)} · ${orPct(s.latentPct)}</div>`;
+      return `<button class="or-lot${sold?' sold':''}" data-lot="${esc(String(l.id))}">${orCoin(l)}
+        <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} ×${s.vendu? s.detenu+'/'+s.Q : s.Q}</div>
+        <div class="l-sub">${frDate(l.date_achat)} · payé ${orEur(s.cout)}</div></div>
+        <div class="l-right">${right}</div></button>`;
+    }).join('');
+    h += `<button class="or-link" id="orOps">📜 Historique des opérations</button>`;
+  }
+  h += `<p class="or-foot">ℹ️ Valeur métal = quantité × or fin par pièce × cours de l'or. Ce n'est pas un prix de revente :
+    aucune source fiable et gratuite ne publie la cotation des pièces (prime comprise) ni un prix de rachat, donc Zeste n'en affiche pas.
+    Source : ${orSourceTxt()}.</p>`;
+  el.innerHTML = h;
+  document.getElementById('orRefresh').onclick = ()=>{ orCours(true); };
+  document.getElementById('orAdd').onclick = ()=>orOuvrirAchat(null);
+  document.getElementById('orSell').onclick = ()=>orOuvrirVente(null, null);
+  el.querySelectorAll('[data-lot]').forEach(b=>{ b.onclick = ()=>orOuvrirLot(b.dataset.lot); });
+  const ops = document.getElementById('orOps'); if(ops) ops.onclick = orOuvrirOps;
+  const perEl = document.getElementById('orPer');
+  if(perEl) perEl.querySelectorAll('button').forEach(b=>{ b.onclick = ()=>{ OR.per = b.dataset.p; OR.perDefaut = false; renderOr(); }; });
+  if(hasLots) orGraphDashboard();
+}
+function orMajBoutonCours(){ const b = document.getElementById('orRefresh'); if(b) b.classList.toggle('spin', !!OR.majCours); }
+
+function orGraphDashboard(){
+  const box = document.getElementById('orGraph'); if(!box) return;
+  const fin = todayISO(), premier = orPremierAchat();
+  if(OR.perDefaut && premier && orEcart(premier, fin) < 365) OR.per = 'max';
+  const debut = orDebutPeriode(OR.per, fin, premier);
+  const pts = orSerie(OR.lots, OR.ventes, orHist(), debut, fin, orPointDuJour());
+  orDessiner(box, document.getElementById('orTip'), pts);
+  orNoteTrous(document.getElementById('orGraphNote'), pts);
+}
+function orNoteTrous(el, pts){
+  if(!el) return;
+  const premierConnu = pts.find(p=>p.valeur!=null), trou = pts.some(p=>p.valeur==null);
+  el.textContent = !trou ? '' : !premierConnu
+    ? 'Historique du cours indisponible sur cette période : seule la courbe du montant investi est tracée.'
+    : 'Historique du cours indisponible avant le '+frDate(premierConnu.j)+' : la courbe de valeur commence à cette date (rien n\'est inventé).';
+}
+
+/* ---------- GRAPHIQUE (SVG fait main, lisible au doigt) ---------- */
+function orDessiner(box, tip, pts){
+  if(!box) return;
+  if(pts.length < 2){ box.innerHTML = ''; if(tip) tip.innerHTML = '<span class="t-d">Pas encore assez de données pour tracer une courbe.</span>'; return; }
+  const W = Math.max(260, Math.round(box.clientWidth || (mainEl.clientWidth - 40) || 320)), H = 176;
+  const pT = 8, pB = 22, pL = 2, pR = 2;
+  const vals = []; pts.forEach(p=>{ vals.push(p.investi); if(p.valeur!=null) vals.push(p.valeur); });
+  let mn = Math.min(...vals), mx = Math.max(...vals);
+  if(mx - mn < Math.max(100, mx*0.02)){ const m = Math.max(100, mx*0.04); mn -= m; mx += m; }
+  const marge = (mx-mn)*0.08; mx += marge; mn = Math.max(0, mn - marge);
+  const n = pts.length, X = i=> pL + i*(W-pL-pR)/(n-1), Y = v=> pT + (mx-v)/(mx-mn)*(H-pT-pB);
+  // valeur : segments continus (trous = pas de cours)
+  let dv = '', da = '', seg = [];
+  const fermer = ()=>{ if(seg.length>1){ da += 'M'+seg.map(([x,y])=>x.toFixed(1)+' '+y.toFixed(1)).join('L')+'L'+seg[seg.length-1][0].toFixed(1)+' '+(H-pB)+'L'+seg[0][0].toFixed(1)+' '+(H-pB)+'Z'; } seg = []; };
+  pts.forEach((p,i)=>{ if(p.valeur==null){ fermer(); return; } const x=X(i), y=Y(p.valeur); dv += (seg.length?'L':'M')+x.toFixed(1)+' '+y.toFixed(1); seg.push([x,y]); });
+  fermer();
+  // investi : en escalier (il ne bouge qu'aux achats / ventes)
+  let di = '';
+  pts.forEach((p,i)=>{ const x=X(i), y=Y(p.investi); di += i===0 ? 'M'+x.toFixed(1)+' '+y.toFixed(1) : 'L'+x.toFixed(1)+' '+Y(pts[i-1].investi).toFixed(1)+'L'+x.toFixed(1)+' '+y.toFixed(1); });
+  const grille = [0.25,0.5,0.75].map(f=>{ const y = pT + f*(H-pT-pB); return `<line x1="0" x2="${W}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4"/>`; }).join('');
+  const etq = v=> (Math.round(v/100)).toLocaleString('fr-FR')+' €';
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img" aria-label="Évolution de la valeur et du montant investi">
+    <defs><linearGradient id="orAire" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5b800" stop-opacity=".34"/><stop offset="1" stop-color="#f5b800" stop-opacity="0"/></linearGradient></defs>
+    ${grille}
+    <path d="${da}" fill="url(#orAire)"/>
+    <path d="${di}" fill="none" stroke="var(--purple)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" opacity=".85"/>
+    <path d="${dv}" fill="none" stroke="#e9a800" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <text class="ax" x="${W-2}" y="${pT+9}" text-anchor="end">${etq(mx)}</text>
+    <text class="ax" x="${W-2}" y="${H-pB-4}" text-anchor="end">${etq(mn)}</text>
+    <text class="ax" x="2" y="${H-5}">${frDate(pts[0].j)}</text>
+    <text class="ax" x="${W-2}" y="${H-5}" text-anchor="end">${frDate(pts[n-1].j)}</text>
+    <g id="orCur" style="display:none"><line y1="${pT}" y2="${H-pB}" stroke="var(--muted)" stroke-width="1"/>
+      <circle class="cv" r="5" fill="#e9a800" stroke="var(--card)" stroke-width="2"/><circle class="ci" r="4.5" fill="var(--purple)" stroke="var(--card)" stroke-width="2"/></g>
+  </svg>`;
+  const svg = box.querySelector('svg'), cur = svg.getElementById ? svg.getElementById('orCur') : svg.querySelector('#orCur');
+  const montrer = (i, curseur)=>{
+    const p = pts[i]; if(!p || !tip) return;
+    const ecart = p.valeur==null ? null : p.valeur - p.investi;
+    tip.innerHTML = `<span class="t-d">${frDate(p.j)}${p.g ? ' · or '+orG(p.g,2)+' €/g' : ''}</span>
+      <span class="t-v">${p.valeur==null ? 'Valeur —' : orEur(p.valeur)}</span><span class="t-i">investi ${orEur(p.investi)}</span>
+      ${ecart==null ? '' : `<span class="t-x ${orClasse(ecart)}">${orEur(ecart,true)}</span>`}`;
+    if(!curseur){ cur.style.display = 'none'; return; }
+    const x = X(i); cur.style.display = '';
+    cur.querySelector('line').setAttribute('x1', x); cur.querySelector('line').setAttribute('x2', x);
+    const cv = cur.querySelector('.cv'), ci = cur.querySelector('.ci');
+    ci.setAttribute('cx', x); ci.setAttribute('cy', Y(p.investi));
+    if(p.valeur==null) cv.style.display='none'; else { cv.style.display=''; cv.setAttribute('cx', x); cv.setAttribute('cy', Y(p.valeur)); }
+  };
+  montrer(n-1, false);
+  let tRetour = null;
+  const suivre = e=>{
+    const r = svg.getBoundingClientRect(); if(!r.width) return;
+    const i = Math.max(0, Math.min(n-1, Math.round((e.clientX - r.left)/r.width*(n-1))));
+    clearTimeout(tRetour); montrer(i, true);
+  };
+  const lacher = ()=>{ clearTimeout(tRetour); tRetour = setTimeout(()=>montrer(n-1,false), 2200); };
+  box.onpointerdown = e=>{ suivre(e); };
+  box.onpointermove = e=>{ if(e.pointerType==='mouse' || e.buttons || e.pressure>0) suivre(e); };
+  box.onpointerup = lacher; box.onpointercancel = lacher; box.onpointerleave = lacher;
+}
+
+/* ---------- FENÊTRES : ouvrir / fermer ---------- */
+function orOuvrirFen(id){ document.getElementById(id+'Bg').classList.add('open'); document.getElementById(id+'Sheet').classList.add('open'); }
+function orFermerFen(id){ document.getElementById(id+'Bg').classList.remove('open'); document.getElementById(id+'Sheet').classList.remove('open'); }
+function orFermerTout(){ ['orLot','orOps','orVente','orAchat'].forEach(orFermerFen); orLotId = null; }
+
+/* ---------- DÉTAIL D'UN ACHAT ---------- */
+var orLotId = null;
+function orLot(id){ return (OR.lots||[]).find(l=>String(l.id)===String(id)); }
+function orOuvrirLot(id){ orLotId = id; orRenderLotOuvert(); if(orLotId) orOuvrirFen('orLot'); }
+function orRenderLotOuvert(){
+  if(!orLotId) return;
+  const l = orLot(orLotId);
+  if(!l){ orLotId = null; orFermerFen('orLot'); return; }
+  const g = orCoursG(), s = orLotStats(l, OR.ventes, g), a = orActuel(), t = OR_TYPE[l.type] || OR_TYPE.autre;
+  let h = `<div class="or-d-head">${orCoin(l,'big')}<div><h3>${esc(orNomLot(l))}</h3>
+    <small>Acheté le ${frDate(l.date_achat)}${l.vendeur?' · chez '+esc(String(l.vendeur)):''}</small></div></div>
+    <div id="orLotPhoto"></div>
+    <div class="or-d-sum">
+      <div><small>Pièces détenues</small><b>${s.detenu}${s.vendu?' / '+s.Q:''}</b></div>
+      <div><small>Prix payé${s.vendu?' (détenu)':''}</small><b>${orEur(s.coutDetenu)}</b></div>
+      <div><small>Valeur métal</small><b>${orEur(s.valeur)}</b></div>
+      <div><small>Plus-value latente</small><b class="${orClasse(s.latent)}">${s.detenu? orEur(s.latent,true)+' · '+orPct(s.latentPct) : '—'}</b></div>
+      ${s.vendu ? `<div><small>Gains réalisés</small><b class="${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</b></div>
+      <div><small>Coût total de l'achat</small><b>${orEur(s.cout)}</b></div>` : ''}
+    </div>
+    <div class="or-card" style="margin-top:12px;padding:12px">
+      <div style="font-weight:800;font-size:13.5px">📈 Valeur métal depuis l'achat</div>
+      <div class="or-tip" id="orLotTip"></div><div class="or-graph" id="orLotGraph"></div>
+      <div class="or-leg"><span><i class="lv"></i>Valeur métal (cours de l'or)</span><span><i class="li"></i>Prix payé</span></div>
+      <div class="or-graph-note" id="orLotNote"></div></div>
+    <div class="or-val3">
+      <div><div class="k">1. Valeur du métal<small>${a ? `${orG(s.poidsFin,4)} g d'or fin × ${orG(a.eur_g,2)} €/g — ${orSourceTxt()}` : 'Cours de l\'or indisponible.'}</small></div><div class="v">${orEur(s.valeur)}</div></div>
+      <div><div class="k">2. Cotation de la pièce<small>Prix de marché prime comprise : aucune source fiable et gratuite n'est disponible.</small></div><div class="v na">Non disponible</div></div>
+      <div><div class="k">3. Prix de rachat estimé<small>Aucune donnée réelle de rachat. La valeur métal n'est pas le prix auquel la pièce se revend.</small></div><div class="v na">Non disponible</div></div>
+    </div>
+    <div class="or-fiche" style="margin-top:12px">🔎 <b>Fiche</b> — ${l.poids_brut_g ? 'poids brut <b>'+orG(l.poids_brut_g)+' g</b> · ' : ''}${l.titre_millieme ? 'titre <b>'+orG(l.titre_millieme,2)+' ‰</b> · ' : ''}or fin <b>${orG(l.poids_fin_g)} g</b> par pièce${t.libre?' (saisi par toi)':''}
+      ${l.commentaire ? `<br>💬 ${esc(String(l.commentaire))}` : ''}</div>
+    <div class="remb-h">📜 Opérations</div>
+    <div class="or-op"><div class="o-txt"><b>Achat · ${s.Q} pièce${s.Q>1?'s':''}</b> le ${frDate(l.date_achat)}
+      <small>${orEur(orC(l.prix_total))}${+l.frais?' + '+orEur(orC(l.frais))+' de frais':''}</small></div></div>`;
+  h += s.ventes.map(x=>`<div class="or-op"><div class="o-txt"><b>Vente · ${x.v.quantite} pièce${x.v.quantite>1?'s':''}</b> le ${frDate(x.v.date_vente)}
+      <small>${orEur(orC(x.v.prix_total))}${+x.v.frais?' − '+orEur(orC(x.v.frais))+' de frais':''} · <span class="${orClasse(x.gain)}">${orEur(x.gain,true)} réalisé</span></small>
+      ${x.v.commentaire?`<small>💬 ${esc(String(x.v.commentaire))}</small>`:''}</div>
+      <button data-vedit="${esc(String(x.v.id))}" aria-label="Modifier cette vente">✏️</button><button data-vdel="${esc(String(x.v.id))}" aria-label="Supprimer cette vente">🗑️</button></div>`).join('');
+  h += `<button class="share-btn" id="orLotEdit" style="margin-top:16px">✏️ Modifier l'achat</button>
+    <button class="share-btn danger" id="orLotDel">🗑️ Supprimer l'achat</button>`;
+  const body = document.getElementById('orLotBody'); body.innerHTML = h;
+  document.getElementById('orLotEdit').onclick = ()=>orOuvrirAchat(l);
+  document.getElementById('orLotDel').onclick = ()=>orSupprimerLot(l.id);
+  body.querySelectorAll('[data-vedit]').forEach(b=>{ b.onclick = ()=>orOuvrirVente(l.id, b.dataset.vedit); });
+  body.querySelectorAll('[data-vdel]').forEach(b=>{ b.onclick = ()=>orSupprimerVente(b.dataset.vdel); });
+  const vb = document.getElementById('orLotVendre'); vb.style.display = s.detenu>0 ? '' : 'none'; vb.onclick = ()=>orOuvrirVente(l.id, null);
+  // courbe du lot (ce lot seul, ses ventes seules)
+  const fin = todayISO(), vl = (OR.ventes||[]).filter(v=>v.lot_id===l.id);
+  const pts = orSerie([l], vl, orHist(), l.date_achat, fin, orPointDuJour());
+  requestAnimationFrame(()=>{ orDessiner(document.getElementById('orLotGraph'), document.getElementById('orLotTip'), pts); orNoteTrous(document.getElementById('orLotNote'), pts); });
+  if(l.a_photo) orChargerPhoto(l.id);
+}
+const orPhotos = {};
+async function orChargerPhoto(lid){
+  const box = ()=>document.getElementById('orLotPhoto');
+  if(orPhotos[lid]){ const b=box(); if(b) b.innerHTML = `<img class="or-d-photo" src="${orPhotos[lid]}" alt="Photo de la pièce">`; return; }
+  try{ const {data, error} = await cloud.sb.rpc('zeste_or_photo_lire', { p_lot: lid });
+    if(error) throw error;
+    if(data && /^data:image\/jpeg;base64,/.test(data)){ orPhotos[lid] = data; if(String(orLotId)===String(lid)){ const b=box(); if(b) b.innerHTML = `<img class="or-d-photo" src="${data}" alt="Photo de la pièce">`; } }
+  }catch(e){ console.warn('photo', e); }
+}
+
+async function orSupprimerLot(id){
+  const l = orLot(id); if(!l) return;
+  const nv = (OR.ventes||[]).filter(v=>v.lot_id===l.id).length;
+  const q = nv ? `Supprimer l'achat « ${orNomLot(l)} » du ${frDate(l.date_achat)} ET ses ${nv} vente${nv>1?'s':''} ?\nC'est définitif.`
+               : `Supprimer l'achat « ${orNomLot(l)} » du ${frDate(l.date_achat)} ?\nC'est définitif.`;
+  if(!confirm(q)) return;
+  const {error} = await cloud.sb.rpc('zeste_or_lot_supprimer', { p_id: l.id, p_avec_ventes: nv>0 });
+  if(error){ toast('⚠️ '+orMsg(error)); return; }
+  OR.lots = OR.lots.filter(x=>x.id!==l.id); OR.ventes = OR.ventes.filter(v=>v.lot_id!==l.id); delete orPhotos[l.id];
+  orEcrireCache(); orLotId = null; orFermerFen('orLot'); renderOr(); renderProgress(); toast('Achat supprimé 🗑️');
+}
+async function orSupprimerVente(vid){
+  const v = (OR.ventes||[]).find(x=>String(x.id)===String(vid)); if(!v) return;
+  if(!confirm(`Supprimer la vente de ${v.quantite} pièce${v.quantite>1?'s':''} du ${frDate(v.date_vente)} ?\nLes pièces redeviennent détenues.`)) return;
+  const {error} = await cloud.sb.rpc('zeste_or_vente_supprimer', { p_id: v.id });
+  if(error){ toast('⚠️ '+orMsg(error)); return; }
+  OR.ventes = OR.ventes.filter(x=>x.id!==v.id); orEcrireCache(); renderOr(); orRenderLotOuvert(); renderProgress(); toast('Vente supprimée 🗑️');
+}
+
+/* ---------- HISTORIQUE DES OPÉRATIONS ---------- */
+function orOuvrirOps(){
+  const ops = [];
+  OR.lots.forEach(l=>ops.push({ j:l.date_achat, t:l.cree_le, l, achat:true }));
+  OR.ventes.forEach(v=>{ const l = orLot(v.lot_id); if(l) ops.push({ j:v.date_vente, t:v.cree_le, l, v }); });
+  ops.sort((a,b)=> String(b.j).localeCompare(String(a.j)) || String(b.t||'').localeCompare(String(a.t||'')));
+  const g = orCoursG(), pl = orParLot(OR.ventes);
+  let h = `<h3>📜 Historique des opérations</h3>`;
+  h += ops.length ? ops.map(o=>{
+    if(o.achat) return `<button class="or-lot" data-ol="${esc(String(o.l.id))}">${orCoin(o.l)}<div class="l-mid"><div class="l-name">Achat · ${esc(orNomLot(o.l))} ×${o.l.quantite}</div>
+      <div class="l-sub">${frDate(o.j)}${o.l.vendeur?' · '+esc(String(o.l.vendeur)):''}</div></div><div class="l-right"><div class="l-val">−${orEur(orC(o.l.prix_total)+orC(o.l.frais))}</div></div></button>`;
+    const x = orStatsLot(o.l, pl[o.l.id]||[], g).ventes.find(y=>y.v.id===o.v.id);
+    return `<button class="or-lot" data-ol="${esc(String(o.l.id))}">${orCoin(o.l)}<div class="l-mid"><div class="l-name">Vente · ${esc(orNomLot(o.l))} ×${o.v.quantite}</div>
+      <div class="l-sub">${frDate(o.j)}</div></div><div class="l-right"><div class="l-val">+${orEur(x?x.net:0)}</div>
+      <div class="l-pl ${orClasse(x&&x.gain)}">${x?orEur(x.gain,true):''}</div></div></button>`;
+  }).join('') : `<div class="or-empty">Aucune opération.</div>`;
+  const body = document.getElementById('orOpsBody'); body.innerHTML = h;
+  body.querySelectorAll('[data-ol]').forEach(b=>{ b.onclick = ()=>{ orFermerFen('orOps'); orOuvrirLot(b.dataset.ol); }; });
+  orOuvrirFen('orOps');
+}
+
+/* ---------- SAISIE D'UN ACHAT ---------- */
+var orF = null, orOcc = false;
+function orHorsLigne(){ return typeof navigator!=='undefined' && navigator.onLine===false; }
+function orOuvrirAchat(l){
+  if(!cloud.on){ toast('🔒 Connecte-toi pour enregistrer ton or'); return; }
+  orF = { id: l ? l.id : ((crypto && crypto.randomUUID) ? crypto.randomUUID() : null), edit: !!l, type: l ? l.type : 'napoleon20',
+          mode: 'unit', photo: undefined, aPhoto: !!(l && l.a_photo) };
+  const $ = i=>document.getElementById(i);
+  $('orAchatTitre').textContent = l ? 'Modifier l\'achat ✏️' : 'Nouvel achat 🪙';
+  $('orAchatOk').textContent = l ? 'Enregistrer la modification' : 'Enregistrer l\'achat';
+  $('orQte').value = l ? l.quantite : 1;
+  const dt = $('orDate'); dt.max = todayISO(); dt.value = l ? l.date_achat : todayISO();
+  $('orPrix').value = l ? String(+l.prix_total).replace('.',',') : '';
+  if(l){ orF.mode = 'total'; }
+  $('orFrais').value = l && +l.frais ? String(+l.frais).replace('.',',') : '';
+  $('orMil').value = l && l.millesime ? l.millesime : '';
+  $('orVendeur').value = l ? (l.vendeur||'') : '';
+  $('orComm').value = l ? (l.commentaire||'') : '';
+  $('orNom').value = l ? (l.nom||'') : '';
+  const libre = l && (OR_TYPE[l.type]||{}).libre;
+  $('orBrut').value = libre && l.poids_brut_g ? String(+l.poids_brut_g).replace('.',',') : '';
+  $('orTitre').value = libre && l.titre_millieme ? String(+l.titre_millieme).replace('.',',') : '';
+  $('orFin').value = libre && l.poids_fin_g ? String(+l.poids_fin_g).replace('.',',') : '';
+  const details = !!(l && (+l.frais || l.millesime || l.vendeur || l.commentaire || l.a_photo));
+  $('orDetails').style.display = details ? '' : 'none'; $('orPlus').style.display = details ? 'none' : '';
+  $('orAchatErr').textContent = '';
+  orRenderTypes(); orSyncMode('orMode', orF.mode); orCalcAchat(); orRenderPhotoIn();
+  if(l && l.a_photo && !orPhotos[l.id]) orChargerPhoto(l.id).then(orRenderPhotoIn);
+  orOuvrirFen('orAchat');
+}
+function orRenderTypes(){
+  const box = document.getElementById('orTypes');
+  box.innerHTML = OR_TYPES.map(t=>`<button type="button" class="or-type${orF.type===t.code?' sel':''}" data-t="${t.code}">
+    <span class="or-coin">${esc(t.jeton)}</span><span><span class="tn">${esc(t.court)}</span><span class="tf" style="display:block">${t.libre ? 'poids à saisir' : orG(t.fin)+' g d\'or fin'}</span></span></button>`).join('');
+  box.querySelectorAll('[data-t]').forEach(b=>{ b.onclick = ()=>{ orF.type = b.dataset.t; orRenderTypes(); orCalcAchat(); }; });
+  const t = OR_TYPE[orF.type];
+  document.getElementById('orFiche').innerHTML = `<div class="or-fiche${t.libre?' alert':''}">${t.libre ? '✍️' : '🔎'} ${t.libre ? '' : `<b>Fiche</b> — poids brut <b>${orG(t.brut)} g</b> · titre <b>${orG(t.titre,2)} ‰</b> · or fin <b>${orG(t.fin)} g</b> par pièce.<br>`}${esc(t.info)}</div>`;
+  document.getElementById('orPerso').style.display = t.libre ? '' : 'none';
+  document.getElementById('orNomLab').textContent = orF.type==='autre' ? 'Nom de la pièce *' : 'Précision (règne, type…)';
+  document.getElementById('orNom').placeholder = orF.type==='autre' ? 'Ex : 50 pesos mexicain' : 'Ex : Louis XV aux lunettes, 1735';
+}
+function orSyncMode(id, m){ document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.toggle('on', b.dataset.m===m)); }
+function orQte(id){ const v = parseInt(document.getElementById(id).value, 10); return isNaN(v) ? null : v; }
+function orCalcAchat(){
+  const q = orQte('orQte'), p = orLireEur(document.getElementById('orPrix').value), c = document.getElementById('orPrixCalc');
+  if(p==null || isNaN(p) || !q || q<1){ c.textContent = ''; }
+  else if(orF.mode==='unit') c.textContent = q>1 ? 'Soit '+orEur(p*q)+' au total' : '';
+  else c.textContent = q>1 ? 'Soit '+orEur(Math.round(p/q))+' la pièce' : '';
+  const t = OR_TYPE[orF.type], fc = document.getElementById('orFinCalc');
+  if(t && t.libre){
+    const b = orLireNb(document.getElementById('orBrut').value), ti = orLireNb(document.getElementById('orTitre').value), f = orLireNb(document.getElementById('orFin').value);
+    fc.textContent = (f==null && b>0 && ti>0) ? 'Or fin calculé : '+orG(Math.round(b*ti/1000*10000)/10000)+' g par pièce' : '';
+  }
+}
+function orRenderPhotoIn(){
+  const box = document.getElementById('orPhotoIn'); if(!box || !orF) return;
+  const src = orF.photo !== undefined ? orF.photo : (orF.aPhoto ? orPhotos[orF.id] : null);
+  box.innerHTML = (src ? `<img src="${src}" alt="Photo">` : '') +
+    `<label>📷 ${src ? 'Changer' : 'Ajouter une photo'}<input type="file" accept="image/*" id="orPhotoFile" style="display:none"></label>` +
+    (src ? `<button type="button" id="orPhotoDel">Retirer</button>` : '');
+  document.getElementById('orPhotoFile').onchange = async e=>{
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    try{ orF.photo = await orCompresser(f); orRenderPhotoIn(); }catch(err){ toast('⚠️ '+err.message); }
+  };
+  const d = document.getElementById('orPhotoDel'); if(d) d.onclick = ()=>{ orF.photo = null; orRenderPhotoIn(); };
+}
+function orCompresser(file){
+  return new Promise((res, rej)=>{
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = ()=>{
+      const k = Math.min(1, 900/Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth*k); c.height = Math.round(img.naturalHeight*k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      let q = 0.78, d = c.toDataURL('image/jpeg', q);
+      while(d.length > 560000 && q > 0.35){ q -= 0.12; d = c.toDataURL('image/jpeg', q); }
+      if(d.length > 590000) rej(new Error('Photo trop lourde')); else res(d);
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); rej(new Error('Photo illisible')); };
+    img.src = url;
+  });
+}
+async function orEnregistrerAchat(){
+  if(orOcc || !orF) return;
+  const $ = i=>document.getElementById(i), err = $('orAchatErr'), btn = $('orAchatOk');
+  const fail = (m, f)=>{ err.textContent = '⚠️ '+m; if(f) $(f).focus(); return false; };
+  const t = OR_TYPE[orF.type]; if(!t) return fail('Choisis le type de pièce.');
+  const q = orQte('orQte'); if(!q || q<1 || q>100000 || String(q)!==$('orQte').value.trim()) return fail('Indique une quantité entière (au moins 1).', 'orQte');
+  const date = $('orDate').value; if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('Indique la date d\'achat.', 'orDate');
+  if(date > todayISO()) return fail('La date d\'achat ne peut pas être dans le futur.', 'orDate');
+  const p = orLireEur($('orPrix').value); if(p==null) return fail('Indique le prix payé.', 'orPrix');
+  if(isNaN(p)) return fail('Prix invalide (2 chiffres après la virgule au maximum).', 'orPrix');
+  const total = orF.mode==='unit' ? p*q : p;
+  const frais = orLireEur($('orFrais').value); if(frais!=null && isNaN(frais)) return fail('Frais invalides.', 'orFrais');
+  const milTxt = $('orMil').value.trim(), mil = milTxt ? parseInt(milTxt,10) : null;
+  if(milTxt && (!/^\d{4}$/.test(milTxt) || mil<1200 || mil>new Date().getFullYear())) return fail('Millésime invalide (année sur 4 chiffres).', 'orMil');
+  const pay = { id: orF.id, type: t.code, quantite: q, date_achat: date, prix_total: total/100, frais: (frais||0)/100,
+    millesime: mil, vendeur: $('orVendeur').value.trim(), commentaire: $('orComm').value.trim(), nom: $('orNom').value.trim() };
+  if(t.libre){
+    if(t.code==='autre' && !pay.nom) return fail('Indique le nom de la pièce.', 'orNom');
+    const b = orLireNb($('orBrut').value), ti = orLireNb($('orTitre').value), f = orLireNb($('orFin').value);
+    if([b,ti,f].some(x=>x!=null && isNaN(x))) return fail('Poids ou titre invalide.');
+    if(ti!=null && (ti<=0 || ti>1000)) return fail('Le titre s\'exprime en millièmes (ex : 900, 917).', 'orTitre');
+    const fin = f!=null ? f : (b>0 && ti>0 ? Math.round(b*ti/1000*10000)/10000 : null);
+    if(!(fin>0)) return fail('Indique le poids d\'or fin, ou le poids brut et le titre.', 'orFin');
+    if(b!=null && fin>b) return fail('L\'or fin ne peut pas dépasser le poids brut.', 'orFin');
+    pay.poids_brut_g = b; pay.titre_millieme = ti; pay.poids_fin_g = fin;
+  } else pay.nom = t.code==='louis_xvi' ? pay.nom : '';
+  if(orHorsLigne()) return fail('Pas de connexion internet : rien n\'a été enregistré.');
+  orOcc = true; btn.disabled = true; err.textContent = '';
+  try{
+    const {data, error} = await cloud.sb.rpc('zeste_or_lot_enregistrer', { p: pay });
+    if(error) return fail(orMsg(error));
+    const i = OR.lots.findIndex(x=>x.id===data.id); if(i>=0) OR.lots[i] = data; else OR.lots.push(data);
+    let photoKo = false;
+    if(orF.photo !== undefined){
+      const r = await cloud.sb.rpc('zeste_or_photo_enregistrer', { p_lot: data.id, p_image: orF.photo });
+      if(r.error) photoKo = true; else { data.a_photo = !!orF.photo; if(orF.photo) orPhotos[data.id] = orF.photo; else delete orPhotos[data.id]; }
+    }
+    const ancien = OR.cours && OR.cours.premier_jour, rattrapage = !ancien || date < ancien;
+    const edit = orF.edit; orF = null; orEcrireCache(); orFermerFen('orAchat');
+    renderOr(); orRenderLotOuvert(); renderProgress();
+    toast(photoKo ? '⚠️ Achat enregistré, mais la photo n\'a pas pu l\'être' : edit ? 'Achat modifié ✏️' : 'Achat enregistré 🪙'); if(!edit) playDing();
+    if(rattrapage) orCours(false); // historique du cours à compléter depuis cette date
+  }catch(e){ fail(orMsg(e)); }
+  finally{ orOcc = false; btn.disabled = false; }
+}
+
+/* ---------- SAISIE D'UNE VENTE ---------- */
+var orV = null;
+function orOuvrirVente(lotId, venteId){
+  if(!cloud.on){ toast('🔒 Connecte-toi pour enregistrer ton or'); return; }
+  const v = venteId ? (OR.ventes||[]).find(x=>String(x.id)===String(venteId)) : null;
+  if(venteId && !v){ toast('Cette vente n\'existe plus'); return; }
+  const dispo = OR.lots.map(l=>({ l, s: orLotStats(l, OR.ventes, null) })).filter(x=> x.s.detenu>0 || (v && x.l.id===v.lot_id));
+  if(!dispo.length){ toast('Aucune pièce à vendre'); return; }
+  const choisi = v ? v.lot_id : (lotId && dispo.some(x=>x.l.id===lotId) ? lotId : dispo.sort((a,b)=>String(a.l.date_achat).localeCompare(String(b.l.date_achat)))[0].l.id);
+  orV = { id: v ? v.id : ((crypto && crypto.randomUUID) ? crypto.randomUUID() : null), lot: choisi, edit: !!v, mode: v ? 'total' : 'unit', fige: !!v || !!lotId };
+  const $ = i=>document.getElementById(i);
+  $('orVenteTitre').textContent = v ? 'Modifier la vente ✏️' : 'Enregistrer une vente 💶';
+  $('orVenteOk').textContent = v ? 'Enregistrer la modification' : 'Enregistrer la vente';
+  $('orVQte').value = v ? v.quantite : 1;
+  const dt = $('orVDate'); dt.max = todayISO(); dt.value = v ? v.date_vente : todayISO();
+  $('orVPrix').value = v ? String(+v.prix_total).replace('.',',') : '';
+  $('orVFrais').value = v && +v.frais ? String(+v.frais).replace('.',',') : '';
+  $('orVComm').value = v ? (v.commentaire||'') : '';
+  $('orVenteErr').textContent = '';
+  orSyncMode('orVMode', orV.mode); orRenderLotsVente(); orCalcVente();
+  orOuvrirFen('orVente');
+}
+function orRestant(lotId){
+  const l = orLot(lotId); if(!l) return 0;
+  const autres = (OR.ventes||[]).filter(v=>v.lot_id===l.id && v.id!==orV.id).reduce((s,v)=>s+(v.quantite|0), 0);
+  return l.quantite - autres;
+}
+function orRenderLotsVente(){
+  const box = document.getElementById('orVenteLots');
+  const lots = OR.lots.filter(l=> l.id===orV.lot || (!orV.fige && orLotStats(l, OR.ventes, null).detenu>0))
+    .sort((a,b)=>String(a.date_achat).localeCompare(String(b.date_achat)));
+  box.innerHTML = lots.map(l=>`<button type="button" class="${l.id===orV.lot?'sel':''}" data-vl="${esc(String(l.id))}">${orCoin(l)}
+    <span class="lp">${esc(orNomLot(l))}<small>acheté le ${frDate(l.date_achat)} · ${orRestant(l.id)} pièce${orRestant(l.id)>1?'s':''} à vendre</small></span></button>`).join('');
+  box.querySelectorAll('[data-vl]').forEach(b=>{ b.onclick = ()=>{ orV.lot = b.dataset.vl; orRenderLotsVente(); orCalcVente(); }; });
+  const l = orLot(orV.lot); if(l) document.getElementById('orVDate').min = l.date_achat;
+}
+function orCalcVente(){
+  const c = document.getElementById('orVCalc'), l = orLot(orV.lot); if(!l){ c.textContent=''; return; }
+  const q = orQte('orVQte'), p = orLireEur(document.getElementById('orVPrix').value), fr = orLireEur(document.getElementById('orVFrais').value) || 0;
+  if(!q || q<1 || p==null || isNaN(p) || isNaN(fr)){ c.textContent = 'Il reste '+orRestant(l.id)+' pièce(s) dans cet achat.'; return; }
+  const total = orV.mode==='unit' ? p*q : p;
+  // même calcul que l'affichage final : on simule la vente dans la liste
+  const autres = (OR.ventes||[]).filter(v=>v.lot_id===l.id && v.id!==orV.id);
+  const sim = { id: orV.id || 'sim', lot_id: l.id, date_vente: document.getElementById('orVDate').value || todayISO(), quantite: q, prix_total: total/100, frais: fr/100, cree_le: '9999' };
+  const x = orStatsLot(l, [...autres, sim].sort(orTriVentes), null).ventes.find(y=>y.v===sim);
+  c.innerHTML = x ? `${orV.mode==='unit' && q>1 ? 'Total '+orEur(total)+' · ' : ''}gain réalisé estimé <b class="${orClasse(x.gain)}">${orEur(x.gain,true)}</b> (coût de ces pièces ${orEur(x.base)})` : '';
+}
+async function orEnregistrerVente(){
+  if(orOcc || !orV) return;
+  const $ = i=>document.getElementById(i), err = $('orVenteErr'), btn = $('orVenteOk');
+  const fail = (m, f)=>{ err.textContent = '⚠️ '+m; if(f) $(f).focus(); return false; };
+  const l = orLot(orV.lot); if(!l) return fail('Choisis l\'achat dont viennent les pièces.');
+  const q = orQte('orVQte'), reste = orRestant(l.id);
+  if(!q || q<1 || String(q)!==$('orVQte').value.trim()) return fail('Indique une quantité entière (au moins 1).', 'orVQte');
+  if(q > reste) return fail('Il ne reste que '+reste+' pièce'+(reste>1?'s':'')+' dans cet achat.', 'orVQte');
+  const date = $('orVDate').value; if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('Indique la date de vente.', 'orVDate');
+  if(date > todayISO()) return fail('La date de vente ne peut pas être dans le futur.', 'orVDate');
+  if(date < l.date_achat) return fail('La vente ne peut pas précéder l\'achat ('+frDate(l.date_achat)+').', 'orVDate');
+  const p = orLireEur($('orVPrix').value); if(p==null) return fail('Indique le prix de vente.', 'orVPrix');
+  if(isNaN(p)) return fail('Prix invalide (2 chiffres après la virgule au maximum).', 'orVPrix');
+  const fr = orLireEur($('orVFrais').value); if(fr!=null && isNaN(fr)) return fail('Frais invalides.', 'orVFrais');
+  if(orHorsLigne()) return fail('Pas de connexion internet : rien n\'a été enregistré.');
+  const pay = { id: orV.id, lot_id: l.id, quantite: q, date_vente: date, prix_total: (orV.mode==='unit' ? p*q : p)/100, frais: (fr||0)/100, commentaire: $('orVComm').value.trim() };
+  orOcc = true; btn.disabled = true; err.textContent = '';
+  try{
+    const {data, error} = await cloud.sb.rpc('zeste_or_vente_enregistrer', { p: pay });
+    if(error) return fail(orMsg(error));
+    const i = OR.ventes.findIndex(x=>x.id===data.id); if(i>=0) OR.ventes[i] = data; else OR.ventes.push(data);
+    const edit = orV.edit; orV = null; orEcrireCache(); orFermerFen('orVente');
+    renderOr(); orRenderLotOuvert(); renderProgress(); toast(edit ? 'Vente modifiée ✏️' : 'Vente enregistrée 💶'); if(!edit) playDing();
+  }catch(e){ fail(orMsg(e)); }
+  finally{ orOcc = false; btn.disabled = false; }
+}
+
+/* ---------- en-tête (carte du haut) ---------- */
+function orProgress(T, D, ring, ringtxt){
+  T.textContent = '🪙 Mon or';
+  ring.style.setProperty('--p', '0%'); ringtxt.textContent = '🪙';
+  if(!cloud.on){ D.textContent = 'Connecte-toi pour voir ton or'; return; }
+  const P = orPortefeuille(OR.lots, OR.ventes, orCoursG());
+  D.textContent = OR.lots.length ? `${P.pieces} pièce${P.pieces>1?'s':''} · ${P.valeur==null ? 'valeur indisponible' : orEur(P.valeur)}` : 'Aucune pièce pour l\'instant';
+}
+
+/* ---------- branchements ---------- */
+(function(){
+  const $ = i=>document.getElementById(i);
+  [['orLot', ()=>{ orLotId=null; orFermerFen('orLot'); }], ['orOps', ()=>orFermerFen('orOps')],
+   ['orVente', ()=>{ orV=null; orFermerFen('orVente'); }], ['orAchat', ()=>{ orF=null; $('orPrix').blur(); orFermerFen('orAchat'); }]].forEach(([id, fermer])=>{
+    $(id+'Bg').onclick = fermer; $(id+'X').onclick = fermer; enableSwipeDown($(id+'Sheet'), fermer);
+  });
+  $('orAchatOk').onclick = orEnregistrerAchat;
+  $('orVenteOk').onclick = orEnregistrerVente;
+  $('orPlus').onclick = ()=>{ $('orDetails').style.display=''; $('orPlus').style.display='none'; };
+  document.querySelectorAll('#orMode button').forEach(b=>{ b.onclick = ()=>{ orF.mode = b.dataset.m; orSyncMode('orMode', orF.mode); orCalcAchat(); }; });
+  document.querySelectorAll('#orVMode button').forEach(b=>{ b.onclick = ()=>{ orV.mode = b.dataset.m; orSyncMode('orVMode', orV.mode); orCalcVente(); }; });
+  const pas = (id, d, apres)=>{ const e=$(id); const v=Math.max(1,(parseInt(e.value,10)||0)+d); e.value=v; apres(); };
+  $('orQteM').onclick = ()=>pas('orQte', -1, orCalcAchat); $('orQteP').onclick = ()=>pas('orQte', 1, orCalcAchat);
+  $('orVQteM').onclick = ()=>pas('orVQte', -1, orCalcVente); $('orVQteP').onclick = ()=>pas('orVQte', 1, orCalcVente);
+  ['orQte','orPrix','orBrut','orTitre','orFin'].forEach(i=>$(i).addEventListener('input', orCalcAchat));
+  ['orVQte','orVPrix','orVFrais','orVDate'].forEach(i=>$(i).addEventListener('input', orCalcVente));
+  // entrée dans l'onglet : cours rafraîchi s'il date de plus de 15 min, courbe redessinée à la bonne largeur
+  document.querySelector('.tab.t-or').addEventListener('click', ()=>{
+    if(cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false);
+    requestAnimationFrame(()=>{ if(tab==='or') renderOr(); });
+  });
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && tab==='or' && cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false); });
+  setInterval(()=>{ if(!document.hidden && tab==='or' && cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false); }, 60e3);
+  let tRes = null; window.addEventListener('resize', ()=>{ clearTimeout(tRes); tRes = setTimeout(()=>{ if(tab==='or') renderOr(); if(orLotId) orRenderLotOuvert(); }, 200); });
+  orAuth();
+})();
 </script>
 </body>
 </html>
