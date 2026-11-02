@@ -93,37 +93,62 @@
 
   /* ---------- HEADER ---------- */
   header{
-    padding:calc(var(--safe-t) + 16px) 18px 12px;
+    padding:calc(var(--safe-t) + 8px) 16px 8px;
     position:sticky;top:0;z-index:20;
     background:linear-gradient(180deg, var(--header-bg) 55%, transparent);
     backdrop-filter:saturate(1.4) blur(8px);
     -webkit-backdrop-filter:saturate(1.4) blur(8px);
   }
-  .hi{font-size:14.5px;color:var(--muted);font-weight:700}
-  .brand{display:flex;align-items:center;gap:9px;margin-top:1px}
-  .brand h1{font-size:31px;margin:0;font-weight:800;letter-spacing:-.6px;
+  .hi{display:none}
+  .brand{display:flex;align-items:center;gap:6px;min-width:0}
+  .brand h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.4px;
     background:linear-gradient(120deg,#ff9f45,#f5b800 40%,#ff6b9d);-webkit-background-clip:text;background-clip:text;color:transparent}
-  .brand .logo{font-size:29px;filter:drop-shadow(0 4px 6px rgba(245,184,0,.45));animation:bob 3.5s ease-in-out infinite}
+  .brand .logo{font-size:21px;filter:drop-shadow(0 3px 4px rgba(245,184,0,.45));animation:bob 3.5s ease-in-out infinite}
+  /* état de la synchro (en attente / synchronisé / échec / conflit) */
+  .sync-st{border:none;background:none;font-size:12px;font-weight:800;color:var(--muted);padding:0 6px;min-height:44px;
+    display:none;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+  .sync-st.show{display:inline-flex}
+  .sync-st .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .sync-st.ok .dot{background:var(--green)} .sync-st.wait .dot{background:var(--orange)}
+  .sync-st.fail{color:var(--red)} .sync-st.fail .dot{background:var(--red)}
+  .sync-st.conflict{color:var(--red)} .sync-st.conflict .dot{background:var(--red)}
+  .conflict-bar{display:none;margin:8px 16px 0;padding:12px 14px;border-radius:16px;border:2px solid var(--red);
+    background:var(--card);font-size:13.5px;font-weight:700;line-height:1.4}
+  .conflict-bar.show{display:block}
+  .conflict-bar .cb-btns{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+  .conflict-bar button{min-height:44px;border-radius:12px;border:2px solid var(--line);background:var(--chip);color:var(--ink);
+    font-weight:800;font-size:14px;cursor:pointer;padding:8px 10px}
+  .conflict-bar small{display:block;color:var(--muted);font-weight:600;margin-top:4px}
+  .conflict-bar .cf-list{max-height:30vh;overflow:auto;margin-top:4px}
+  .conflict-bar .cf-lost{color:var(--red);font-weight:800}
+  .bk-it{border:2px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:10px;background:var(--card);font-size:14px}
+  .bk-it .bk-h{font-weight:800}
+  .bk-it .bk-s{color:var(--muted);font-weight:600;font-size:13px;margin-top:2px}
+  .bk-btns{display:flex;gap:8px;margin-top:8px}
+  .bk-btns button{flex:1;min-height:44px;border-radius:12px;border:2px solid var(--line);background:var(--chip);color:var(--ink);font-weight:800;font-size:14px;cursor:pointer}
+  .bk-det{margin-top:8px;font-size:13px;line-height:1.45}
+  .bk-det .bk-miss{color:var(--red);font-weight:800}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-4px) rotate(4deg)}}
 
   /* ---------- PROGRESS CARD ---------- */
   .progress{
-    margin-top:12px;border-radius:22px;padding:14px 16px;position:relative;overflow:hidden;
-    box-shadow:var(--shadow);display:flex;align-items:center;gap:14px;
+    margin-top:6px;border-radius:16px;padding:6px 12px;position:relative;overflow:hidden;
+    box-shadow:var(--shadow-s);display:flex;align-items:center;gap:10px;
     background:linear-gradient(135deg,var(--card),var(--panel));
     border:1.5px solid var(--line);
   }
   .progress::before{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;
     background:radial-gradient(circle,rgba(255,210,63,.22),transparent 70%)}
   .progress .ring{
-    width:52px;height:52px;border-radius:50%;flex:none;
+    width:34px;height:34px;border-radius:50%;flex:none;
     background:conic-gradient(var(--green) var(--p,0%), #eceaf3 var(--p,0%) 100%);
-    display:grid;place-items:center;position:relative;box-shadow:0 4px 10px rgba(61,220,132,.25);
+    display:grid;place-items:center;position:relative;
   }
-  .progress .ring::after{content:"";position:absolute;inset:5px;background:var(--card);border-radius:50%}
-  .progress .ring span{position:relative;font-size:13px;font-weight:800}
-  .progress .txt b{font-size:16.5px;font-weight:800}
-  .progress .txt div{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px}
+  .progress .ring::after{content:"";position:absolute;inset:4px;background:var(--card);border-radius:50%}
+  .progress .ring span{position:relative;font-size:10px;font-weight:800}
+  .progress .txt{display:flex;align-items:baseline;gap:8px;min-width:0;flex-wrap:wrap}
+  .progress .txt b{font-size:14.5px;font-weight:800}
+  .progress .txt div{font-size:12.5px;color:var(--muted);font-weight:600}
 
   /* ---------- MAIN ---------- */
   main{flex:1;padding:8px 16px 140px;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -182,15 +207,19 @@
   /* checkbox */
   .check{
     width:30px;height:30px;border-radius:50%;flex:none;border:2.5px solid var(--line);
-    display:grid;place-items:center;cursor:pointer;transition:.15s;background:var(--chip);
+    display:grid;place-items:center;cursor:pointer;transition:.15s;background:var(--chip);position:relative;
   }
+  /* zone tactile élargie à 44 × 44 px sans changer le dessin */
+  .check::after,.cal::after,.searchbar .sx::after,.stars .star::after{content:"";position:absolute;inset:-7px}
+  .cal,.stars .star{position:relative}
+  .stars .star::after{inset:-12px -3px}
   .check svg{width:16px;height:16px;stroke:#fff;stroke-width:3.5;fill:none;
     stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:.2s}
   .row.done .check{background:var(--green);border-color:var(--green)}
   .row.done .check svg{stroke-dashoffset:0}
 
   /* poignée de réordonnancement */
-  .row .drag{flex:none;width:26px;text-align:center;color:var(--muted);font-size:19px;cursor:grab;
+  .row .drag{flex:none;width:40px;align-self:stretch;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:19px;cursor:grab;
     touch-action:none;opacity:.6;line-height:1;letter-spacing:-2px}
   .row .drag:active{cursor:grabbing;opacity:.9}
   .swipe.dragging{z-index:6;position:relative}
@@ -387,32 +416,94 @@
   .tab{font-size:11px;padding:9px 4px}
   .tab .ic{font-size:21px}
 
-  /* on me doit */
-  .debt-total{margin-top:14px;border-radius:22px;padding:18px 18px;position:relative;overflow:hidden;
-    background:linear-gradient(135deg,#ffb347,#ff8a3d);color:#fff;box-shadow:0 10px 26px rgba(255,138,61,.4)}
-  .debt-total .dt-lab{font-size:14px;font-weight:800;opacity:.95}
-  .debt-total .dt-val{font-size:34px;font-weight:800;letter-spacing:-.5px;margin-top:2px}
-  .debt-total .dt-sub{font-size:13px;font-weight:700;opacity:.9;margin-top:2px}
-  .debt-person{display:flex;align-items:center;gap:9px;margin:18px 2px 10px;font-weight:800;font-size:16px}
-  .debt-person .pp{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:12px;
-    background:var(--soft);color:var(--purple);font-size:16px;font-weight:800;text-transform:uppercase}
-  .debt-person .pt{margin-left:auto;font-size:15px;font-weight:800;color:var(--green-d)}
-  .row .debt-amt{font-size:16px;font-weight:800;color:var(--green-d);flex:none}
-  .row.done .debt-amt{color:var(--muted)}
-  .row .debt-note{font-size:12.5px;color:var(--muted);font-weight:600;margin-top:2px}
-  .debt-thing-tag{font-size:12.5px;font-weight:800;color:var(--orange);background:hsl(35 90% 92%);padding:2px 8px;border-radius:20px}
-  :root[data-theme="dark"] .debt-thing-tag{background:hsl(35 50% 20%)}
-  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .debt-thing-tag{background:hsl(35 50% 20%)}}
-  /* remboursements reçus */
-  .row .debt-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
-  .row .debt-rest-lab{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
-  .row .debt-prog{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:2px}
-  .row .remb-btn{flex:none;border:none;background:var(--soft);border-radius:12px;width:38px;height:38px;
-    font-size:19px;cursor:pointer;display:grid;place-items:center}
-  .row .remb-btn:active{transform:scale(.9)}
-  .sheet.loan-sheet{z-index:53}
-  .sheet.remb-sheet{z-index:55}
-  #loanBg{z-index:52} #rembBg{z-index:54}
+  /* on me doit : résumé compact (un seul total, une ligne par devise) */
+  .debt-sum{margin-top:8px;border-radius:18px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:linear-gradient(135deg,#ffb347,#ff8a3d);color:#fff;box-shadow:0 6px 16px rgba(255,138,61,.3)}
+  .debt-sum .ds-lab{font-size:13px;font-weight:800;opacity:.95;width:100%}
+  .debt-sum .ds-val{font-size:24px;font-weight:800;letter-spacing:-.3px;line-height:1.1}
+  .debt-sum .ds-sep{opacity:.6;font-weight:800}
+  .debt-sum .ds-sub{font-size:12.5px;font-weight:700;opacity:.92;width:100%}
+  /* carte par personne */
+  .pcard{background:var(--card);border-radius:18px;box-shadow:var(--shadow-s);margin-top:10px;overflow:hidden;position:relative;--ch:265}
+  .pcard::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:hsl(var(--ch) 70% 60%)}
+  .pcard.flash{animation:flash 1.6s ease}
+  @keyframes flash{0%,30%{box-shadow:0 0 0 3px var(--green)}100%{box-shadow:var(--shadow-s)}}
+  .pc-main{width:100%;border:none;background:none;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:11px;
+    padding:12px 14px 10px 16px;text-align:left;min-height:56px}
+  .pp{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:12px;
+    background:hsl(var(--ch) var(--ts) var(--tl));color:hsl(var(--ch) 55% var(--ttl));font-size:16px;font-weight:800;text-transform:uppercase}
+  .pc-txt{flex:1;min-width:0}
+  .pc-txt b{display:block;font-size:16.5px;font-weight:800;overflow-wrap:anywhere}
+  .pc-txt small{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-top:1px}
+  .pc-bal{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px;max-width:48%}
+  .pc-bal b{font-size:17px;font-weight:800;color:var(--green-d);white-space:nowrap}
+  .pc-bal small{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+  .pc-chev{flex:none;color:var(--muted);font-size:20px;font-weight:800;margin-left:-2px}
+  .pc-act{display:flex;gap:8px;padding:0 14px 12px 16px}
+  .act-btn{flex:1;min-height:44px;border:none;border-radius:13px;font-weight:800;font-size:15px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 12px;
+    background:linear-gradient(135deg,var(--green),var(--green-d));color:#fff;box-shadow:0 4px 12px rgba(61,220,132,.28)}
+  .act-btn.alt{background:var(--soft);color:var(--ink);box-shadow:none;border:2px solid var(--line)}
+  .act-btn:active{transform:scale(.97)}
+  .pcard.closed .pc-bal b{color:var(--muted)}
+  .sec-h{display:flex;align-items:center;gap:8px;margin:22px 2px 2px;font-weight:800;font-size:15px;width:100%;
+    border:none;background:none;color:var(--ink);padding:10px 0;min-height:44px;cursor:pointer;text-align:left}
+  .sec-h .n{background:var(--line);color:var(--muted);font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px}
+  .sec-h .chev{margin-left:auto;color:var(--muted);transition:transform .2s}
+  .sec-h.open .chev{transform:rotate(90deg)}
+  .note-box{background:var(--card);border:2px dashed var(--orange);border-radius:16px;padding:12px 14px;margin-top:8px;
+    font-size:13.5px;font-weight:600;line-height:1.45}
+  .note-box b{font-weight:800}
+  /* ligne de prêt (fiche personne, archives, à vérifier) */
+  .lrow{display:flex;align-items:center;gap:10px;background:var(--field);border:2px solid var(--line);border-radius:14px;
+    padding:10px 12px;margin-top:8px;width:100%;color:var(--ink);text-align:left;cursor:pointer;min-height:56px}
+  .lrow .lr-emo{font-size:20px;flex:none}
+  .lrow .lr-txt{flex:1;min-width:0}
+  .lrow .lr-t{display:block;font-weight:800;font-size:15px;overflow-wrap:anywhere}
+  .lrow .lr-s{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-top:1px}
+  .lrow .lr-r{flex:none;text-align:right}
+  .lrow .lr-r b{display:block;font-weight:800;color:var(--green-d);font-size:15.5px;white-space:nowrap}
+  .lrow .lr-r small{display:block;font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap}
+  .lrow.done .lr-r b{color:var(--muted)}
+  .lr-btns{display:flex;gap:8px;margin:6px 0 2px}
+  .lr-btns .act-btn{font-size:13.5px}
+  .small-btn{min-height:44px;border:2px solid var(--line);background:var(--chip);color:var(--ink);border-radius:12px;
+    font-weight:800;font-size:13.5px;padding:6px 12px;cursor:pointer}
+  .small-btn.danger{color:var(--red);border-color:#ffd6d6}
+  .sheet.person-sheet{z-index:53} .sheet.loan-sheet{z-index:55} .sheet.pick-sheet{z-index:57} .sheet.remb-sheet{z-index:59}
+  #personBg{z-index:52} #loanBg{z-index:54} #pickBg{z-index:56} #rembBg{z-index:58}
+  /* formulaire de remboursement */
+  .remb-ctx{background:var(--field);border:2px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;font-weight:700;line-height:1.5}
+  .remb-ctx span{color:var(--muted);font-weight:700;font-size:13px}
+  /* clavier ouvert : formulaire resserré pour garder montant, reste et boutons visibles */
+  html.kb-open .remb-sheet h3,html.kb-open .remb-sheet .grab{display:none}
+  html.kb-open .remb-sheet .remb-ctx{padding:6px 10px;font-size:13px;line-height:1.35;margin-right:50px}
+  html.kb-open .remb-sheet .remb-due{margin-top:6px}
+  html.kb-open .remb-sheet .remb-lab{margin:8px 2px 4px}
+  html.kb-open .remb-sheet .field{padding:11px 14px;font-size:17px}
+  .remb-due{display:flex;align-items:baseline;justify-content:space-between;margin:10px 2px 0;font-weight:800}
+  .remb-due small{font-size:13px;color:var(--muted)}
+  .remb-due b{font-size:22px;color:var(--green-d)}
+  .remb-amt-row{display:flex;gap:8px;align-items:stretch}
+  .remb-amt-row .field-wrap{flex:1;min-width:0}
+  .remb-all{flex:none;border:2px solid var(--green);background:var(--chip);color:var(--green-d);border-radius:16px;
+    font-weight:800;font-size:14px;padding:0 12px;cursor:pointer;min-height:44px;line-height:1.15;max-width:42%}
+  .remb-all:active{transform:scale(.96)}
+  .remb-after{margin:8px 2px 0;font-size:14px;font-weight:700;color:var(--muted)}
+  .remb-after b{color:var(--ink)}
+  .remb-after.bad{color:var(--red)} .remb-after.bad b{color:var(--red)}
+  .sheet-foot{flex:none;display:flex;gap:10px;margin-top:12px}
+  .sheet-foot .submit{margin-top:0;flex:2}
+  .btn-sec{flex:1;min-height:52px;border:2px solid var(--line);background:var(--chip);color:var(--ink);border-radius:18px;
+    font-weight:800;font-size:16px;cursor:pointer}
+  .btn-sec:active{transform:scale(.98)}
+  .link-btn{display:block;width:100%;min-height:44px;margin-top:8px;border:2px dashed var(--line);background:none;color:var(--ink);
+    border-radius:14px;font-weight:800;font-size:14px;cursor:pointer;padding:8px 12px;text-align:center}
+  .warn-line{margin:4px 2px 10px;padding:9px 12px;border-radius:12px;background:hsl(35 90% 92%);color:#9a4b00;font-weight:800;font-size:13.5px}
+  :root[data-theme="dark"] .warn-line{background:hsl(35 50% 20%);color:#ffc98a}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .warn-line{background:hsl(35 50% 20%);color:#ffc98a}}
+  .row.flash{animation:rowflash 1.6s ease}
+  @keyframes rowflash{0%,35%{box-shadow:inset 0 0 0 3px var(--green)}100%{box-shadow:var(--shadow-s)}}
   .loan-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 12px}
   .loan-sum div{background:var(--field);border:2px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center;min-width:0}
   .loan-sum small{display:block;font-size:11.5px;font-weight:800;color:var(--muted)}
@@ -431,7 +522,7 @@
   .remb-it .ri-amt{font-weight:800;color:var(--green-d)}
   .remb-it .ri-date{font-size:12.5px;font-weight:700;color:var(--muted)}
   .remb-it .ri-note{font-size:13px;font-weight:600;margin-top:2px;overflow-wrap:anywhere}
-  .remb-it button{flex:none;border:none;background:var(--chip);border-radius:10px;width:36px;height:36px;font-size:16px;cursor:pointer}
+  .remb-it button{flex:none;border:none;background:var(--chip);border-radius:10px;width:44px;height:44px;font-size:16px;cursor:pointer}
   .remb-it button:active{transform:scale(.9)}
   .remb-empty{color:var(--muted);font-weight:600;font-size:14px;padding:6px 2px}
   .remb-lab{display:block;font-size:13px;font-weight:800;color:var(--muted);margin:12px 2px 6px}
@@ -528,11 +619,11 @@
   .sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;flex:1;padding-bottom:4px}
   .grab{width:50px;height:6px;background:var(--line);border-radius:6px;margin:0 auto 12px;cursor:grab;
     touch-action:none;padding:10px 40px;box-sizing:content-box;background-clip:content-box}
-  .sheet-x{position:absolute;top:14px;right:16px;border:none;background:var(--line);color:var(--muted);
-    width:36px;height:36px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;z-index:3;
+  .sheet-x{position:absolute;top:10px;right:12px;border:none;background:var(--line);color:var(--muted);
+    width:44px;height:44px;border-radius:50%;font-size:17px;font-weight:800;cursor:pointer;z-index:3;
     display:grid;place-items:center;line-height:1}
   .sheet-x:active{background:var(--red);color:#fff;transform:scale(.9)}
-  .sheet h3{margin:0 0 14px;font-size:20px;font-weight:800}
+  .sheet h3{margin:0 0 14px;font-size:20px;font-weight:800;padding-right:50px}
   .field{
     width:100%;border:2.5px solid var(--line);border-radius:16px;padding:15px 16px;
     font-size:18px;font-weight:600;font-family:inherit;outline:none;background:var(--field);color:var(--ink);
@@ -591,10 +682,10 @@
 
   /* topbar + gear */
   .topbar{display:flex;align-items:center;justify-content:space-between}
-  .top-back{border:none;background:var(--card);width:40px;height:40px;border-radius:14px;font-size:22px;font-weight:800;
+  .top-back{border:none;background:var(--card);width:44px;height:44px;border-radius:14px;font-size:22px;font-weight:800;
     cursor:pointer;box-shadow:var(--shadow-s);display:grid;place-items:center;color:var(--ink);flex:none}
   .top-back:active{transform:scale(.9)}
-  .gear{border:none;background:var(--card);width:40px;height:40px;border-radius:14px;font-size:19px;
+  .gear{border:none;background:var(--card);width:44px;height:44px;border-radius:14px;font-size:19px;
     cursor:pointer;box-shadow:var(--shadow-s);display:grid;place-items:center;transition:transform .3s}
   .gear:active{transform:rotate(90deg) scale(.9)}
 
@@ -646,7 +737,7 @@
   .toast{
     position:fixed;bottom:calc(var(--safe-b) + 170px);left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--pill);color:#fff;padding:11px 18px;border-radius:16px;font-weight:700;font-size:14px;
-    z-index:70;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow);white-space:nowrap;
+    z-index:70;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow);white-space:normal;max-width:92vw;width:max-content;text-align:center;line-height:1.35;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -656,7 +747,7 @@
     z-index:71;opacity:0;transition:.25s;pointer-events:none;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;max-width:92vw}
   .snack.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
   .snack .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .snack button{flex:none;border:none;background:rgba(255,255,255,.22);color:#fff;font-weight:800;padding:7px 13px;border-radius:11px;cursor:pointer}
+  .snack button{flex:none;min-height:44px;border:none;background:rgba(255,255,255,.22);color:#fff;font-weight:800;padding:7px 13px;border-radius:11px;cursor:pointer}
   .snack button:active{background:rgba(255,255,255,.35)}
 
   /* ajout rapide (IA) */
@@ -677,8 +768,8 @@
   .mg-hint{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
 
   /* barre de recherche */
-  .searchbar{margin-top:10px;position:relative}
-  .searchbar input{width:100%;border:2px solid var(--line);border-radius:16px;padding:11px 14px 11px 40px;
+  .searchbar{margin-top:6px;position:relative}
+  .searchbar input{width:100%;border:2px solid var(--line);border-radius:16px;padding:9px 40px 9px 38px;
     font-size:16px;font-weight:600;font-family:inherit;background:var(--card);color:var(--ink);outline:none}
   .searchbar input:focus{border-color:var(--purple)}
   .searchbar .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.6}
@@ -705,17 +796,18 @@
 <div id="app">
   <header>
     <div class="topbar">
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
         <button class="top-back" id="topBack" aria-label="Retour aux catégories" style="display:none">←</button>
+        <div class="brand"><span class="logo">🍋</span><h1>Zeste</h1></div>
         <div class="hi" id="greet">Bonjour 👋</div>
+        <button class="sync-st" id="syncSt" aria-live="polite"><span class="dot"></span><span id="syncTxt"></span></button>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="gear magic-btn" id="magicBtn" aria-label="Ajout rapide">✨</button>
         <button class="gear" id="gear" aria-label="Réglages">⚙️</button>
       </div>
     </div>
-    <div class="brand"><span class="logo">🍋</span><h1>Zeste</h1></div>
-    <div class="progress">
+    <div class="progress" id="progress">
       <div class="ring" id="ring"><span id="ringtxt">0%</span></div>
       <div class="txt"><b id="progTitle">Ta journée</b><div id="progSub">Rien à faire pour l'instant</div></div>
     </div>
@@ -726,6 +818,7 @@
     </div>
   </header>
 
+  <div class="conflict-bar" id="conflictBar" role="alert"></div>
   <div class="notif-banner" id="notifBanner">🔔 Autorise les notifications pour recevoir tes rappels.<button id="notifBtn">Activer</button></div>
   <main>
     <div class="view active" id="view-todo"></div>
@@ -817,6 +910,8 @@
   <div id="filmOpts" style="display:none">
     <div class="film-results" id="filmResults"></div>
     <div class="film-preview" id="filmPreview" style="display:none"></div>
+    <div class="warn-line" id="filmDup" style="display:none"></div>
+    <button type="button" class="link-btn" id="filmManual" style="display:none"></button>
     <div class="cat-pick" id="platPick"></div>
   </div>
 
@@ -828,7 +923,7 @@
     </div>
     <div id="debtMoney" style="margin-top:12px">
       <div class="field-wrap">
-        <input class="field" id="debtAmount" type="number" inputmode="decimal" step="0.01" placeholder="Montant" />
+        <input class="field" id="debtAmount" type="text" inputmode="decimal" placeholder="Montant (ex : 200 ou 49,90)" autocomplete="off" />
         <span class="field-emo" id="debtCurEmo">€</span>
       </div>
       <div class="seg" id="debtCur" style="margin-top:10px">
@@ -839,7 +934,10 @@
     <div id="debtThing" style="display:none;margin-top:12px">
       <input class="field" id="debtWhat" placeholder="Quoi ? (ex : ma perceuse)" autocomplete="off" />
     </div>
-    <input class="field auth-inp" id="debtNote" placeholder="Note (facultatif : motif, date…)" autocomplete="off" />
+    <input class="field auth-inp" id="debtNote" placeholder="Motif (facultatif, ex : voiture, resto…)" autocomplete="off" />
+    <label class="remb-lab" for="debtDate">Date du prêt</label>
+    <input class="field" id="debtDate" type="date" />
+    <p class="remb-hint" id="debtDateHint" style="display:none">Date non renseignée pour ce prêt : laisse vide si tu ne la connais pas.</p>
   </div>
 
   <div class="rec-toggle" id="recToggleRow">
@@ -851,13 +949,30 @@
   <button class="submit" id="addBtn">Ajouter</button>
 </div>
 
-<!-- DÉTAIL D'UN PRÊT D'ARGENT (remboursements reçus) -->
+<!-- FICHE D'UNE PERSONNE (ses prêts, son historique) -->
+<div class="sheet-bg" id="personBg"></div>
+<div class="sheet person-sheet" id="personSheet">
+  <button class="sheet-x" id="personX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body" id="personBody"></div>
+  <button class="submit" id="personRembBtn">💸 Remboursement reçu</button>
+</div>
+
+<!-- DÉTAIL D'UN PRÊT (remboursements reçus) -->
 <div class="sheet-bg" id="loanBg"></div>
 <div class="sheet loan-sheet" id="loanSheet">
   <button class="sheet-x" id="loanX" aria-label="Fermer">✕</button>
   <div class="grab"></div>
   <div class="sheet-body" id="loanBody"></div>
-  <button class="submit" id="loanRembBtn">💸 Enregistrer un remboursement</button>
+  <button class="submit" id="loanRembBtn">💸 Remboursement reçu</button>
+</div>
+
+<!-- CHOIX DU PRÊT REMBOURSÉ (plusieurs prêts ouverts) -->
+<div class="sheet-bg" id="pickBg"></div>
+<div class="sheet pick-sheet" id="pickSheet">
+  <button class="sheet-x" id="pickX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body" id="pickBody"></div>
 </div>
 
 <!-- SAISIE / MODIFICATION D'UN REMBOURSEMENT -->
@@ -867,19 +982,27 @@
   <div class="grab"></div>
   <div class="sheet-body">
     <h3 id="rembTitle">Remboursement reçu 💸</h3>
-    <p class="set-hint" id="rembInfo" style="margin:0 2px 4px"></p>
-    <label class="remb-lab" for="rembAmount">Montant remboursé *</label>
-    <div class="field-wrap">
-      <input class="field" id="rembAmount" type="text" inputmode="decimal" placeholder="Montant (ex : 200 ou 49,90)" autocomplete="off" />
-      <span class="field-emo" id="rembCur">€</span>
+    <div class="remb-ctx" id="rembCtx"></div>
+    <div class="remb-due"><small id="rembDueLab">Reste dû</small><b id="rembDue"></b></div>
+    <label class="remb-lab" for="rembAmount">Montant reçu *</label>
+    <div class="remb-amt-row">
+      <div class="field-wrap">
+        <input class="field" id="rembAmount" type="text" inputmode="decimal" placeholder="Ex : 200 ou 49,90" autocomplete="off" enterkeyhint="done" />
+        <span class="field-emo" id="rembCur">€</span>
+      </div>
+      <button type="button" class="remb-all" id="rembAll">Tout le reste</button>
     </div>
+    <div class="remb-after" id="rembAfter" aria-live="polite"></div>
     <label class="remb-lab" for="rembDate">Date du remboursement *</label>
     <input class="field" id="rembDate" type="date" />
     <label class="remb-lab" for="rembNote">Note</label>
-    <input class="field" id="rembNote" placeholder="Facultatif (ex : virement, espèces…)" autocomplete="off" />
+    <input class="field" id="rembNote" placeholder="Facultatif (ex : virement, espèces…)" autocomplete="off" enterkeyhint="done" />
     <p class="remb-hint" id="rembErr" role="alert" style="color:var(--red)"></p>
   </div>
-  <button class="submit" id="rembSave">Enregistrer</button>
+  <div class="sheet-foot">
+    <button type="button" class="btn-sec" id="rembCancel">Annuler</button>
+    <button type="button" class="submit" id="rembSave">Enregistrer</button>
+  </div>
 </div>
 
 <!-- AJOUT RAPIDE (langage naturel) -->
@@ -944,6 +1067,13 @@
       <p class="set-hint">Tes listes se synchronisent en temps réel sur tous les appareils connectés avec ce compte. 🔄</p>
       <button class="share-btn danger" id="logoutBtn">Se déconnecter</button>
     </div>
+  </div>
+
+  <!-- Copies de secours (versions écartées) -->
+  <div class="share-box" id="backupBox" style="margin-top:14px;background:var(--soft);border-color:var(--line)">
+    <div class="share-h">🛟 Copies de secours</div>
+    <p class="set-hint" style="margin-top:2px">Versions écartées lors d'un conflit, d'un refus du serveur ou d'un changement de compte. Gardées sur ce téléphone seulement (5 dernières).</p>
+    <div id="backupList"></div>
   </div>
 
   <!-- Google Agenda -->
@@ -1076,6 +1206,14 @@ const FILM_PLATS = [
   {id:'other',  e:'🎬', n:'Autre'},
 ];
 const FPLATMAP = Object.fromEntries(FILM_PLATS.map(p=>[p.id,p]));
+// plateforme inconnue : jamais Netflix par défaut
+const FILM_NOPLAT = {id:'', e:'❔', n:'Non renseignée'};
+function platOf(f){ return FPLATMAP[f && f.plat] || FILM_NOPLAT; }
+// affiches TMDB : taille adaptée à l'affichage (40 px → w92, ou w154 sur écran Retina 3×), chargées au besoin
+function tmdbSized(u, w){ return String(u||'').replace(/\/t\/p\/w\d+\//, '/t/p/'+w+'/'); }
+function posterImg(u, px, fallback){
+  return `<img src="${tmdbSized(u,'w92')}" srcset="${tmdbSized(u,'w92')} 92w, ${tmdbSized(u,'w154')} 154w" sizes="${px}px" loading="lazy" decoding="async" alt="" onerror="${fallback}">`;
+}
 // emoji d'ambiance selon le titre/genre
 const FILM_EMO = {horreur:'👻',peur:'👻',fantome:'👻',amour:'❤️',romance:'❤️',comedie:'😂','comédie':'😂',rire:'😂',action:'💥',guerre:'🎖️',espace:'🚀',science:'🛸',fiction:'🛸',enfant:'🧸',dessin:'🧸',anime:'🎌','animé':'🎌',policier:'🕵️',enquete:'🕵️',thriller:'🔪',doc:'🎥',documentaire:'🎥',foot:'⚽',sport:'🏆',musique:'🎵',western:'🤠',super:'🦸',magie:'🪄',dragon:'🐉'};
 function guessFilmEmo(t){ t=(t||'').toLowerCase(); for(const k in FILM_EMO){ if(t.includes(k)) return FILM_EMO[k]; } return '🎬'; }
@@ -1153,7 +1291,7 @@ function renderFilmResults(list){
   if(!list.length){ el.innerHTML=''; setFilmSearching(false); return; }
   setFilmSearching(true);
   el.innerHTML = list.map((m,i)=>`<div class="film-result" data-i="${i}">
-    ${m.poster?`<img src="${m.poster}" alt="" onerror="this.outerHTML='<div class=ph>${m.type==='tv'?'📺':'🎬'}</div>'">`:`<div class="ph">${m.type==='tv'?'📺':'🎬'}</div>`}
+    ${m.poster?posterImg(m.poster, 38, `this.outerHTML='<div class=ph>${m.type==='tv'?'📺':'🎬'}</div>'`):`<div class="ph">${m.type==='tv'?'📺':'🎬'}</div>`}
     <div><div class="ti">${esc(m.title)}</div><div class="yr">${m.type==='tv'?'📺 Série':'🎬 Film'}${m.year?' · '+m.year:''}</div></div></div>`).join('');
   el.querySelectorAll('.film-result').forEach(r=>{ r.onclick = ()=>selectFilmResult(list[+r.dataset.i]); });
 }
@@ -1185,10 +1323,11 @@ async function tmdbProviders(id, type){
 }
 function selectFilmResult(m){
   form.filmMeta = {poster:m.poster, overview:m.overview, year:m.year, tmdbId:m.tmdbId, type:m.type||'movie', ytKey:'', provName:''};
+  form.plat = ''; syncPlatPick(); // « Non renseignée » tant que TMDB n'a pas trouvé la plateforme
   inp.value = m.title; inpEmo.textContent = m.type==='tv'?'📺':guessFilmEmo(m.title);
   document.getElementById('filmResults').innerHTML=''; setFilmSearching(false);
   if(inp.blur) inp.blur(); // referme le clavier pour voir l'aperçu + Ajouter
-  showFilmPreview(form.filmMeta, m.title);
+  showFilmPreview(form.filmMeta, m.title); updateFilmUI();
   const same = ()=> form.filmMeta && form.filmMeta.tmdbId===m.tmdbId;
   tmdbTrailer(m.tmdbId, m.type).then(k=>{ if(same()){ form.filmMeta.ytKey=k; showFilmPreview(form.filmMeta, m.title); } });
   tmdbProviders(m.tmdbId, m.type).then(p=>{ if(same() && p.plat){ form.plat=p.plat; syncPlatPick(); form.filmMeta.provName=p.name; showFilmPreview(form.filmMeta, m.title); } });
@@ -1405,6 +1544,10 @@ function load(){
     if(!d.cartons) d.cartons = [];
     return d;
   } }catch(e){}
+  return sampleState();
+}
+// contenu d'exemple d'une première installation
+function sampleState(){
   return {
     shopCats: clone(DEFAULT_SHOP_CATS),
     todoCats: clone(DEFAULT_TODO_CATS),
@@ -1435,13 +1578,19 @@ function load(){
     cartons:[],
     history:{},
     catLearn:{},
-  };
+  };;
 }
 function saveLocal(){ localStorage.setItem('zeste', JSON.stringify(S)); }
 let cloudTimer=null;
+// clés de synchro conservées dans le téléphone
+const ACCT_KEY='zeste_acct', PEND_KEY='zeste_pending', SYNC_KEY='zeste_sync';
 function save(){
   saveLocal();
-  if(cloud.on && !cloud.applying){ clearTimeout(cloudTimer); cloudTimer=setTimeout(cloudPush,400); }
+  if(cloud.applying) return;
+  // appareil rattaché à un compte : la modification est « en attente » jusqu'à confirmation du serveur,
+  // même si l'appli est fermée entre-temps (marque conservée dans le téléphone)
+  if(cloud.on || localStorage.getItem(ACCT_KEY)){ markPending(); setSyncState(); }
+  if(cloud.on){ clearTimeout(cloudTimer); cloudTimer=setTimeout(cloudPush,400); }
 }
 function id(){ return Math.random().toString(36).slice(2,9); }
 function clone(x){ return JSON.parse(JSON.stringify(x)); }
@@ -1494,12 +1643,15 @@ function playDing(){
   }catch(e){}
 }
 
+/* Rendu ciblé : seul l'onglet visible est redessiné ; les autres sont marqués « à refaire »
+   et redessinés quand on y revient (avant, chaque action redessinait les 5 onglets). */
+const VIEWS = { todo:()=>renderTodo(), shop:()=>renderShop(), film:()=>renderFilms(), debt:()=>renderDebt(), move:()=>renderMove() };
+let dirtyViews = new Set();
+function renderView(t){ if(!VIEWS[t]) return; VIEWS[t](); dirtyViews.delete(t); }
 function paint(){
-  renderTodo();
-  renderShop();
-  renderFilms();
-  renderDebt();
-  renderMove();
+  dirtyViews = new Set(Object.keys(VIEWS));
+  renderView(tab);
+  if(personOpenKey!=null) renderPersonSheet(); // fiche personne ouverte : soldes à jour
   if(loanOpenId) renderLoanDetail(); // détail d'un prêt ouvert : soldes à jour
   renderProgress();
   if(typeof updateNotifBanner==='function') updateNotifBanner();
@@ -1556,7 +1708,7 @@ function renderTodo(){
     h += `</div>`;
     if(!shown){ el.innerHTML = emptyState('📝','Aucune tâche','Appuie sur + pour en ajouter une !'); return; }
     el.innerHTML = h;
-    el.querySelectorAll('[data-open]').forEach(b=>{ b.onclick=()=>{ todoCat=b.dataset.open; paint(); renderProgress(); }; });
+    el.querySelectorAll('[data-open]').forEach(b=>{ b.onclick=()=>{ todoCat=b.dataset.open; paint(); window.scrollTo(0,0); }; });
     updateTopBack();
     return;
   }
@@ -1732,8 +1884,8 @@ function renderFilms(){
   if(!films.length){ el.innerHTML = ideas + (searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🍿','Aucun film','Ajoute un film, ou touche ✨ Idées !')); const so=el.querySelector('#suggOpen'); if(so) so.onclick=openSugg; return; }
   const toSee = films.filter(f=>!f.done), seen = films.filter(f=>f.done);
   let h = ideas;
-  FILM_PLATS.forEach(p=>{
-    const list = toSee.filter(f=>(f.plat||'other')===p.id);
+  [...FILM_PLATS, FILM_NOPLAT].forEach(p=>{
+    const list = toSee.filter(f=>platOf(f).id===p.id);
     if(!list.length) return;
     h += `<div class="cat"><div class="cat-h" style="--ch:${catHue(p.id)}"><span class="e">${p.e}</span>${p.n}<span class="n">${list.length}</span></div>`;
     h += list.map(rowFilm).join('');
@@ -1741,11 +1893,14 @@ function renderFilms(){
   });
   if(!toSee.length) h += emptyState('🍿','Tout est vu !','Ajoute un nouveau film avec le bouton +');
   if(seen.length){
-    h += `<div class="cat-h" style="margin-top:22px;--ch:280"><span class="e">🍿</span>Déjà vus<span class="n">${seen.length}</span></div>`;
-    h += seen.map(rowFilm).join('');
+    // « Déjà vus » repliés par défaut (ouverts pendant une recherche)
+    const showSeen = filmSeenOpen || !!searchQ;
+    h += `<button class="sec-h ${showSeen?'open':''}" id="seenTgl">🍿 Déjà vus <span class="n">${seen.length}</span><span class="chev">›</span></button>`;
+    if(showSeen) h += `<div>${seen.map(rowFilm).join('')}</div>`;
   }
   el.innerHTML = h;
   { const so=el.querySelector('#suggOpen'); if(so) so.onclick=openSugg; }
+  { const st=el.querySelector('#seenTgl'); if(st) st.onclick=()=>{ filmSeenOpen=!filmSeenOpen; renderFilms(); }; }
   bindRows(el,'films');
   el.querySelectorAll('.stars').forEach(st=>{
     st.querySelectorAll('.star').forEach(s=>{
@@ -1753,8 +1908,9 @@ function renderFilms(){
     });
   });
 }
+var filmSeenOpen = false;
 function rowFilm(f){
-  const p = FPLATMAP[f.plat] || FILM_PLATS[FILM_PLATS.length-1];
+  const p = platOf(f);
   let sub;
   if(f.done){
     let stars=''; for(let i=1;i<=5;i++) stars += `<span class="star ${i<=(f.rating||0)?'on':''}" data-v="${i}">⭐</span>`;
@@ -1763,7 +1919,7 @@ function rowFilm(f){
     sub = `<div class="sub"><span class="plat-tag" style="--ch:${catHue(p.id)}">${p.e} ${esc(p.n)}${f.year?' · '+esc(f.year):''}${f.type==='tv'?' · 📺 Série':''}</span></div>`;
   }
   const media = f.poster
-    ? `<span class="emo poster"><img src="${f.poster}" alt="" onerror="this.parentElement.textContent='🎬'"></span>`
+    ? `<span class="emo poster">${posterImg(f.poster, 40, "this.parentElement.textContent='🎬'")}</span>`
     : `<span class="emo">${f.emo||'🎬'}</span>`;
   return `<div class="swipe"><div class="del">Supprimer <span class="t">🗑️</span></div>
     <div class="row ${f.done?'done':''}" data-id="${f.id}" style="--ch:${catHue(f.plat)}">
@@ -1779,7 +1935,9 @@ function rowFilm(f){
 const CUR_SYM = {EUR:'€', ILS:'₪'};
 function curOf(d){ return (d && d.cur==='ILS') ? 'ILS' : 'EUR'; }
 function fmtMoney(n, cur){ n=Math.round((+n||0)*100)/100; return n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' '+(CUR_SYM[cur]||'€'); }
+function fmtCents(c, cur){ return fmtMoney(c/100, cur); }
 function eur(n){ return fmtMoney(n,'EUR'); }
+// regroupement par personne : même nom aux majuscules/espaces près (aucun rapprochement « ressemblant »)
 function personKey(w){ return (w||'').trim().toLowerCase(); }
 /* remboursements reçus : d.repays = [{id, amount, date:'AAAA-MM-JJ', note, ts}]
    Le montant initial (d.amount) n'est JAMAIS modifié : le reste dû est calculé.
@@ -1791,73 +1949,265 @@ function loanStats(d){
   return { init, paid, rest: Math.max(0, init-paid) };
 }
 function restOf(d){ return loanStats(d).rest/100; }
-// après chaque ajout / modif / suppression de remboursement : statut recalculé
-function syncLoanStatus(d){ if(d && d.kind==='money') d.done = loanStats(d).rest<=0; }
+function isMoney(d){ return !!d && d.kind==='money'; }
+/* Ancien prêt d'argent marqué « réglé » à la main alors que les remboursements ne couvrent pas le montant.
+   On ne le transforme JAMAIS en remboursement fictif : il est seulement signalé (« À vérifier »). */
+function legacySettled(d){ return isMoney(d) && !!d.done && loanStats(d).rest>0; }
+// en cours = encore quelque chose à récupérer (argent : reste > 0 ; objet : pas encore rendu)
+function loanIsOpen(d){ if(!d || d.archived) return false; return isMoney(d) ? (!d.done && loanStats(d).rest>0) : !d.done; }
+function loanIsClosed(d){ return !!d && !d.archived && !loanIsOpen(d) && !legacySettled(d); }
+/* Le statut d'un prêt d'argent découle du solde : on le recalcule après chaque changement,
+   sauf pour un ancien « réglé à la main » (son état réel n'est pas modifié sans action explicite). */
+function withLoanStatus(d, change){
+  const legacy = legacySettled(d);
+  change();
+  if(isMoney(d) && !legacy) d.done = loanStats(d).rest<=0;
+}
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function frDate(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); return m ? m[3]+'/'+m[2]+'/'+m[1] : (iso||''); }
+function isISODate(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s||'') && !isNaN(new Date(s+'T12:00:00')); }
+// date du prêt : uniquement une date saisie ; les anciens prêts sans date l'indiquent clairement
+function loanDateLabel(d){ return isISODate(d.date) ? 'Prêté le '+frDate(d.date) : 'Date non renseignée'; }
+function loanLabel(d){ return isMoney(d) ? (d.note ? String(d.note) : "Prêt d'argent") : (d.txt ? String(d.txt) : 'Objet prêté'); }
+function whoOf(d){ return String((d && d.who) || '').trim() || '—'; }
+function loanSortKey(d){ return isISODate(d.date) ? d.date : ('9999'+String(d.ts||0)); }
+// restes dus par devise (en centimes) — on n'additionne jamais deux devises
+function sumByCur(list){ const t={}; list.forEach(d=>{ const c=curOf(d), r=loanStats(d).rest; if(r>0) t[c]=(t[c]||0)+r; }); return t; }
+function curKeys(t){ return Object.keys(t).sort(); }
+function personGroups(list){
+  const g={}, order=[];
+  list.forEach(d=>{ const k=personKey(d.who); if(!g[k]){ g[k]={key:k, name:whoOf(d), loans:[]}; order.push(k); } g[k].loans.push(d); });
+  return order.map(k=>g[k]);
+}
+function loansOfPerson(k){ return (S.debts||[]).filter(d=>personKey(d.who)===k); }
+function loanById(lid){ return (S.debts||[]).find(d=>d.id===lid); }
+
+let debtArchOpen=false, debtLegacyOpen=true, debtCards=[];
 function renderDebt(){
   const el = document.getElementById('view-debt');
   const debts = S.debts || [];
-  const totals = {};
-  debts.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); totals[c]=(totals[c]||0)+restOf(d); });
-  const thingsN = debts.filter(d=>!d.done && d.kind==='thing').length;
-  const totVal = Object.keys(totals).length
-    ? Object.keys(totals).map(c=>fmtMoney(totals[c],c)).join('  •  ')
-    : fmtMoney(0,'EUR');
-  let h = `<div class="debt-total"><div class="dt-lab">💰 On te doit au total</div>
-    <div class="dt-val">${totVal}</div>
-    <div class="dt-sub">${thingsN? '+ '+thingsN+' objet'+(thingsN>1?'s':'')+' à récupérer' : 'aucun objet en attente'}</div></div>`;
-
-  const all = debts.filter(d=> matchQ(d.who) || matchQ(d.txt) || matchQ(d.note) );
-  if(!all.length){
-    el.innerHTML = h + (searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🤝','Personne ne te doit rien','Appuie sur + pour noter un prêt'));
-    return;
+  const live = debts.filter(d=>!d.archived);
+  const open = live.filter(loanIsOpen);
+  const tot = sumByCur(open.filter(isMoney)), curs = curKeys(tot);
+  const thingsN = open.filter(d=>!isMoney(d)).length;
+  let h = `<div class="debt-sum"><div class="ds-lab">💰 On te doit</div>`
+    + (curs.length ? curs.map(c=>`<span class="ds-val">${fmtCents(tot[c],c)}</span>`).join('<span class="ds-sep">·</span>') : `<span class="ds-val">${fmtMoney(0,'EUR')}</span>`)
+    + (thingsN ? `<div class="ds-sub">+ ${thingsN} objet${thingsN>1?'s':''} à récupérer</div>` : '') + `</div>`;
+  if(!debts.length){ el.innerHTML = h + emptyState('🤝','Personne ne te doit rien','Appuie sur + pour noter un prêt'); return; }
+  const hit = d => matchQ(d.who) || matchQ(d.txt) || matchQ(d.note);
+  const keep = g => !searchQ || g.loans.some(hit);
+  debtCards = [];
+  // 1) une carte par personne qui a encore quelque chose en cours
+  const openGroups = personGroups(open).filter(keep);
+  const openKeys = new Set(personGroups(open).map(g=>g.key));
+  openGroups.forEach(g=>{ h += personCard(g, false); });
+  // 2) personnes dont tout est réglé (non archivé)
+  const closedAll = live.filter(loanIsClosed);
+  const closedGroups = personGroups(closedAll).filter(g=>!openKeys.has(g.key)).filter(keep);
+  if(!openGroups.length && searchQ && !closedGroups.length) h += emptyState('🔍','Aucun résultat','Essaie un autre mot');
+  else if(!openGroups.length && !searchQ) h += `<div class="remb-empty" style="margin-top:14px">Rien en cours pour l'instant. 🎉</div>`;
+  if(closedGroups.length){
+    h += `<div class="sec-h" style="cursor:default">✅ Réglés <span class="n">${closedGroups.length}</span></div>`;
+    closedGroups.forEach(g=>{ h += personCard(g, true); });
   }
-  const active = all.filter(d=>!d.done), done = all.filter(d=>d.done);
-  const groups={}, order=[];
-  active.forEach(d=>{ const k=personKey(d.who); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(d); });
-  order.forEach(k=>{
-    const list=groups[k], name=list[0].who||'—';
-    const psums={}; list.filter(d=>d.kind==='money').forEach(d=>{ const c=curOf(d); psums[c]=(psums[c]||0)+restOf(d); });
-    const pt = Object.keys(psums).map(c=>fmtMoney(psums[c],c)).join(' • ');
-    h += `<div class="debt-person" style="--ch:${catHue(name)}"><span class="pp">${esc((name.trim()[0]||'?'))}</span>${esc(name)}${pt?`<span class="pt">${pt}</span>`:''}</div>`;
-    h += list.map(rowDebt).join('');
-  });
-  if(done.length){
-    h += `<div class="cat-h" style="margin-top:22px;--ch:145"><span class="e">✅</span>Réglés<span class="n">${done.length}</span></div>`;
-    h += done.map(rowDebt).join('');
-    h += `<button class="clearbtn" id="clearDebt">🧹 Effacer les prêts réglés (${done.length})</button>`;
+  if(closedAll.length && !searchQ) h += `<button class="clearbtn" id="archDebt">🗄️ Archiver les prêts réglés (${closedAll.length})</button>`;
+  // 3) anciens prêts « réglés à la main » sans remboursement : signalés, jamais modifiés automatiquement
+  const legacy = live.filter(legacySettled).filter(d=>!searchQ || hit(d));
+  if(legacy.length){
+    h += `<button class="sec-h ${debtLegacyOpen?'open':''}" id="legacyTgl">⚠️ À vérifier <span class="n">${legacy.length}</span><span class="chev">›</span></button>`;
+    if(debtLegacyOpen){
+      h += `<div class="note-box">Ces prêts ont été marqués <b>« réglé » à la main</b>, sans remboursement enregistré. Ils <b>ne comptent pas</b> dans le solde. Rien n'a été modifié : décide pour chacun.</div>`;
+      legacy.forEach(d=>{ h += loanRowHTML(d, true) + `<div class="lr-btns"><button class="act-btn alt" data-reopen="${d.id}">↩︎ Remettre en cours</button><button class="act-btn alt" data-arch1="${d.id}">🗄️ Archiver tel quel</button></div>`; });
+    }
+  }
+  // 4) archives : consultables et restaurables (remboursements conservés)
+  const arch = debts.filter(d=>d.archived).filter(d=>!searchQ || hit(d));
+  if(arch.length){
+    const showA = debtArchOpen || !!searchQ;
+    h += `<button class="sec-h ${showA?'open':''}" id="archTgl">🗄️ Archives <span class="n">${arch.length}</span><span class="chev">›</span></button>`;
+    if(showA) [...arch].sort((a,b)=>(b.archivedAt||0)-(a.archivedAt||0)).forEach(d=>{
+      h += loanRowHTML(d, true) + `<div class="lr-btns"><button class="act-btn alt" data-restore="${d.id}">♻️ Restaurer</button></div>`;
+    });
   }
   el.innerHTML = h;
-  bindRows(el,'debts');
-  const cd=document.getElementById('clearDebt'); if(cd) cd.onclick=()=>{ S.debts=S.debts.filter(d=>!d.done); render(); toast('Nettoyé 🎉'); };
+  el.querySelectorAll('[data-pi]').forEach(b=>{ b.onclick=()=>openPerson(debtCards[+b.dataset.pi].key); });
+  el.querySelectorAll('[data-premb]').forEach(b=>{ b.onclick=()=>rembFromPerson(debtCards[+b.dataset.premb].key); });
+  el.querySelectorAll('[data-pret]').forEach(b=>{ b.onclick=()=>thingFromPerson(debtCards[+b.dataset.pret].key); });
+  bindLoanActions(el);
+  const ad=el.querySelector('#archDebt'); if(ad) ad.onclick=archiveClosed;
+  const lt=el.querySelector('#legacyTgl'); if(lt) lt.onclick=()=>{ debtLegacyOpen=!debtLegacyOpen; renderDebt(); };
+  const at=el.querySelector('#archTgl'); if(at) at.onclick=()=>{ debtArchOpen=!debtArchOpen; renderDebt(); };
 }
-function rowDebt(d){
-  const money = d.kind==='money';
-  const label = money ? (d.note?esc(d.note):'Prêt d\'argent') : esc(d.txt||'Objet prêté');
-  const st = money ? loanStats(d) : null, cur = curOf(d);
-  // dès qu'un remboursement existe : on affiche le reste dû, et le montant initial en dessous
-  const right = !money ? '' : st.paid
-    ? `<span class="debt-right"><span class="debt-rest-lab">Reste</span><span class="debt-amt">${fmtMoney(st.rest/100, cur)}</span></span>`
-    : `<span class="debt-amt">${fmtMoney(+d.amount||0, cur)}</span>`;
-  const prog = (money && st.paid) ? `<div class="debt-prog">Prêté ${fmtMoney(st.init/100,cur)} · remboursé ${fmtMoney(st.paid/100,cur)}</div>` : '';
-  const noteThing = (!money && d.note) ? `<div class="debt-note">${esc(d.note)}</div>` : '';
-  const rembBtn = (money && st.rest>0) ? `<button class="remb-btn" data-remb title="Enregistrer un remboursement" aria-label="Enregistrer un remboursement">💸</button>` : '';
-  return `<div class="swipe"><div class="del">Réglé <span class="t">✅</span></div>
-    <div class="row ${d.done?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
-    <div class="check" data-check>${chk()}</div>
-    <span class="emo">${money?'💶':'📦'}</span>
-    <div class="label">${label}${noteThing}${prog}</div>
-    ${right}${rembBtn}
-  </div></div>`;
+function personCard(g, closed){
+  const i = debtCards.push(g)-1;
+  const open = g.loans.filter(loanIsOpen), money = open.filter(isMoney), things = open.filter(d=>!isMoney(d));
+  const tot = sumByCur(money), curs = curKeys(tot);
+  const parts = [];
+  if(money.length) parts.push(money.length+' prêt'+(money.length>1?'s':'')+' en cours');
+  if(things.length) parts.push(things.length+' objet'+(things.length>1?'s':'')+' à récupérer');
+  const sub = closed ? 'Tout est réglé ✓' : parts.join(' · ');
+  const bal = curs.length ? `<small>Reste dû</small>`+curs.map(c=>`<b>${fmtCents(tot[c],c)}</b>`).join('') : '';
+  let act = '';
+  if(money.length) act += `<button class="act-btn" data-premb="${i}">💸 Remboursement reçu</button>`;
+  if(things.length) act += `<button class="act-btn alt" data-pret="${i}">📦 Objet rendu</button>`;
+  return `<div class="pcard ${closed?'closed':''}" data-pk="${i}" style="--ch:${catHue(g.name)}">
+    <button class="pc-main" data-pi="${i}" aria-label="Voir les prêts de ${esc(g.name)}">
+      <span class="pp">${esc(g.name[0]||'?')}</span>
+      <span class="pc-txt"><b>${esc(g.name)}</b><small>${sub}</small></span>
+      <span class="pc-bal">${bal}</span><span class="pc-chev">›</span>
+    </button>${act?`<div class="pc-act">${act}</div>`:''}</div>`;
 }
+function loanRowHTML(d, withWho){
+  const money = isMoney(d), st = money ? loanStats(d) : null, cur = curOf(d);
+  const title = (withWho ? esc(whoOf(d))+' · ' : '') + esc(loanLabel(d));
+  let sub = esc(loanDateLabel(d));
+  if(money && st.paid) sub += ' · remboursé '+fmtCents(st.paid,cur);
+  if(!money && d.done) sub += ' · rendu'+(d.returnedAt?' le '+frDate(d.returnedAt):'');
+  const right = money
+    ? (legacySettled(d) ? `<b>${fmtCents(st.init,cur)}</b><small>marqué réglé</small>`
+       : st.rest>0 ? `<b>${fmtCents(st.rest,cur)}</b><small>sur ${fmtCents(st.init,cur)}</small>`
+       : `<b>${fmtCents(st.init,cur)}</b><small>remboursé ✓</small>`)
+    : `<b style="font-size:13px">${d.done?'Rendu ✓':'À récupérer'}</b>`;
+  return `<button class="lrow ${loanIsOpen(d)?'':'done'}" data-lopen="${d.id}">
+    <span class="lr-emo">${money?'💶':'📦'}</span>
+    <span class="lr-txt"><span class="lr-t">${title}</span><span class="lr-s">${sub}</span></span>
+    <span class="lr-r">${right}</span></button>`;
+}
+// boutons communs aux listes de prêts (vue, fiche personne, détail)
+function bindLoanActions(root){
+  root.querySelectorAll('[data-lopen]').forEach(b=>{ b.onclick=()=>openLoan(b.dataset.lopen); });
+  root.querySelectorAll('[data-reopen]').forEach(b=>{ b.onclick=()=>reopenLegacy(b.dataset.reopen); });
+  root.querySelectorAll('[data-arch1]').forEach(b=>{ b.onclick=()=>archiveOne(b.dataset.arch1); });
+  root.querySelectorAll('[data-restore]').forEach(b=>{ b.onclick=()=>restoreLoan(b.dataset.restore); });
+  root.querySelectorAll('[data-ret]').forEach(b=>{ b.onclick=()=>returnThing(b.dataset.ret, true); });
+  root.querySelectorAll('[data-unret]').forEach(b=>{ b.onclick=()=>returnThing(b.dataset.unret, false); });
+}
+function flashPerson(k){
+  const i = debtCards.findIndex(g=>g.key===k); if(i<0) return;
+  const c = document.querySelector('#view-debt [data-pk="'+i+'"]'); if(!c) return;
+  c.classList.remove('flash'); void c.offsetWidth; c.classList.add('flash');
+}
+
+/* ----- actions sur les prêts (toujours explicites, annulables quand c'est fiable) ----- */
+function reopenLegacy(lid){
+  const d = loanById(lid); if(!d || !legacySettled(d)) return;
+  d.done = false; render();
+  toast('↩︎ Prêt remis en cours · reste '+fmtCents(loanStats(d).rest, curOf(d)));
+  showSnack('↩︎ « '+loanLabel(d)+' » remis en cours', ()=>{ const x=loanById(lid); if(x){ x.done=true; render(); } });
+}
+function archiveOne(lid){
+  const d = loanById(lid); if(!d || d.archived || loanIsOpen(d)) return;
+  const now = Date.now(); d.archived = true; d.archivedAt = now; render();
+  showSnack('🗄️ « '+loanLabel(d)+' » archivé', ()=>{ const x=loanById(lid); if(x && x.archivedAt===now){ x.archived=false; delete x.archivedAt; render(); } });
+}
+function archiveClosed(){
+  const list = (S.debts||[]).filter(loanIsClosed); if(!list.length) return;
+  const n = list.length;
+  if(!confirm('Archiver '+n+' prêt'+(n>1?'s':'')+' réglé'+(n>1?'s':'')+' ?\nIls restent consultables et restaurables dans « Archives », avec leurs remboursements.')) return;
+  const now = Date.now(), ids = list.map(d=>d.id);
+  list.forEach(d=>{ d.archived = true; d.archivedAt = now; });
+  render();
+  showSnack('🗄️ '+n+' prêt'+(n>1?'s':'')+' archivé'+(n>1?'s':''), ()=>{ ids.forEach(i=>{ const x=loanById(i); if(x && x.archivedAt===now){ x.archived=false; delete x.archivedAt; } }); render(); });
+}
+function restoreLoan(lid){
+  const d = loanById(lid); if(!d || !d.archived) return;
+  d.archived = false; delete d.archivedAt; render(); toast('♻️ Prêt restauré');
+}
+function returnThing(lid, returned){
+  const d = loanById(lid); if(!d || isMoney(d) || d.archived) return;
+  if(returned){
+    if(d.done) return;
+    d.done = true; d.returnedAt = todayISO(); render();
+    showSnack('📦 « '+loanLabel(d)+' » rendu', ()=>{ const x=loanById(lid); if(x){ x.done=false; delete x.returnedAt; render(); } });
+  } else { d.done = false; delete d.returnedAt; render(); toast('📦 Objet de nouveau à récupérer'); }
+}
+function deleteLoan(lid){
+  const idx = (S.debts||[]).findIndex(d=>d.id===lid); if(idx<0) return;
+  const d = S.debts[idx], n = repaysOf(d).length;
+  if(!confirm('Supprimer définitivement ce prêt'+(n?' et ses '+n+' remboursement'+(n>1?'s':''):'')+' ?\nÀ réserver aux erreurs de saisie. Pour un prêt terminé, préfère « Archiver ».')) return;
+  S.debts.splice(idx,1); closeLoan(); render();
+  showSnack('🗑️ Prêt supprimé', ()=>{ S.debts.splice(Math.min(idx,S.debts.length),0,d); render(); });
+}
+
+// montant saisi pour un prêt, en centimes (null si invalide) — mêmes règles que le serveur : > 0, 2 décimales max
+function debtAmountCents(){
+  const raw=(document.getElementById('debtAmount').value||'').replace(/[\s €₪]/g,'').replace(',','.');
+  if(!/^\d+(\.\d{1,2})?$/.test(raw)) return null;
+  const c=cents(parseFloat(raw)); return c>0 ? c : null;
+}
+
+/* ---------- FICHE D'UNE PERSONNE ---------- */
+var personOpenKey = null;
+function openPerson(k){
+  personOpenKey = k; renderPersonSheet(); if(personOpenKey==null) return;
+  document.getElementById('personBg').classList.add('open'); document.getElementById('personSheet').classList.add('open');
+}
+function closePerson(){
+  personOpenKey = null;
+  document.getElementById('personBg').classList.remove('open'); document.getElementById('personSheet').classList.remove('open');
+}
+function renderPersonSheet(){
+  if(personOpenKey==null) return;
+  const loans = loansOfPerson(personOpenKey);
+  if(!loans.length){ closePerson(); return; }
+  const name = whoOf(loans[0]);
+  const live = loans.filter(d=>!d.archived), open = live.filter(loanIsOpen).sort((a,b)=>loanSortKey(a).localeCompare(loanSortKey(b)));
+  const money = open.filter(isMoney), tot = sumByCur(money), curs = curKeys(tot);
+  let h = `<h3>🤝 ${esc(name)}</h3>`;
+  h += `<div class="loan-sum" style="grid-template-columns:repeat(${Math.max(1,curs.length)},minmax(0,1fr))">`
+    + (curs.length ? curs.map(c=>`<div class="rest"><small>Reste dû (${CUR_SYM[c]})</small><b>${fmtCents(tot[c],c)}</b></div>`).join('')
+                   : `<div><small>Reste dû</small><b>${fmtMoney(0,'EUR')}</b></div>`) + `</div>`;
+  h += `<div class="remb-h">⏳ En cours</div>`;
+  if(!open.length) h += `<div class="remb-empty">Plus rien en cours avec ${esc(name)}.</div>`;
+  open.forEach(d=>{ h += loanRowHTML(d, false); if(!isMoney(d)) h += `<div class="lr-btns"><button class="act-btn alt" data-ret="${d.id}">📦 Objet rendu</button></div>`; });
+  const legacy = live.filter(legacySettled);
+  if(legacy.length){
+    h += `<div class="remb-h">⚠️ À vérifier</div><div class="note-box">Marqué${legacy.length>1?'s':''} « réglé » à la main sans remboursement enregistré : non compté${legacy.length>1?'s':''} dans le solde.</div>`;
+    legacy.forEach(d=>{ h += loanRowHTML(d, false) + `<div class="lr-btns"><button class="act-btn alt" data-reopen="${d.id}">↩︎ Remettre en cours</button><button class="act-btn alt" data-arch1="${d.id}">🗄️ Archiver tel quel</button></div>`; });
+  }
+  const closed = live.filter(loanIsClosed);
+  if(closed.length){ h += `<div class="remb-h">✅ Réglés</div>`; closed.forEach(d=>{ h += loanRowHTML(d, false); }); }
+  const arch = loans.filter(d=>d.archived);
+  if(arch.length){ h += `<div class="remb-h">🗄️ Archivés</div>`; arch.forEach(d=>{ h += loanRowHTML(d, false); }); }
+  h += `<button class="share-btn" id="personNew" style="margin-top:16px">＋ Nouveau prêt pour ${esc(name)}</button>`;
+  const body = document.getElementById('personBody'); body.innerHTML = h;
+  bindLoanActions(body);
+  document.getElementById('personNew').onclick = ()=>{ closePerson(); openSheet(); inp.value = name; };
+  const rb = document.getElementById('personRembBtn');
+  rb.style.display = money.length ? '' : 'none';
+  rb.onclick = ()=>rembFromPerson(personOpenKey);
+}
+// « Remboursement reçu » depuis une personne : 1 prêt ouvert → directement ; plusieurs → choix (jamais de répartition auto)
+function rembFromPerson(k){
+  const money = loansOfPerson(k).filter(d=>isMoney(d) && loanIsOpen(d)).sort((a,b)=>loanSortKey(a).localeCompare(loanSortKey(b)));
+  if(!money.length){ toast("Aucun prêt d'argent en cours"); return; }
+  if(money.length===1){ openRemb(money[0].id, null); return; }
+  openPick(money);
+}
+function thingFromPerson(k){
+  const things = loansOfPerson(k).filter(d=>!isMoney(d) && loanIsOpen(d));
+  if(things.length===1) returnThing(things[0].id, true); else openPerson(k);
+}
+function openPick(list){
+  const name = whoOf(list[0]);
+  let h = `<h3>Quel prêt ${esc(name)} rembourse ?</h3><p class="set-hint" style="margin:-6px 2px 4px">Le remboursement sera rattaché à ce prêt uniquement.</p>`;
+  list.forEach(d=>{
+    const st = loanStats(d), cur = curOf(d);
+    h += `<button class="lrow" data-pick="${d.id}"><span class="lr-emo">💶</span>
+      <span class="lr-txt"><span class="lr-t">${esc(loanLabel(d))}</span><span class="lr-s">${esc(loanDateLabel(d))} · ${cur==='ILS'?'shekels ₪':'euros €'}</span></span>
+      <span class="lr-r"><b>${fmtCents(st.rest,cur)}</b><small>sur ${fmtCents(st.init,cur)}</small></span></button>`;
+  });
+  const body = document.getElementById('pickBody'); body.innerHTML = h;
+  body.querySelectorAll('[data-pick]').forEach(b=>{ b.onclick=()=>{ closePick(); openRemb(b.dataset.pick, null); }; });
+  document.getElementById('pickBg').classList.add('open'); document.getElementById('pickSheet').classList.add('open');
+}
+function closePick(){ document.getElementById('pickBg').classList.remove('open'); document.getElementById('pickSheet').classList.remove('open'); }
 
 /* ---------- DÉTAIL D'UN PRÊT + REMBOURSEMENTS REÇUS ---------- */
 // « var » volontaire : paint() peut lire loanOpenId avant que ce bloc soit exécuté
 var loanOpenId = null, rembForm = null, rembBusy = false;
-function loanById(lid){ return (S.debts||[]).find(d=>d.id===lid); }
 function openItem(item, key){
-  if(key==='debts' && item.kind==='money') openLoan(item.id); else openSheet(item, key);
+  if(key==='debts') openLoan(item.id); else openSheet(item, key);
 }
 function openLoan(lid){
   loanOpenId = lid; renderLoanDetail(); if(!loanOpenId) return;
@@ -1870,89 +2220,132 @@ function closeLoan(){
 function renderLoanDetail(){
   if(!loanOpenId) return;
   const d = loanById(loanOpenId);
-  if(!d || d.kind!=='money'){ closeLoan(); return; } // prêt supprimé (ex : depuis un autre appareil)
-  const st = loanStats(d), cur = curOf(d), f = c=>fmtMoney(c/100, cur);
-  const reps = [...repaysOf(d)].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')) || (b.ts||0)-(a.ts||0));
-  const status = st.rest<=0 ? ['ok','✅ Remboursé'] : d.done ? ['ok','✅ Marqué réglé'] : ['','⏳ En cours'];
-  let h = `<h3>🤝 ${esc(String(d.who||'—'))}</h3>`;
-  if(d.note) h += `<p class="set-hint" style="margin:-8px 2px 10px">${esc(String(d.note))}</p>`;
-  h += `<span class="loan-status ${status[0]}">${status[1]}</span>
-    <div class="loan-sum">
-      <div><small>Prêté</small><b>${f(st.init)}</b></div>
-      <div><small>Remboursé</small><b>${f(st.paid)}</b></div>
-      <div class="rest"><small>Reste dû</small><b>${f(st.rest)}</b></div>
-    </div>
-    <div class="remb-h">📜 Historique des remboursements</div>`;
-  h += reps.length ? reps.map(r=>`<div class="remb-it">
-      <div class="ri-txt"><span class="ri-amt">+ ${fmtMoney(+r.amount||0, cur)}</span> <span class="ri-date">le ${frDate(r.date)}</span>
-        ${r.note?`<div class="ri-note">${esc(String(r.note))}</div>`:''}</div>
-      <button data-redit="${esc(String(r.id))}" title="Modifier" aria-label="Modifier ce remboursement">✏️</button>
-      <button data-rdel="${esc(String(r.id))}" title="Supprimer" aria-label="Supprimer ce remboursement">🗑️</button>
-    </div>`).join('') : `<div class="remb-empty">Aucun remboursement enregistré pour l'instant.</div>`;
-  h += `<button class="share-btn" id="loanEdit" style="margin-top:16px">✏️ Modifier le prêt</button>`;
+  if(!d){ closeLoan(); return; } // prêt supprimé (ex : depuis un autre appareil)
+  const money = isMoney(d), cur = curOf(d), f = c=>fmtCents(c, cur);
+  let status;
+  if(d.archived) status = ['','🗄️ Archivé'];
+  else if(legacySettled(d)) status = ['','⚠️ Marqué réglé sans remboursement · non compté dans le solde'];
+  else if(money) status = loanStats(d).rest<=0 ? ['ok','✅ Remboursé'] : ['','⏳ En cours'];
+  else status = d.done ? ['ok','✅ Rendu'+(d.returnedAt?' le '+frDate(d.returnedAt):'')] : ['','⏳ À récupérer'];
+  let h = `<h3>${money?'💶':'📦'} ${esc(whoOf(d))}</h3>
+    <p class="set-hint" style="margin:-8px 2px 6px"><b>${esc(loanLabel(d))}</b> · ${esc(loanDateLabel(d))}</p>
+    <span class="loan-status ${status[0]}">${status[1]}</span>`;
+  if(money){
+    const st = loanStats(d);
+    const reps = [...repaysOf(d)].sort((a,b)=> String(b.date||'').localeCompare(String(a.date||'')) || (b.ts||0)-(a.ts||0));
+    h += `<div class="loan-sum">
+        <div><small>Prêté</small><b>${f(st.init)}</b></div>
+        <div><small>Remboursé</small><b>${f(st.paid)}</b></div>
+        <div class="rest"><small>Reste dû</small><b>${f(st.rest)}</b></div>
+      </div>
+      <div class="remb-h">📜 Historique des remboursements</div>`;
+    const canEdit = !d.archived;
+    h += reps.length ? reps.map(r=>`<div class="remb-it">
+        <div class="ri-txt"><span class="ri-amt">+ ${fmtMoney(+r.amount||0, cur)}</span> <span class="ri-date">le ${frDate(r.date)}</span>
+          ${r.note?`<div class="ri-note">${esc(String(r.note))}</div>`:''}</div>
+        ${canEdit?`<button data-redit="${esc(String(r.id))}" title="Modifier" aria-label="Modifier ce remboursement">✏️</button>
+        <button data-rdel="${esc(String(r.id))}" title="Supprimer" aria-label="Supprimer ce remboursement">🗑️</button>`:''}
+      </div>`).join('') : `<div class="remb-empty">Aucun remboursement enregistré pour l'instant.</div>`;
+    if(reps.length && canEdit) h += `<p class="remb-hint">Une erreur de saisie ? Touche ✏️ pour corriger un remboursement ou 🗑️ pour le supprimer : le reste dû est recalculé.</p>`;
+  }
+  // actions (explicites)
+  let a = '';
+  if(!d.archived && legacySettled(d)) a += `<button class="act-btn alt" data-reopen="${d.id}">↩︎ Remettre en cours</button><button class="act-btn alt" data-arch1="${d.id}">🗄️ Archiver tel quel</button>`;
+  if(!d.archived && !money) a += d.done ? `<button class="act-btn alt" data-unret="${d.id}">↩︎ Pas encore rendu</button>` : `<button class="act-btn" data-ret="${d.id}">📦 Objet rendu</button>`;
+  if(loanIsClosed(d)) a += `<button class="act-btn alt" data-arch1="${d.id}">🗄️ Archiver</button>`;
+  if(d.archived) a += `<button class="act-btn alt" data-restore="${d.id}">♻️ Restaurer</button>`;
+  if(a) h += `<div class="lr-btns" style="margin-top:14px;flex-wrap:wrap">${a}</div>`;
+  if(!d.archived) h += `<button class="share-btn" id="loanEdit" style="margin-top:10px">✏️ Modifier le prêt</button>`;
+  h += `<button class="share-btn danger" id="loanDel" style="margin-top:10px">🗑️ Supprimer ce prêt</button>`;
   const body = document.getElementById('loanBody'); body.innerHTML = h;
   body.querySelectorAll('[data-redit]').forEach(b=>{ b.onclick=()=>openRemb(d.id, b.dataset.redit); });
   body.querySelectorAll('[data-rdel]').forEach(b=>{ b.onclick=()=>delRemb(d.id, b.dataset.rdel); });
-  document.getElementById('loanEdit').onclick = ()=>{ closeLoan(); openSheet(d, 'debts'); };
+  bindLoanActions(body);
+  const le = document.getElementById('loanEdit'); if(le) le.onclick = ()=>{ closeLoan(); closePerson(); openSheet(d, 'debts'); };
+  document.getElementById('loanDel').onclick = ()=>deleteLoan(d.id);
   const rb = document.getElementById('loanRembBtn');
-  rb.style.display = st.rest>0 ? '' : 'none';
+  rb.style.display = (money && loanIsOpen(d)) ? '' : 'none';
   rb.onclick = ()=>openRemb(d.id, null);
 }
+
+/* ---------- FORMULAIRE DE REMBOURSEMENT ---------- */
+function rembRaw(){ return (document.getElementById('rembAmount').value||'').replace(/[\s €₪]/g,'').replace(',','.'); }
+function updateRembAfter(){
+  const el = document.getElementById('rembAfter'); if(!rembForm){ el.textContent=''; return; }
+  const {max, cur} = rembForm, raw = rembRaw();
+  el.className = 'remb-after';
+  if(!raw){ el.innerHTML = `Reste après remboursement : <b>${fmtCents(max,cur)}</b>`; return; }
+  if(!/^\d+(\.\d{1,2})?$/.test(raw)){ el.className='remb-after bad'; el.textContent='Montant invalide (2 chiffres après la virgule au maximum)'; return; }
+  const c = cents(parseFloat(raw));
+  if(c>max){ el.className='remb-after bad'; el.innerHTML = `Dépasse le reste dû de <b>${fmtCents(c-max,cur)}</b>`; return; }
+  el.innerHTML = c===max ? `Reste après remboursement : <b>${fmtCents(0,cur)}</b> · le prêt sera réglé ✅` : `Reste après remboursement : <b>${fmtCents(max-c,cur)}</b>`;
+}
 function openRemb(lid, rid){
-  const d = loanById(lid); if(!d || d.kind!=='money') return;
+  const d = loanById(lid); if(!d || !isMoney(d)) return;
+  if(d.archived){ toast("Prêt archivé : restaure-le d'abord"); return; }
+  if(!rid && legacySettled(d)){ toast("Prêt marqué réglé à la main : remets-le en cours d'abord"); return; }
   const r = rid ? repaysOf(d).find(x=>x.id===rid) : null;
   if(rid && !r){ toast('Ce remboursement n\'existe plus'); return; }
   const cur = curOf(d), max = loanStats(d).rest + (r ? cents(r.amount) : 0);
   if(!r && max<=0){ toast('Ce prêt est déjà entièrement remboursé ✅'); return; }
-  rembForm = { lid:d.id, rid: r ? r.id : null, newId: id() }; // newId : empêche un doublon (double clic)
-  document.getElementById('rembTitle').textContent = r ? 'Modifier le remboursement ✏️' : 'Remboursement reçu 💸';
-  document.getElementById('rembInfo').innerHTML = `${esc(String(d.who||'—'))} · ${r?'maximum':'reste à rembourser'} : <b>${fmtMoney(max/100, cur)}</b>`;
+  rembForm = { lid:d.id, rid: r ? r.id : null, newId: id(), max, cur }; // newId : empêche un doublon (double appui)
+  document.getElementById('rembTitle').textContent = r ? 'Corriger le remboursement ✏️' : 'Remboursement reçu 💸';
+  document.getElementById('rembCtx').innerHTML = `<div><b>${esc(whoOf(d))}</b> · prêt « ${esc(loanLabel(d))} »</div>
+    <div><span>${esc(loanDateLabel(d))} · devise : ${cur==='ILS'?'shekels ₪':'euros €'}</span></div>`;
+  document.getElementById('rembDueLab').textContent = r ? 'Maximum pour ce remboursement' : 'Reste dû';
+  document.getElementById('rembDue').textContent = fmtCents(max, cur);
+  document.getElementById('rembAll').innerHTML = (r?'Maximum':'Tout le reste')+'<br>'+esc(fmtCents(max, cur));
   document.getElementById('rembCur').textContent = CUR_SYM[cur]||'€';
   document.getElementById('rembAmount').value = r ? String(+r.amount||'').replace('.',',') : '';
   const dt = document.getElementById('rembDate'); dt.max = todayISO(); dt.value = r ? (r.date||'') : todayISO();
   document.getElementById('rembNote').value = r ? (r.note||'') : '';
   document.getElementById('rembErr').textContent = '';
-  const sv = document.getElementById('rembSave'); sv.disabled = false; sv.textContent = r ? 'Enregistrer la modification' : 'Enregistrer';
+  const sv = document.getElementById('rembSave'); sv.disabled = false; sv.textContent = r ? 'Enregistrer la correction' : 'Enregistrer';
+  updateRembAfter();
   document.getElementById('rembBg').classList.add('open'); document.getElementById('rembSheet').classList.add('open');
-  if(!r) setTimeout(()=>document.getElementById('rembAmount').focus(), 280);
+  // focus dans le même geste que le toucher : condition pour qu'iOS ouvre le clavier
+  if(!r){ const a=document.getElementById('rembAmount'); try{ a.focus({preventScroll:true}); }catch(e){ a.focus(); } }
 }
 function closeRemb(){
   rembForm = null; document.getElementById('rembAmount').blur();
   document.getElementById('rembBg').classList.remove('open'); document.getElementById('rembSheet').classList.remove('open');
 }
 function saveRemb(){
-  if(rembBusy || !rembForm) return; // double clic : le 2ᵉ appui ne fait rien
+  if(rembBusy || !rembForm) return; // double appui : le 2ᵉ ne fait rien
   rembBusy = true; const sv = document.getElementById('rembSave'); sv.disabled = true;
   try{
     const errEl = document.getElementById('rembErr');
     const fail = (msg, focusId)=>{ errEl.textContent = '⚠️ '+msg; if(focusId) document.getElementById(focusId).focus(); sv.disabled = false; };
     const d = loanById(rembForm.lid);
-    if(!d || d.kind!=='money'){ closeRemb(); toast('Ce prêt n\'existe plus'); return; }
+    if(!d || !isMoney(d) || d.archived){ closeRemb(); toast('Ce prêt n\'est plus disponible'); return; }
     const r = rembForm.rid ? repaysOf(d).find(x=>x.id===rembForm.rid) : null;
     if(rembForm.rid && !r){ closeRemb(); toast('Ce remboursement n\'existe plus'); return; }
-    const raw = (document.getElementById('rembAmount').value||'').replace(/[\s €₪]/g,'').replace(',','.');
-    if(!raw) return fail('Indique le montant remboursé.', 'rembAmount');
+    const raw = rembRaw();
+    if(!raw) return fail('Indique le montant reçu.', 'rembAmount');
     if(/^-/.test(raw)) return fail('Le montant doit être supérieur à 0.', 'rembAmount');
     if(!/^\d+(\.\d{1,2})?$/.test(raw)) return fail('Montant invalide (2 chiffres après la virgule au maximum).', 'rembAmount');
     const c = cents(parseFloat(raw));
     if(c<=0) return fail('Le montant doit être supérieur à 0.', 'rembAmount');
     const others = repaysOf(d).filter(x=>x!==r).reduce((s,x)=>s+cents(x.amount),0);
     const max = cents(d.amount) - others;
-    if(c>max) return fail('Le montant dépasse le reste à rembourser ('+fmtMoney(Math.max(0,max)/100, curOf(d))+').', 'rembAmount');
+    if(c>max) return fail('Le montant dépasse le reste dû ('+fmtCents(Math.max(0,max), curOf(d))+').', 'rembAmount');
     const date = document.getElementById('rembDate').value;
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(new Date(date+'T12:00:00'))) return fail('Indique la date du remboursement.', 'rembDate');
+    if(!isISODate(date)) return fail('Indique la date du remboursement.', 'rembDate');
     if(date > todayISO()) return fail('La date ne peut pas être dans le futur.', 'rembDate');
     const note = document.getElementById('rembNote').value.trim().slice(0,300);
     const wasDone = d.done;
-    if(r){ r.amount = c/100; r.date = date; r.note = note; r.edited = Date.now(); }
-    else {
-      if(!Array.isArray(d.repays)) d.repays = [];
-      if(!d.repays.some(x=>x.id===rembForm.newId)) d.repays.push({ id:rembForm.newId, amount:c/100, date, note, ts:Date.now() });
-    }
-    syncLoanStatus(d);
-    closeRemb(); render(); // render() rafraîchit la liste, les totaux et le détail ouvert
-    if(d.done && !wasDone){ toast('Prêt entièrement remboursé 🎉'); playDing(); }
-    else toast(r ? 'Remboursement modifié ✏️' : 'Remboursement enregistré 💸');
+    withLoanStatus(d, ()=>{
+      if(r){ r.amount = c/100; r.date = date; r.note = note; r.edited = Date.now(); }
+      else {
+        if(!Array.isArray(d.repays)) d.repays = [];
+        if(!d.repays.some(x=>x.id===rembForm.newId)) d.repays.push({ id:rembForm.newId, amount:c/100, date, note, ts:Date.now() });
+      }
+    });
+    closeRemb(); render(); // render() rafraîchit la liste, les totaux, la fiche personne et le détail ouverts
+    const cur = curOf(d), rest = loanStats(d).rest;
+    if(d.done && !wasDone){ toast('🎉 '+fmtCents(c,cur)+' reçus de '+whoOf(d)+' · prêt entièrement remboursé', 3500); playDing(); }
+    else toast((r?'✏️ Correction enregistrée':'✅ '+fmtCents(c,cur)+' reçus de '+whoOf(d))+' · reste '+fmtCents(rest,cur), 3500);
+    flashPerson(personKey(d.who));
   } finally { rembBusy = false; }
 }
 function delRemb(lid, rid){
@@ -1960,14 +2353,25 @@ function delRemb(lid, rid){
   const r = repaysOf(d).find(x=>x.id===rid); if(!r) return;
   if(!confirm('Supprimer le remboursement de '+fmtMoney(+r.amount||0, curOf(d))+' du '+frDate(r.date)+' ?\nLe reste dû sera recalculé.')) return;
   const d2 = loanById(lid); if(!d2) return; // l'état a pu être remplacé pendant la question
-  d2.repays = repaysOf(d2).filter(x=>x.id!==rid);
-  syncLoanStatus(d2); render(); toast('Remboursement supprimé 🗑️');
+  withLoanStatus(d2, ()=>{ d2.repays = repaysOf(d2).filter(x=>x.id!==rid); });
+  render(); toast('Remboursement supprimé 🗑️ · reste '+fmtCents(loanStats(d2).rest, curOf(d2)));
 }
+document.getElementById('personBg').onclick = closePerson;
+document.getElementById('personX').onclick = closePerson;
 document.getElementById('loanBg').onclick = closeLoan;
 document.getElementById('loanX').onclick = closeLoan;
+document.getElementById('pickBg').onclick = closePick;
+document.getElementById('pickX').onclick = closePick;
 document.getElementById('rembBg').onclick = closeRemb;
 document.getElementById('rembX').onclick = closeRemb;
+document.getElementById('rembCancel').onclick = closeRemb;
 document.getElementById('rembSave').onclick = saveRemb;
+document.getElementById('rembAll').onclick = ()=>{
+  if(!rembForm) return;
+  document.getElementById('rembAmount').value = String(rembForm.max/100).replace('.',',');
+  document.getElementById('rembErr').textContent = ''; updateRembAfter();
+};
+document.getElementById('rembAmount').addEventListener('input', ()=>{ document.getElementById('rembErr').textContent=''; updateRembAfter(); });
 ['rembAmount','rembNote'].forEach(i=>document.getElementById(i).addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); saveRemb(); } }));
 
 /* ---------- DÉMÉNAGEMENT (cartons) ---------- */
@@ -2169,28 +2573,31 @@ function renderSuggResults(list, label){
 }
 function addSuggestion(m){
   if(!m) return;
-  S.films.unshift({id:id(),txt:m.title,emo:m.type==='tv'?'📺':'🎬',plat:'other',type:m.type||'movie',done:false,rating:0,
+  S.films.unshift({id:id(),txt:m.title,emo:m.type==='tv'?'📺':'🎬',plat:'',type:m.type||'movie',done:false,rating:0,
     poster:m.poster||'',overview:m.overview||'',year:m.year||'',tmdbId:m.tmdbId||null,ytKey:''});
   render(); toast('Ajouté à ta liste 🎬');
 }
 
-let lastDel=null, snackT=null;
-function showSnack(msg){
+// bandeau « Annuler » : undoFn = l'opération inverse exacte (5 s)
+let snackUndoFn=null, snackT=null;
+function showSnack(msg, undoFn){
   const s=document.getElementById('snack'); document.getElementById('snackMsg').textContent=msg;
-  s.classList.add('show'); clearTimeout(snackT); snackT=setTimeout(()=>s.classList.remove('show'),5000);
+  snackUndoFn = undoFn || null;
+  document.getElementById('snackUndo').style.display = snackUndoFn ? '' : 'none';
+  s.classList.add('show'); clearTimeout(snackT); snackT=setTimeout(()=>{ s.classList.remove('show'); snackUndoFn=null; },5000);
 }
 function delItem(key,itemId){
+  if(key==='debts') return; // un prêt ne se supprime que depuis sa fiche, avec confirmation
   const idx = S[key].findIndex(x=>x.id===itemId); if(idx<0) return;
   const item = S[key][idx];
-  S[key].splice(idx,1); lastDel={key,item,index:idx}; render();
-  showSnack('🗑️ « '+item.txt+' » supprimé');
+  S[key].splice(idx,1); render();
+  showSnack('🗑️ « '+item.txt+' » supprimé', ()=>{ S[key].splice(Math.min(idx,S[key].length),0,item); render(); toast('Restauré ↩︎'); });
   if(navigator.vibrate) navigator.vibrate(15);
 }
 document.getElementById('snackUndo').onclick = ()=>{
-  if(!lastDel) return;
-  const {key,item,index}=lastDel; lastDel=null;
-  S[key].splice(Math.min(index,S[key].length),0,item);
-  document.getElementById('snack').classList.remove('show'); render(); toast('Restauré ↩︎');
+  const f = snackUndoFn; snackUndoFn = null;
+  document.getElementById('snack').classList.remove('show');
+  if(f) f();
 };
 function bindRows(el,key){
   el.querySelectorAll('.row').forEach(row=>{
@@ -2285,6 +2692,8 @@ function renderProgress(){
   if(tab==='todo' && todoCat){ const tc=S.todoCats.length?S.todoCats:[{id:'perso'}]; const f=tc[0].id; list=S.todos.filter(i=>catOrFirst(i.cat,tc,f)===todoCat); }
   const tot = list.length, done = list.filter(i=>i.done).length;
   const pct = tot? Math.round(done/tot*100):0;
+  // Prêts : le résumé « On te doit » de l'onglet suffit (pas de total en double)
+  document.getElementById('progress').style.display = tab==='debt' ? 'none' : '';
   const ring = document.getElementById('ring');
   ring.style.setProperty('--p', pct+'%');
   document.getElementById('ringtxt').textContent = pct+'%';
@@ -2337,36 +2746,41 @@ function burst(node){
   playDing();
 }
 let toastT;
-function toast(msg){
+function toast(msg, ms){
   const t = document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1800);
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),ms||1800);
 }
 
 /* ============ TABS ============ */
 const mainEl = document.querySelector('main');
+// c'est la page entière qui défile (pas <main>) : position mémorisée séparément pour chaque onglet
+const tabScroll = {};
 document.querySelectorAll('.tab').forEach(b=>{
   b.onclick = ()=>{
     // taper l'onglet déjà actif → remonter en haut (réflexe iPhone)
-    if(tab === b.dataset.tab){ mainEl.scrollTo({top:0, behavior:'smooth'}); return; }
+    if(tab === b.dataset.tab){ window.scrollTo({top:0, behavior:'smooth'}); return; }
+    tabScroll[tab] = window.scrollY;
     tab = b.dataset.tab;
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('view-'+tab).classList.add('active');
-    mainEl.scrollTo({top:0});
+    if(dirtyViews.has(tab)) renderView(tab);
     renderProgress();
+    window.scrollTo(0, tabScroll[tab]||0);
   };
 });
 
 /* ============ RECHERCHE ============ */
 const searchEl = document.getElementById('search');
+let searchT = null;
 searchEl.addEventListener('input',()=>{
-  searchQ = searchEl.value.trim().toLowerCase();
-  document.getElementById('searchbar').classList.toggle('has', !!searchQ);
-  paint();
+  document.getElementById('searchbar').classList.toggle('has', !!searchEl.value.trim());
+  clearTimeout(searchT); // court délai : on ne redessine pas à chaque lettre
+  searchT = setTimeout(()=>{ searchQ = searchEl.value.trim().toLowerCase(); paint(); }, 160);
 });
 document.getElementById('searchClear').onclick = ()=>{
-  searchEl.value=''; searchQ=''; document.getElementById('searchbar').classList.remove('has'); paint(); searchEl.focus();
+  clearTimeout(searchT); searchEl.value=''; searchQ=''; document.getElementById('searchbar').classList.remove('has'); paint(); searchEl.focus();
 };
 
 /* ============ ADD SHEET ============ */
@@ -2379,7 +2793,7 @@ function openSheet(editItem=null, editKey=null){
   editState = editItem ? {id:editItem.id, key:editKey} : null;
   const mode = editItem ? ({todos:'todo',shop:'shop',films:'film',debts:'debt'}[editKey]) : tab;
   const isTodo = mode==='todo', isShop = mode==='shop', isFilm = mode==='film', isDebt = mode==='debt';
-  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:(FILM_PLATS[0]||{}).id, qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem, debtKind:'money', debtCur:'EUR'};
+  form = {prio:3, cat:(S.shopCats[0]||{}).id, tcat:(S.todoCats[0]||{}).id, plat:'', qty:1, subs:[], rec:false, due:null, repeat:'none', gcal:false, catTouched:!!editItem, debtKind:'money', debtCur:'EUR'};
   // dans une catégorie ouverte : nouvelle tâche = cette catégorie par défaut
   if(!editItem && isTodo && todoCat && S.todoCats.some(c=>c.id===todoCat)){ form.tcat=todoCat; form.catTouched=true; }
   document.getElementById('sheetTitle').textContent = isTodo?'Nouvelle tâche ✅':isShop?'Nouvel article 🛒':isFilm?'Nouveau film 🎬':'Nouveau prêt 🤝';
@@ -2397,6 +2811,7 @@ function openSheet(editItem=null, editKey=null){
   document.getElementById('debtAmount').value=''; document.getElementById('debtWhat').value=''; document.getElementById('debtNote').value='';
   document.querySelectorAll('#debtCur button').forEach(b=>b.classList.toggle('on', b.dataset.cur==='EUR'));
   document.getElementById('debtCurEmo').textContent = '€';
+  { const dd=document.getElementById('debtDate'); dd.max=todayISO(); dd.value=todayISO(); document.getElementById('debtDateHint').style.display='none'; }
   inp.placeholder = isTodo?'Ex : Sortir les poubelles':isShop?'Ex : Tomates':isFilm?'Ex : Oppenheimer':'Qui te doit ? (prénom)';
   document.getElementById('recHint').textContent = isTodo? '(revient chaque fois)':'(essentiel à racheter)';
   inp.value=''; inpEmo.textContent = isTodo?'⭐':isShop?'🛒':isFilm?'🎬':'🤝';
@@ -2418,6 +2833,7 @@ function openSheet(editItem=null, editKey=null){
   document.getElementById('filmPreview').style.display='none';
   document.getElementById('filmPreview').innerHTML='';
   setFilmSearching(false);
+  document.getElementById('filmDup').style.display='none';
   buildCatPick();
   buildTcatPick();
   buildPlatPick();
@@ -2448,14 +2864,16 @@ function openSheet(editItem=null, editKey=null){
       document.querySelectorAll('#debtType button').forEach(b=>b.classList.toggle('on', b.dataset.dt===form.debtKind));
       document.getElementById('debtMoney').style.display = form.debtKind==='money'?'block':'none';
       document.getElementById('debtThing').style.display = form.debtKind==='thing'?'block':'none';
-      document.getElementById('debtAmount').value = editItem.amount||'';
+      document.getElementById('debtAmount').value = editItem.amount ? String(editItem.amount).replace('.',',') : '';
       document.getElementById('debtWhat').value = editItem.txt||'';
       document.getElementById('debtNote').value = editItem.note||'';
       form.debtCur = curOf(editItem);
       document.querySelectorAll('#debtCur button').forEach(b=>b.classList.toggle('on', b.dataset.cur===form.debtCur));
       document.getElementById('debtCurEmo').textContent = CUR_SYM[form.debtCur]||'€';
+      const dd=document.getElementById('debtDate'); dd.value = isISODate(editItem.date) ? editItem.date : '';
+      document.getElementById('debtDateHint').style.display = dd.value ? 'none' : 'block';
     } else {
-      form.plat = editItem.plat; syncPlatPick();
+      form.plat = platOf(editItem).id; syncPlatPick();
       if(editItem.poster || editItem.overview){
         form.filmMeta = {poster:editItem.poster, overview:editItem.overview, year:editItem.year, tmdbId:editItem.tmdbId, type:editItem.type||'movie', provName:editItem.provName||'', ytKey:editItem.ytKey||''};
         showFilmPreview(form.filmMeta, editItem.txt);
@@ -2467,7 +2885,9 @@ function openSheet(editItem=null, editKey=null){
   }
 
   bg.classList.add('open'); sheet.classList.add('open');
-  if(!editItem) setTimeout(()=>inp.focus(),300);
+  updateFilmUI();
+  // focus dans le même geste que le toucher sur « + » : condition pour qu'iOS ouvre le clavier
+  if(!editItem){ try{ inp.focus({preventScroll:true}); }catch(e){ inp.focus(); } }
 }
 function closeSheet(){ bg.classList.remove('open'); sheet.classList.remove('open'); inp.blur(); editState=null; }
 document.getElementById('fab').onclick = ()=>openSheet();
@@ -2482,7 +2902,7 @@ function openMove(item, key){
   let cats, field, cur, title;
   if(key==='shop'){ cats=S.shopCats; field='cat'; cur=item.cat; title='Déplacer « '+item.txt+' »'; }
   else if(key==='todos'){ cats=S.todoCats; field='cat'; cur=item.cat; title='Changer la catégorie'; }
-  else { cats=FILM_PLATS; field='plat'; cur=item.plat; title='Changer la plateforme'; }
+  else { cats=[...FILM_PLATS, FILM_NOPLAT]; field='plat'; cur=platOf(item).id; title='Changer la plateforme'; }
   moveTarget = {id:item.id, key, field};
   document.getElementById('moveTitle').textContent = title;
   const el = document.getElementById('movePick');
@@ -2603,8 +3023,8 @@ function addAllMagic(){
   let n=0;
   magicItems.forEach(it=>{
     if(it.type==='shop'){ const [e,c]=detectShop(it.txt); S.shop.unshift({id:id(),txt:it.txt,emo:it.emo||e,cat:it.cat||c,store:curStore,qty:it.qty||1,done:false}); if(it.cat) learnCat(it.txt,it.cat); n++; }
-    else if(it.type==='film'){ S.films.unshift({id:id(),txt:it.txt,emo:'🎬',plat:'other',type:'movie',done:false,rating:0}); n++; }
-    else if(it.type==='debt'){ S.debts.unshift({id:id(),who:it.who,kind:it.kind||'money',amount:it.amount||0,txt:it.kind==='thing'?(it.txt||''):'',note:'',done:false,ts:Date.now()}); n++; }
+    else if(it.type==='film'){ S.films.unshift({id:id(),txt:it.txt,emo:'🎬',plat:'',type:'movie',done:false,rating:0}); n++; }
+    else if(it.type==='debt'){ S.debts.unshift({id:id(),who:it.who,kind:it.kind||'money',amount:it.amount||0,txt:it.kind==='thing'?(it.txt||''):'',note:'',done:false,ts:Date.now(),date:todayISO()}); n++; }
     else { S.todos.unshift({id:id(),txt:it.txt,emo:guessTodo(it.txt),cat:it.cat||guessTodoCat(it.txt),prio:3,rec:false,done:false,due:it.due||null,repeat:'none',notified:false,subs:[]}); n++; }
   });
   magicItems=[]; render(); closeMagic(); toast('✨ '+n+' élément'+(n>1?'s':'')+' ajouté'+(n>1?'s':'')+' !');
@@ -2647,9 +3067,9 @@ inp.addEventListener('input',()=>{
   const v = inp.value.trim();
   const m = editState ? ({todos:'todo',shop:'shop',films:'film',debts:'debt'}[editState.key]) : tab;
   if(m==='debt'){ inpEmo.textContent='🤝'; return; }
-  if(!v){ inpEmo.textContent = m==='todo'?'⭐':m==='shop'?'🛒':'🎬'; return; }
+  if(!v){ inpEmo.textContent = m==='todo'?'⭐':m==='shop'?'🛒':'🎬'; if(m==='film'){ form.filmMeta=null; scheduleFilmSearch(''); updateFilmUI(); } return; }
   if(m==='todo'){ inpEmo.textContent = guessTodo(v); if(!form.catTouched){ const g=guessTodoCat(v); form.tcat = S.todoCats.some(x=>x.id===g)?g:form.tcat; syncTcatPick(); } }
-  else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); form.filmMeta = null; const pv=document.getElementById('filmPreview'); pv.style.display='none'; pv.innerHTML=''; scheduleFilmSearch(v); }
+  else if(m==='film'){ inpEmo.textContent = guessFilmEmo(v); form.filmMeta = null; document.getElementById('filmDup').style.display='none'; const pv=document.getElementById('filmPreview'); pv.style.display='none'; pv.innerHTML=''; scheduleFilmSearch(v); updateFilmUI(); }
   else{ const [e,c] = detectShop(v); inpEmo.textContent = e; if(!form.catTouched){ form.cat = S.shopCats.some(x=>x.id===c)?c:form.cat; syncCatPick(); } }
 });
 
@@ -2730,13 +3150,61 @@ function syncTcatPick(){ document.querySelectorAll('#tcatPick button').forEach(b
 
 function buildPlatPick(){
   const cp = document.getElementById('platPick');
-  cp.innerHTML = FILM_PLATS.map(p=>`<button data-plat="${p.id}" class="${p.id===form.plat?'sel':''}"><span class="e">${p.e}</span>${esc(p.n)}</button>`).join('');
+  cp.innerHTML = [FILM_NOPLAT, ...FILM_PLATS].map(p=>`<button data-plat="${p.id}" class="${p.id===(form.plat||'')?'sel':''}"><span class="e">${p.e}</span>${esc(p.n)}</button>`).join('');
   cp.querySelectorAll('button').forEach(b=>{ b.onclick=()=>{ form.plat=b.dataset.plat; syncPlatPick(); }; });
 }
-function syncPlatPick(){ document.querySelectorAll('#platPick button').forEach(b=>b.classList.toggle('sel', b.dataset.plat===form.plat)); }
+function syncPlatPick(){ document.querySelectorAll('#platPick button').forEach(b=>b.classList.toggle('sel', b.dataset.plat===(form.plat||''))); }
+
+/* ----- ajout de film : uniquement sur un résultat choisi, ou ajout manuel clairement identifié ----- */
+function filmDupOf(meta, title){
+  const list = S.films||[];
+  if(meta && meta.tmdbId) return list.find(f=>f.tmdbId===meta.tmdbId && (f.type||'movie')===(meta.type||'movie')) || null;
+  const t = String(title||'').trim().toLowerCase();
+  return t ? (list.find(f=>String(f.txt||'').trim().toLowerCase()===t) || null) : null;
+}
+function updateFilmUI(){
+  const man = document.getElementById('filmManual'), dupEl = document.getElementById('filmDup'), btn = document.getElementById('addBtn');
+  if(editState || tab!=='film'){ man.style.display='none'; dupEl.style.display='none'; btn.disabled=false; return; }
+  const v = inp.value.trim(), meta = form.filmMeta;
+  man.style.display = (v && !meta) ? 'block' : 'none';
+  man.textContent = '✍️ Ajouter « '+v+' » sans fiche (manuel)';
+  const dup = meta ? filmDupOf(meta) : null;
+  dupEl.style.display = dup ? 'block' : 'none';
+  if(dup) dupEl.textContent = '⚠️ Déjà dans ta liste'+(dup.done?' (déjà vu)':' (à voir)')+' : « '+dup.txt+' »';
+  btn.disabled = !meta;
+  btn.textContent = !meta ? 'Choisis un film dans la liste' : dup ? 'Ajouter quand même' : 'Ajouter';
+}
+function addFilmManual(){
+  const v = inp.value.trim(); if(!v){ inp.focus(); return; }
+  const dup = filmDupOf(null, v);
+  if(dup && !confirm('« '+dup.txt+' » est déjà dans ta liste'+(dup.done?' (déjà vu)':'')+'.\nL\'ajouter quand même ?')) return;
+  const f = {id:id(),txt:v,emo:guessFilmEmo(v),plat:form.plat||'',done:false,rating:0,type:'movie',poster:'',overview:'',year:'',tmdbId:null,ytKey:'',provName:''};
+  S.films.unshift(f); afterFilmAdded(f);
+}
+document.getElementById('filmManual').onclick = addFilmManual;
+function afterFilmAdded(f){
+  render(); closeSheet();
+  const shown = !searchQ || matchQ(f.txt);
+  toast(shown ? 'Ajouté ! 🎬' : 'Ajouté ! 🎬 (masqué par la recherche en cours)', shown ? 1800 : 3200);
+  if(shown) revealRow('view-film', f.id);
+}
+// rend visible une ligne (sans changer filtres ni onglet) et la met brièvement en évidence
+function revealRow(viewId, itemId){
+  requestAnimationFrame(()=>{
+    const r = document.querySelector('#'+viewId+' .row[data-id="'+itemId+'"]'); if(!r) return;
+    const b = r.getBoundingClientRect(), top = document.querySelector('header').offsetHeight;
+    if(b.top < top+8 || b.bottom > innerHeight-110) window.scrollTo({top: Math.max(0, scrollY + b.top - top - 60), behavior:'smooth'});
+    r.classList.remove('flash'); void r.offsetWidth; r.classList.add('flash');
+  });
+}
 
 document.getElementById('addBtn').onclick = add;
-inp.addEventListener('keydown',e=>{ if(e.key==='Enter') add(); });
+inp.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  // film : Entrée ne crée jamais un titre brut et ne choisit pas un résultat à ta place
+  if(!editState && tab==='film' && !form.filmMeta){ e.preventDefault(); toast(inp.value.trim() ? 'Touche un film dans la liste, ou « Ajouter sans fiche »' : 'Tape le titre du film'); return; }
+  add();
+});
 function add(){
   const v = inp.value.trim(); if(!v){ inp.focus(); return; }
 
@@ -2753,21 +3221,27 @@ function add(){
       } else if(k==='films'){
         it.txt = v;
         const fmt = form.filmMeta;
-        it.emo = (fmt&&fmt.type==='tv')?'📺':guessFilmEmo(v); it.plat = form.plat;
+        it.emo = (fmt&&fmt.type==='tv')?'📺':guessFilmEmo(v); it.plat = form.plat||'';
         if(fmt){ it.type=fmt.type||'movie'; it.poster=fmt.poster||''; it.overview=fmt.overview||''; it.year=fmt.year||''; it.tmdbId=fmt.tmdbId||null; it.ytKey=fmt.ytKey||''; it.provName=fmt.provName||''; }
       } else if(k==='debts'){
-        const amt = parseFloat((document.getElementById('debtAmount').value||'').replace(',','.'));
+        const amtC = debtAmountCents();
         const paid = loanStats(it).paid;
+        if(form.debtKind==='money' && amtC==null){ toast('Montant invalide 💶 (ex : 200 ou 49,90)'); document.getElementById('debtAmount').focus(); return; }
         if(repaysOf(it).length){ // le montant initial ne peut pas passer sous ce qui a déjà été remboursé
           if(form.debtKind!=='money'){ toast("Ce prêt a des remboursements : il reste un prêt d'argent 💶"); return; }
-          if(isNaN(amt) || cents(amt)<paid){ toast('Montant trop bas : '+fmtMoney(paid/100, curOf(it))+' déjà remboursés'); document.getElementById('debtAmount').focus(); return; }
+          if(amtC<paid){ toast('Montant trop bas : '+fmtMoney(paid/100, curOf(it))+' déjà remboursés'); document.getElementById('debtAmount').focus(); return; }
+          if((form.debtCur||'EUR')!==curOf(it)){ toast('Ce prêt a déjà des remboursements en '+CUR_SYM[curOf(it)]+' : la devise ne peut plus changer.', 3500); return; }
         }
-        it.who = v; it.kind = form.debtKind;
-        it.amount = form.debtKind==='money' ? (isNaN(amt)?0:amt) : 0;
-        it.cur = form.debtCur||'EUR';
-        it.txt = form.debtKind==='thing' ? document.getElementById('debtWhat').value.trim() : '';
-        it.note = document.getElementById('debtNote').value.trim();
-        if(repaysOf(it).length) syncLoanStatus(it); // statut recalculé si le montant change
+        const ddate = document.getElementById('debtDate').value;
+        if(ddate && (!isISODate(ddate) || ddate>todayISO())){ toast('Date du prêt invalide (pas dans le futur)'); return; }
+        withLoanStatus(it, ()=>{ // statut recalculé si le montant change (jamais posé à la main)
+          it.who = v; it.kind = form.debtKind;
+          it.amount = form.debtKind==='money' ? amtC/100 : 0;
+          it.cur = form.debtCur||'EUR';
+          it.txt = form.debtKind==='thing' ? document.getElementById('debtWhat').value.trim() : '';
+          it.note = document.getElementById('debtNote').value.trim();
+          if(ddate) it.date = ddate; else delete it.date;
+        });
       } else {
         it.txt = v;
         it.emo = guessShop(v)[0]; it.cat = form.cat; it.qty = form.qty||1;
@@ -2787,17 +3261,23 @@ function add(){
     const autoG = gcal.auto && gcalConnected();
     if(nt.due && (form.gcal || autoG)) setTimeout(()=>openGcal(nt),150);
   }else if(tab==='film'){
-    const fm = form.filmMeta || {};
-    S.films.unshift({id:id(),txt:v,emo:(fm.type==='tv'?'📺':guessFilmEmo(v)),plat:form.plat,done:false,rating:0,
-      type:fm.type||'movie',poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||'',provName:fm.provName||''});
+    const fm = form.filmMeta;
+    if(!fm){ toast('Touche un film dans la liste, ou « Ajouter sans fiche »'); return; } // jamais de titre brut silencieux
+    const nf = {id:id(),txt:v,emo:(fm.type==='tv'?'📺':guessFilmEmo(v)),plat:form.plat||'',done:false,rating:0,
+      type:fm.type||'movie',poster:fm.poster||'',overview:fm.overview||'',year:fm.year||'',tmdbId:fm.tmdbId||null,ytKey:fm.ytKey||'',provName:fm.provName||''};
+    S.films.unshift(nf); afterFilmAdded(nf); return;
   }else if(tab==='debt'){
-    const amt = parseFloat((document.getElementById('debtAmount').value||'').replace(',','.'));
+    const amtC = debtAmountCents();
     const kind = form.debtKind;
-    if(kind==='money' && (isNaN(amt) || amt<=0)){ toast('Entre un montant 💶'); document.getElementById('debtAmount').focus(); return; }
+    if(kind==='money' && (amtC==null || amtC<=0)){ toast('Entre un montant valide 💶 (ex : 200 ou 49,90)'); document.getElementById('debtAmount').focus(); return; }
+    const ddate = document.getElementById('debtDate').value;
+    if(ddate && (!isISODate(ddate) || ddate>todayISO())){ toast('Date du prêt invalide (pas dans le futur)'); return; }
     const what = document.getElementById('debtWhat').value.trim();
     if(kind==='thing' && !what){ toast('Note ce qu\'on te doit 📦'); document.getElementById('debtWhat').focus(); return; }
     const note = document.getElementById('debtNote').value.trim();
-    S.debts.unshift({id:id(),who:v,kind,amount:kind==='money'?amt:0,cur:form.debtCur||'EUR',txt:kind==='thing'?what:'',note,done:false,ts:Date.now()});
+    const nd = {id:id(),who:v,kind,amount:kind==='money'?amtC/100:0,cur:form.debtCur||'EUR',txt:kind==='thing'?what:'',note,done:false,ts:Date.now()};
+    if(ddate) nd.date = ddate;
+    S.debts.unshift(nd);
   }else{
     const [e] = detectShop(v);
     S.shop.unshift({id:id(),txt:v,emo:e,cat:form.cat,store:curStore,qty:form.qty||1,done:false});
@@ -2816,7 +3296,7 @@ function segItemRef(seg){ return seg==='stores'? {key:'shop', field:'store'} : {
 
 document.getElementById('gear').onclick = openSettings;
 setBg.onclick = closeSettings;
-function openSettings(){ setSeg = tab==='shop'?'shop':'todo'; syncSeg(); renderSettingsList(); setBg.classList.add('open'); setSheet.classList.add('open'); }
+function openSettings(){ setSeg = tab==='shop'?'shop':'todo'; syncSeg(); renderSettingsList(); renderBackups(); setBg.classList.add('open'); setSheet.classList.add('open'); }
 function closeSettings(){ setBg.classList.remove('open'); setSheet.classList.remove('open'); render(); }
 
 document.querySelectorAll('#setSeg button').forEach(b=>{
@@ -2945,7 +3425,7 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkDue
 const SB_URL = 'https://api.srv.proformationplus.fr';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg2Mzc3NDc1LCJleHAiOjIxMDE3Mzc0NzV9.Xobp4fkCDcPTv5qxLf_9doMp6SbnR6OFv-ml3zTXGFM';
 const VAPID_PUBLIC = 'BLDGxQtXSyTO93YpjbQxE5MUv2o5YFgF0OWa5dnp52DsvJG5-DocBZ0WFN2qcQv3l4lK108ali0yYUfqEnfzgvw';
-const cloud = { sb:null, on:false, id:null, email:null, chan:null, applying:false };
+const cloud = { sb:null, on:false, id:null, email:null, chan:null, applying:false, v2:undefined, conflict:null };
 
 function urlB64ToUint8(b64){
   const pad='='.repeat((4-b64.length%4)%4);
@@ -2990,6 +3470,10 @@ function initCloud(){
 async function onLogin(user){
   const w=document.getElementById('welcome'); if(w) w.classList.remove('show');
   if(cloud.on && cloud.id===user.id){ updateShareUI(); return; }
+  // autre compte que celui rattaché à cet appareil : on ne lui envoie pas les modifications de l'ancien
+  const prev = localStorage.getItem(ACCT_KEY);
+  if(prev && prev!==user.id){ backupState(S, 'changement de compte'); clearPending(); localStorage.removeItem(SYNC_KEY); }
+  localStorage.setItem(ACCT_KEY, user.id);
   cloud.on = true; cloud.id = user.id; cloud.email = user.email;
   subscribeChan();
   await cloudPull();
@@ -2998,44 +3482,294 @@ async function onLogin(user){
 }
 function onLogout(){
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
-  cloud.on=false; cloud.id=null; cloud.email=null; updateShareUI();
+  cloud.on=false; cloud.id=null; cloud.email=null; updateShareUI(); setSyncState();
 }
 function subscribeChan(){
   if(!cloud.sb || !cloud.id) return;
   if(cloud.chan){ try{ cloud.sb.removeChannel(cloud.chan); }catch(e){} cloud.chan=null; }
   cloud.chan = cloud.sb.channel('zeste-user-'+cloud.id, { config:{ broadcast:{ self:false } } });
   cloud.chan.on('broadcast', {event:'sync'}, ({payload})=>{
-    if(payload && payload.data){ applyRemote(payload.data); }
+    if(!payload || !hasContent(payload.data)) return;
+    const rh = hashState(payload.data);
+    if(rh===hashState(S)){ setSyncMeta({hash:rh, rev:payload.rev??syncMeta().rev}); return; }
+    // modifications locales pas encore confirmées : on n'écrase rien, on signale le conflit
+    if(isPending()){ enterConflict(payload.data, payload.rev??null, rh); return; }
+    applyRemote(payload.data, payload.rev??null, rh);
   });
   cloud.chan.subscribe();
 }
-function applyRemote(data){
-  if(!data || !(data.todos||data.shop||data.films)) return;
-  cloud.applying=true; S=data; ensureShape(); saveLocal(); render(); cloud.applying=false; flashSync();
+
+/* ============ FIABILITÉ DE LA SYNCHRO ============
+   - chaque modification est d'abord écrite dans le téléphone, puis marquée « en attente » (durable) ;
+   - l'envoi n'efface la marque qu'après confirmation du serveur ; en cas d'échec : nouvel essai progressif ;
+   - renvoyer le même état ne peut pas dupliquer un remboursement (état complet + identifiants uniques,
+     doublons refusés par zeste.verif_remboursements) ;
+   - avant d'écraser quoi que ce soit, on compare au dernier état connu du serveur : s'il a changé ailleurs
+     pendant qu'on avait du local non envoyé → CONFLIT affiché, aucune fusion automatique ;
+   - garantie complète (sans fenêtre de course) seulement avec la version serveur v2 (sql/zeste-sync-v2.sql),
+     utilisée automatiquement si elle est présente. */
+function hasContent(d){ return !!(d && (d.todos||d.shop||d.films||d.debts)); }
+// empreinte stable d'un état (clés triées : le serveur jsonb ne garde pas l'ordre des clés)
+function canon(v){
+  if(Array.isArray(v)) return '['+v.map(canon).join(',')+']';
+  if(v && typeof v==='object') return '{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}';
+  return JSON.stringify(v===undefined?null:v);
 }
+function hashState(d){ const s=canon(d); let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h.toString(16)+'-'+s.length; }
+function syncMeta(){ try{ return JSON.parse(localStorage.getItem(SYNC_KEY))||{}; }catch(e){ return {}; } }
+function setSyncMeta(m){ localStorage.setItem(SYNC_KEY, JSON.stringify(Object.assign({}, m, {at:Date.now()}))); }
+function isPending(){ return !!localStorage.getItem(PEND_KEY); }
+function pendRec(){ try{ return JSON.parse(localStorage.getItem(PEND_KEY))||null; }catch(e){ return null; } }
+function markPending(){ if(!isPending()) localStorage.setItem(PEND_KEY, JSON.stringify({since:Date.now(), sent:[]})); }
+function clearPending(){ localStorage.removeItem(PEND_KEY); }
+// empreintes des états déjà envoyés par cet appareil (conservées avec la marque « en attente ») :
+// si la réponse du serveur s'est perdue, le serveur contient NOTRE envoi — ce n'est pas un conflit
+function noteSent(h){ const p = pendRec()||{since:Date.now()}; const s = (p.sent||[]).filter(x=>x!==h); s.push(h); p.sent = s.slice(-8); localStorage.setItem(PEND_KEY, JSON.stringify(p)); }
+function wasSent(h){ const p = pendRec(); return !!(p && (p.sent||[]).includes(h)); }
+function hasItems(d){ return !!d && ['todos','shop','films','debts'].some(k=>Array.isArray(d[k]) && d[k].length); }
+// seulement le contenu d'exemple d'une première installation (rien à mettre de côté)
+function isSampleOnly(d){
+  const smp = sampleState(), txt = x=>x.txt||x.title||x.name||'';
+  return ['todos','shop','films','debts'].every(k=>{ const ok = new Set((smp[k]||[]).map(txt)); return (d[k]||[]).every(x=>ok.has(txt(x))); });
+}
+// copie de secours (5 dernières) de la version écartée lors d'un conflit, d'un refus serveur ou d'un changement de compte ;
+// renvoie false si le téléphone n'a plus la place de la garder
+function backupState(data, reason){
+  if(!hasItems(data)) return true;
+  let list = []; try{ list = JSON.parse(localStorage.getItem('zeste_backups')||'[]'); }catch(e){ list = []; }
+  list.unshift({at:Date.now(), reason, data: clone(data)});
+  for(let n=Math.min(list.length,5); n>=1; n--){
+    try{ localStorage.setItem('zeste_backups', JSON.stringify(list.slice(0,n))); return true; }catch(e){}
+  }
+  console.warn('backup impossible : stockage plein'); return false;
+}
+let syncFail = null, pushing = false, pushAgain = false, pulling = false, retryT = null, retryN = 0;
+function setSyncState(){
+  const el = document.getElementById('syncSt'), tx = document.getElementById('syncTxt'); if(!el) return;
+  const linked = cloud.on || !!localStorage.getItem(ACCT_KEY);
+  let cls = '', txt = '';
+  if(!linked){ el.className = 'sync-st'; return; }
+  if(cloud.conflict){ cls='conflict'; txt='Conflit à régler'; }
+  else if(syncFail && isPending()){ cls='fail'; txt='Échec · réessai'; }
+  else if(isPending()){ cls='wait'; txt = (navigator.onLine===false || !cloud.on) ? 'Hors ligne · en attente' : 'Envoi…'; }
+  else { cls='ok'; txt='Synchronisé'; }
+  el.className = 'sync-st show '+cls; tx.textContent = txt;
+  el.title = syncFail ? ('Dernière erreur : '+syncFail) : '';
+}
+function scheduleRetry(){
+  clearTimeout(retryT);
+  const d = [3,10,30,60,120][Math.min(retryN,4)]*1000; retryN++;
+  retryT = setTimeout(()=>{ if(cloud.on && isPending() && !cloud.conflict) cloudPull(); }, d);
+}
+function syncError(e){ return (e && (e.message||e.msg||e.error_description)) || String(e||'erreur inconnue'); }
+function isMissingFn(e){ return !!e && (e.code==='PGRST202' || /could not find the function|does not exist/i.test(e.message||'')); }
+// lit l'état du serveur ; utilise la version v2 (avec numéro de version) si elle existe
+async function loadRemote(){
+  if(cloud.v2!==false){
+    const r = await cloud.sb.rpc('zeste_load_mine_v2');
+    if(!r.error){ cloud.v2 = true; const d = r.data||{}; return { data: d.data||null, rev: (d.rev==null?null:d.rev) }; }
+    if(isMissingFn(r.error)) cloud.v2 = false; else throw r.error;
+  }
+  const r = await cloud.sb.rpc('zeste_load_mine'); if(r.error) throw r.error;
+  return { data: r.data||null, rev: null };
+}
+function applyRemote(data, rev, rh){
+  if(!hasContent(data)) return;
+  cloud.applying=true; S=data; ensureShape(); saveLocal(); render(); cloud.applying=false;
+  setSyncMeta({hash: rh || hashState(data), rev: rev==null?null:rev});
+  clearPending(); syncFail=null; setSyncState(); flashSync();
+}
+// une seule lecture et un seul envoi à la fois (sinon une lecture lente pourrait ramener un numéro de version périmé)
 async function cloudPull(){
-  if(!cloud.on || !cloud.sb) return;
-  try{
-    const {data,error} = await cloud.sb.rpc('zeste_load_mine');
-    if(error){ console.warn('load',error); toast('⚠️ Synchro indisponible'); return; }
-    if(data && (data.todos||data.shop||data.films)) applyRemote(data);
-    else cloudPush(); // compte neuf → on y met le contenu local actuel
-  }catch(e){ console.warn(e); }
+  if(!cloud.on || !cloud.sb || cloud.conflict) return;
+  if(pushing){ pushAgain = true; return; }
+  if(pulling) return;
+  pulling = true;
+  try{ await pullOnce(); } finally { pulling = false; }
+}
+async function pullOnce(){
+  let r;
+  try{ r = await loadRemote(); }
+  catch(e){ console.warn('load', e); syncFail = syncError(e); setSyncState(); if(isPending()) scheduleRetry(); else toast('⚠️ Synchro indisponible'); return; }
+  if(!hasContent(r.data)){ cloudPush(); return; } // compte neuf → on y met le contenu local actuel
+  if(pushing){ pushAgain = true; return; }         // un envoi a démarré pendant la lecture : il fait foi
+  const meta = syncMeta(), rh = hashState(r.data);
+  if(!isPending()){
+    // 1re synchro de cet appareil (ou ancienne version de l'appli avant) : le contenu local différent est mis de côté, pas perdu
+    if(!meta.hash && rh!==hashState(S) && hasItems(S) && !isSampleOnly(S)) backupState(S, 'contenu de cet appareil avant sa 1re synchro');
+    applyRemote(r.data, r.rev, rh); return;
+  }
+  // du local n'a pas été confirmé par le serveur : on ne l'écrase JAMAIS en silence
+  if(rh===hashState(S)){ setSyncMeta({hash:rh, rev:r.rev}); clearPending(); syncFail=null; setSyncState(); return; }
+  // le serveur n'a pas bougé depuis notre dernière synchro, ou il contient notre propre envoi (réponse perdue)
+  const unchanged = wasSent(rh) || ((cloud.v2 && meta.rev!=null) ? r.rev===meta.rev : (!!meta.hash && rh===meta.hash));
+  if(unchanged){ setSyncMeta({hash:rh, rev:r.rev}); cloudPush(); return; }
+  enterConflict(r.data, r.rev, rh);
 }
 async function cloudPush(){
-  if(!cloud.on || !cloud.sb) return;
-  try{
-    const {error} = await cloud.sb.rpc('zeste_save_mine',{ p_data:S });
-    if(error){
-      console.warn('save',error);
-      // refus du contrôle serveur des remboursements : on prévient et on se réaligne sur le serveur
-      if(/Remboursement refus/.test(error.message||'')){ toast('⚠️ '+error.message); cloudPull(); }
-      return;
-    }
-    if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:S}});
-    syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
-  }catch(e){ console.warn(e); }
+  if(!cloud.on || !cloud.sb || cloud.conflict) return;
+  if(pushing){ pushAgain = true; return; }
+  pushing = true; clearTimeout(cloudTimer);
+  let next = null;
+  try{ next = await pushOnce(); }
+  catch(e){ console.warn('push', e); }
+  finally{ pushing = false; }
+  if(cloud.conflict){ pushAgain = false; return; }
+  if(next==='pull'){ pushAgain = false; cloudPull(); return; }
+  if(next==='again' || pushAgain){ pushAgain = false; cloudPush(); } // modifié pendant l'envoi : on renvoie la dernière version
 }
+// un envoi ; renvoie 'again' (renvoyer), 'pull' (relire le serveur) ou null
+async function pushOnce(){
+  const snap = clone(S), h = hashState(snap), meta = syncMeta();
+  noteSent(h);
+  try{
+    let newRev = null;
+    if(cloud.v2){
+      const r = await cloud.sb.rpc('zeste_save_mine_v2', { p_data:snap, p_base_rev: meta.rev==null?null:meta.rev });
+      if(r.error) throw r.error;
+      newRev = r.data;
+    } else {
+      // sans la version serveur v2 : on relit d'abord le serveur (protection « vérifier puis écrire »)
+      const cur = await loadRemote();
+      if(cloud.v2) return 'again'; // v2 détectée entre-temps
+      if(hasContent(cur.data)){
+        const rh = hashState(cur.data);
+        if(rh!==h && rh!==meta.hash && !wasSent(rh)){ enterConflict(cur.data, null, rh); return null; }
+      }
+      const r = await cloud.sb.rpc('zeste_save_mine', { p_data:snap });
+      if(r.error) throw r.error;
+    }
+    setSyncMeta({hash:h, rev:newRev});
+    if(hashState(S)===h) clearPending(); // rien n'a changé pendant l'envoi
+    syncFail = null; retryN = 0; setSyncState();
+    if(cloud.chan) cloud.chan.send({type:'broadcast', event:'sync', payload:{data:snap, rev:newRev}});
+    syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
+    return null;
+  }catch(e){
+    const msg = syncError(e); console.warn('save', e);
+    // l'ancienne écriture est refusée depuis la version serveur v2 : on bascule sur la nouvelle
+    if(/version de Zeste périmée/.test(msg) && cloud.v2===false){ cloud.v2 = undefined; return 'again'; }
+    if(/Remboursement refus/.test(msg)){
+      // refus du contrôle serveur : copie de secours du local, puis réalignement sur le serveur
+      backupState(S, 'refusée par le serveur : '+msg.slice(0,120)); clearPending(); toast('⚠️ '+msg+' (copie dans ⚙️ Réglages)', 5000);
+      return 'pull';
+    }
+    if(/Conflit de synchronisation/.test(msg)){
+      try{
+        const cur = await loadRemote(), rh = hashState(cur.data);
+        // le serveur contient déjà exactement cet envoi (réponse précédente perdue)
+        if(rh===h){ setSyncMeta({hash:h, rev:cur.rev}); if(hashState(S)===h) clearPending(); syncFail=null; retryN=0; setSyncState(); return hashState(S)===h ? null : 'again'; }
+        if(!hasContent(cur.data)){ setSyncMeta({hash:null, rev:null}); return 'again'; }
+        // le serveur contient un de NOS envois précédents, ou l'état connu avant le passage en v2
+        if(wasSent(rh) || (meta.rev==null && meta.hash===rh)){ setSyncMeta({hash:rh, rev:cur.rev}); return 'again'; }
+        enterConflict(cur.data, cur.rev, rh); return null;
+      }catch(_){ syncFail = msg; setSyncState(); scheduleRetry(); return null; }
+    }
+    syncFail = msg; setSyncState(); scheduleRetry(); // réseau, serveur indisponible… : on garde le local et on réessaie
+    return null;
+  }
+}
+
+/* ----- conflit : les deux versions sont montrées, l'utilisateur choisit, l'autre est sauvegardée ----- */
+function repaySet(d){
+  const m = {};
+  ((d&&d.debts)||[]).forEach(x=>repaysOf(x).forEach(r=>{ m[r.id] = {id:r.id, who:whoOf(x), cur:curOf(x), amount:+r.amount||0, date:r.date}; }));
+  return m;
+}
+function stateSummary(d){
+  const debts = d.debts||[], reps = debts.reduce((s,x)=>s+repaysOf(x).length,0);
+  return debts.length+' prêt'+(debts.length>1?'s':'')+' · '+reps+' remboursement'+(reps>1?'s':'')+' · '+(d.films||[]).length+' film'+((d.films||[]).length>1?'s':'');
+}
+function enterConflict(remote, rev, rh){
+  cloud.conflict = {remote, rev, rh}; clearTimeout(cloudTimer); clearTimeout(retryT);
+  setSyncState(); renderConflict();
+}
+// remboursements présents dans a mais absents (ou différents) dans b
+function repayDiff(a, b){
+  const A = repaySet(a), B = repaySet(b);
+  return Object.keys(A).filter(k=>!B[k] || B[k].amount!==A[k].amount || B[k].date!==A[k].date).map(k=>A[k]);
+}
+function fmtRepay(r){ return fmtMoney(r.amount, r.cur)+' de '+esc(r.who)+' ('+frDate(r.date)+')'; }
+function renderConflict(){
+  const bar = document.getElementById('conflictBar'), c = cloud.conflict;
+  if(!c){ bar.classList.remove('show'); bar.innerHTML=''; return; }
+  const onlyLoc = repayDiff(S, c.remote), onlyRem = repayDiff(c.remote, S);
+  const lst = (arr, where)=> arr.length ? `<div class="cf-list">Remboursements seulement ${where} (${arr.length}) :<br>${arr.map(fmtRepay).join('<br>')}</div>` : '';
+  const lost = (arr)=> arr.length ? `<br><span class="cf-lost">${arr.length} remboursement${arr.length>1?'s':''} écarté${arr.length>1?'s':''}</span> (copie de secours dans ⚙️ Réglages)` : `<br>Aucun remboursement écarté.`;
+  bar.innerHTML = `⚠️ <b>Conflit de synchronisation</b> : tes listes ont aussi changé sur un autre appareil pendant que celui-ci avait des modifications non envoyées. Rien n'a été fusionné ni écrasé.
+    <small>Cet appareil : ${stateSummary(S)}${lst(onlyLoc,'ici')}</small>
+    <small>Autre appareil : ${stateSummary(c.remote)}${lst(onlyRem,'là-bas')}</small>
+    <div class="cb-btns">
+      <button id="cfLocal">📱 Garder la version de cet appareil<small>L'autre version est remplacée sur le serveur.${lost(onlyRem)}</small></button>
+      <button id="cfRemote">☁️ Garder la version de l'autre appareil<small>Tes modifications d'ici sont remplacées.${lost(onlyLoc)}</small></button>
+    </div>`;
+  bar.classList.add('show');
+  document.getElementById('cfLocal').onclick = ()=>resolveConflict(true);
+  document.getElementById('cfRemote').onclick = ()=>resolveConflict(false);
+}
+function resolveConflict(keepLocal){
+  const c = cloud.conflict; if(!c) return;
+  const lost = keepLocal ? repayDiff(c.remote, S) : repayDiff(S, c.remote);
+  const lostTxt = lost.length ? '\n\n'+lost.length+' remboursement'+(lost.length>1?'s':'')+' de l\'autre version ser'+(lost.length>1?'ont':'a')+' écarté'+(lost.length>1?'s':'')+' (copie de secours gardée) :\n'+lost.map(r=>'• '+fmtMoney(r.amount, r.cur)+' de '+r.who+' ('+frDate(r.date)+')').join('\n') : '';
+  if(!confirm((keepLocal ? 'Garder la version de cet appareil et remplacer l\'autre ?' : 'Garder la version de l\'autre appareil et remplacer celle-ci ?')+lostTxt)) return;
+  const discarded = keepLocal ? c.remote : S;
+  if(!backupState(discarded, keepLocal ? 'conflit : version de l\'autre appareil écartée' : 'conflit : version de cet appareil écartée')
+     && !confirm('⚠️ Le téléphone n\'a plus de place pour garder la copie de secours. Continuer quand même ?')) return;
+  cloud.conflict = null; renderConflict();
+  const msg = lost.length ? ' · '+lost.length+' remboursement'+(lost.length>1?'s':'')+' écarté'+(lost.length>1?'s':'')+', copie dans ⚙️ Réglages' : '';
+  if(keepLocal){ setSyncMeta({hash:c.rh, rev:c.rev}); markPending(); cloudPush(); toast('📱 Version de cet appareil conservée'+msg, 5000); }
+  else { applyRemote(c.remote, c.rev, c.rh); toast('☁️ Version de l\'autre appareil conservée'+msg, 5000); }
+}
+/* ----- copies de secours : consultables et restaurables (Réglages) ----- */
+function backupList(){ try{ return JSON.parse(localStorage.getItem('zeste_backups')||'[]'); }catch(e){ return []; } }
+function backupDetail(b){
+  const debts = (b.data && b.data.debts)||[], missing = repayDiff(b.data, S);
+  const missIds = {}; missing.forEach(r=>{ missIds[r.id] = 1; });
+  const rows = debts.map(d=>{
+    const reps = repaysOf(d).map(r=>{ const miss = missIds[r.id];
+      return `<div class="${miss?'bk-miss':''}">↳ ${fmtMoney(r.amount, curOf(d))} le ${frDate(r.date)}${r.note?' · '+esc(r.note):''}${miss?' — absent de la version actuelle':''}</div>`; }).join('');
+    return `<div style="margin-top:6px"><b>${esc(whoOf(d))}</b> · ${esc(loanLabel(d))}${isMoney(d)?' · '+fmtMoney(d.amount, curOf(d)):''}${d.archived?' · archivé':''}${reps}</div>`;
+  }).join('');
+  return `<div>${missing.length ? `<span class="bk-miss">${missing.length} remboursement${missing.length>1?'s':''} absent${missing.length>1?'s':''} de la version actuelle</span>` : 'Tous ses remboursements sont dans la version actuelle.'}</div>${rows || '<div>Aucun prêt.</div>'}`;
+}
+function renderBackups(){
+  const box = document.getElementById('backupList'); if(!box) return;
+  const list = backupList();
+  if(!list.length){ box.innerHTML = '<p class="set-hint">Aucune copie pour l\'instant.</p>'; return; }
+  box.innerHTML = list.map((b,i)=>{ const dt = new Date(b.at);
+    return `<div class="bk-it"><div class="bk-h">${dt.toLocaleDateString('fr-FR')} à ${dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div class="bk-s">${esc(b.reason||'')}</div><div class="bk-s">${hasContent(b.data)?stateSummary(b.data):''}</div>
+      <div class="bk-btns"><button data-bkv="${i}">👁️ Voir</button><button data-bkr="${i}">↩️ Restaurer</button></div>
+      <div class="bk-det" id="bkd${i}" hidden></div></div>`; }).join('');
+  box.querySelectorAll('[data-bkv]').forEach(btn=>btn.onclick = ()=>{
+    const i = +btn.dataset.bkv, el = document.getElementById('bkd'+i);
+    if(el.hidden){ el.innerHTML = backupDetail(list[i]); el.hidden = false; btn.textContent = '🙈 Masquer'; }
+    else { el.hidden = true; btn.textContent = '👁️ Voir'; }
+  });
+  box.querySelectorAll('[data-bkr]').forEach(btn=>btn.onclick = ()=>restoreBackup(+btn.dataset.bkr));
+}
+function restoreBackup(i){
+  const b = backupList()[i]; if(!b || !hasContent(b.data)) return;
+  if(cloud.conflict){ toast('⚠️ Règle d\'abord le conflit de synchronisation'); return; }
+  if(!confirm('Restaurer cette copie ('+stateSummary(b.data)+') ?\n\nElle remplace TOUTES tes listes actuelles, sur tous tes appareils. La version actuelle est gardée en copie de secours.')) return;
+  if(!backupState(S, 'version remplacée par une restauration') && !confirm('⚠️ Pas de place pour garder la version actuelle. Restaurer quand même ?')) return;
+  S = clone(b.data); ensureShape(); save(); render(); renderBackups();
+  toast('↩️ Copie restaurée', 3500);
+}
+document.getElementById('syncSt').onclick = ()=>{
+  if(cloud.conflict){ document.getElementById('conflictBar').scrollIntoView({behavior:'smooth', block:'center'}); return; }
+  if(isPending() && cloud.on){ retryN = 0; toast('🔄 Nouvel essai d\'envoi…'); cloudPull(); return; }
+  toast(isPending() ? 'Modifications en attente : connecte-toi pour les envoyer' : '✅ Tout est synchronisé');
+};
+window.addEventListener('online', ()=>{ setSyncState(); if(cloud.on && isPending()) { retryN=0; cloudPull(); } });
+window.addEventListener('offline', ()=>setSyncState());
+// deux onglets ouverts sur le même appareil : l'autre onglet vient d'enregistrer → on reprend son état
+window.addEventListener('storage', e=>{
+  if(e.key==='zeste' && e.newValue){
+    try{ const d = JSON.parse(e.newValue); cloud.applying = true; S = d; ensureShape(); paint(); cloud.applying = false; }catch(_){ cloud.applying = false; }
+  }
+  if(e.key===PEND_KEY || e.key===SYNC_KEY) setSyncState();
+});
 function ensureShape(){
   if(!S.shopCats) S.shopCats = clone(DEFAULT_SHOP_CATS);
   if(!S.todoCats) S.todoCats = clone(DEFAULT_TODO_CATS);
@@ -3080,9 +3814,11 @@ if(loginBtn) loginBtn.onclick = async ()=>{
 };
 const logoutBtn = document.getElementById('logoutBtn');
 if(logoutBtn) logoutBtn.onclick = async ()=>{
-  if(!confirm('Se déconnecter ? Tes listes restent sur cet appareil (copie locale) mais ne seront plus synchronisées.')) return;
+  const warn = isPending() ? '\n\n⚠️ Des modifications ne sont pas encore envoyées au serveur : elles resteront seulement sur cet appareil.' : '';
+  if(!confirm('Se déconnecter ? Tes listes restent sur cet appareil (copie locale) mais ne seront plus synchronisées.'+warn)) return;
   localStorage.setItem('zeste_skip_login','1');
-  await cloud.sb.auth.signOut(); toast('Déconnecté');
+  localStorage.removeItem(ACCT_KEY); // déconnexion volontaire : cet appareil n'est plus rattaché au compte
+  await cloud.sb.auth.signOut(); setSyncState(); toast('Déconnecté');
 };
 /* écran d'accueil (connexion au 1er lancement) */
 const welcomeEl = document.getElementById('welcome');
@@ -3176,6 +3912,7 @@ setTimeout(checkDue, 800);
 initCloud();
 setTimeout(maybeWelcome, 800); // affiche l'écran de connexion si toujours déconnecté
 updateGcalUI();
+setSyncState(); // affiche dès l'ouverture une éventuelle modification restée en attente
 
 /* ----- Thème (clair / sombre / auto) ----- */
 function applyTheme(){
@@ -3232,6 +3969,7 @@ if(window.visualViewport){
   const onVV = ()=>{
     const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
     document.documentElement.style.setProperty('--kb', kb+'px');
+    document.documentElement.classList.toggle('kb-open', kb>80);
   };
   vv.addEventListener('resize', onVV);
   vv.addEventListener('scroll', onVV);

@@ -1,5 +1,5 @@
 /* Service Worker Zeste — hors-ligne + base pour notifications push */
-const CACHE = 'zeste-v2';
+const CACHE = 'zeste-v3'; // v3 : prêts par personne, films fiabilisés, synchro protégée
 const ASSETS = [
   './',
   './index.html',
