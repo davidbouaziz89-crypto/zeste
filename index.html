@@ -4535,7 +4535,8 @@ function orSourceTxt(){ const a = orActuel(); return a ? (esc(String(a.source||'
 function orNomLot(l){
   const t = OR_TYPE[l.type] || OR_TYPE.autre;
   let n = l.type==='autre' ? (l.nom || 'Pièce') : (t.court + (l.nom ? ' — '+l.nom : ''));
-  return n + (l.millesime ? ' ('+l.millesime+')' : '');
+  // « 20 F » ne se coupe jamais en fin de ligne (petits écrans)
+  return (n + (l.millesime ? ' ('+l.millesime+')' : '')).replace(/ (\d+) F\b/g, '\u00a0$1\u00a0F');
 }
 function orJeton(l){
   const t = OR_TYPE[l.type] || OR_TYPE.autre;
