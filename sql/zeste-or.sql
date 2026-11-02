@@ -478,6 +478,20 @@ begin
   end if;
 end $$;
 
+-- Clé du fournisseur de cours, lue dans le coffre-fort chiffré de la base (Vault, secret
+-- « zeste_goldapi ») : l'ajouter ou la changer ne demande AUCUN redémarrage des fonctions
+-- serveur (partagées par toutes les applis). Réservée au service_role (l'edge function).
+-- Sans Vault (base de test locale) ou sans secret : null.
+create or replace function public.zeste_or_cle_fournisseur()
+returns text language plpgsql stable security definer set search_path = '' as $$
+declare k text;
+begin
+  if to_regclass('vault.decrypted_secrets') is null then return null; end if;
+  execute 'select decrypted_secret from vault.decrypted_secrets where name = $1 order by created_at desc limit 1'
+    into k using 'zeste_goldapi';
+  return nullif(btrim(k), '');
+end $$;
+
 -- Verrou partagé : un seul rafraîchissement du cours à la fois, même si plusieurs
 -- appareils ouvrent l'onglet au même instant (sinon deux appels au fournisseur).
 -- Bail de p_secondes : s'il n'est pas rendu (fonction coupée), il expire seul.
@@ -512,7 +526,7 @@ begin
     'public.zeste_or_vente_enregistrer(jsonb)', 'public.zeste_or_vente_supprimer(uuid)',
     'public.zeste_or_photo_lire(uuid)', 'public.zeste_or_photo_enregistrer(uuid,text)',
     'public.zeste_or_cours_lire(date)', 'public.zeste_or_cours_etat(text)', 'public.zeste_or_cours_maj(jsonb)',
-    'public.zeste_or_cours_reserver(integer)', 'public.zeste_or_cours_liberer()'
+    'public.zeste_or_cours_reserver(integer)', 'public.zeste_or_cours_liberer()', 'public.zeste_or_cle_fournisseur()'
   ] loop
     execute format('revoke all on function %s from public', f);
     begin
@@ -534,4 +548,5 @@ do $$ begin
   grant execute on function public.zeste_or_cours_maj(jsonb)               to service_role;
   grant execute on function public.zeste_or_cours_reserver(integer)        to service_role;
   grant execute on function public.zeste_or_cours_liberer()                to service_role;
+  grant execute on function public.zeste_or_cle_fournisseur()              to service_role;
 exception when undefined_object then null; end $$;

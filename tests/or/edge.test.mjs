@@ -152,3 +152,17 @@ test('appels simultanés (plusieurs appareils) : un seul appel au fournisseur', 
   await traiter(requete({}), ENV, f, MAINTENANT);
   assert.equal(appels.filter(a => a === '/api/price/XAU/EUR').length, 2);
 });
+
+test('clé lue dans le coffre-fort (Vault) quand la variable d\'environnement est absente : aucun redémarrage', async () => {
+  // simule vault.decrypted_secrets (présent en production, absent de la base locale)
+  await db.exec(`create schema if not exists vault; create table vault.decrypted_secrets (name text, decrypted_secret text, created_at timestamptz default now());
+    insert into vault.decrypted_secrets (name, decrypted_secret) values ('zeste_goldapi', 'cle-goldapi');`);
+  const { f, appels } = reseau(db, goldapiNormal);   // le faux GoldAPI exige « cle-goldapi »
+  const j = await (await traiter(requete({}), { ...ENV, GOLDAPI_KEY: undefined }, f, MAINTENANT)).json();
+  assert.ok(appels.includes('/api/price/XAU/EUR'));
+  assert.equal(Number(j.actuel.eur_g), 100.0012);
+  assert.deepEqual(j.alertes, []);
+  // la clé n'est lisible ni par un compte connecté ni sans connexion
+  await assert.rejects(rpc(db, 'zeste_or_cle_fournisseur', {}, { uid: U }), /permission denied/);
+  await assert.rejects(rpc(db, 'zeste_or_cle_fournisseur', {}, { role: 'anon' }), /permission denied/);
+});

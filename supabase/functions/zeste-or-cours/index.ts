@@ -1,8 +1,10 @@
 // Zeste 🍋 — Edge function « zeste-or-cours » : cours de l'or en euros par gramme.
 //
 // Fournisseur : GoldAPI.io, offre GRATUITE (300 requêtes par mois civil, sans
-// carte bancaire). La clé reste sur le serveur (secret GOLDAPI_KEY), jamais
-// dans le navigateur. Au-delà du quota, GoldAPI refuse simplement : aucun
+// carte bancaire). La clé reste sur le serveur, jamais dans le navigateur :
+// coffre-fort Vault de la base (secret « zeste_goldapi », lu par
+// zeste_or_cle_fournisseur, aucun redémarrage nécessaire), ou à défaut la
+// variable d'environnement GOLDAPI_KEY. Au-delà du quota, GoldAPI refuse simplement : aucun
 // risque de facturation. On garde de toute façon une marge (BUDGET_MOIS).
 //
 // Ce que fait un appel (POST, utilisateur connecté obligatoire) :
@@ -92,17 +94,18 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       return json({ ...lu, alertes });
     }
     const etat = await rpc("zeste_or_cours_etat", { p_fournisseur: FOURNISSEUR });
+    const cle: string | undefined = env.GOLDAPI_KEY || (await rpc("zeste_or_cle_fournisseur", {}).catch(() => null)) || undefined;
     let appels = Number(etat?.appels_mois) || 0;
     const meta = (etat?.meta || {}) as Record<string, string>;
     const echecRecent = etat?.dernier_echec && maintenant - Date.parse(etat.dernier_echec) < PAUSE_ECHEC_MS;
-    const peutAppeler = () => !!env.GOLDAPI_KEY && appels < BUDGET_MOIS && !echecRecent;
-    if (!env.GOLDAPI_KEY) alertes.push("Clé du fournisseur de cours non configurée sur le serveur.");
+    const peutAppeler = () => !!cle && appels < BUDGET_MOIS && !echecRecent;
+    if (!cle) alertes.push("Clé du fournisseur de cours non configurée sur le serveur.");
     else if (appels >= BUDGET_MOIS) alertes.push("Quota gratuit du mois atteint : dernier cours connu affiché.");
     else if (echecRecent) alertes.push("Fournisseur de cours indisponible il y a peu : dernier cours connu affiché.");
 
     const appelGoldApi = async (chemin: string) => {
       appels++;
-      const r = await f(`${API}${chemin}`, { headers: { "x-access-token": env.GOLDAPI_KEY!, Accept: "application/json" } });
+      const r = await f(`${API}${chemin}`, { headers: { "x-access-token": cle!, Accept: "application/json" } });
       if (!r.ok) throw new Error(`GoldAPI HTTP ${r.status}`);
       return await r.json();
     };
