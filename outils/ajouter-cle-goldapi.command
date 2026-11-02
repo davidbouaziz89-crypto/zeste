@@ -22,11 +22,22 @@ read -r CONFIRME
 echo
 printf "Colle ta clé GoldAPI puis appuie sur Entrée (elle reste invisible) : "
 read -rs CLE; echo
-CLE=$(printf '%s' "$CLE" | tr -d '[:space:]')
+# caractères invisibles parfois copiés avec la clé depuis une page web (espaces, insécables, largeur nulle…) : retirés
+BRUT=${#CLE}
+CLE=$(printf '%s' "$CLE" | LC_ALL=C tr -cd 'A-Za-z0-9_-')
+RETIRES=$(( BRUT - ${#CLE} ))
+# journal SANS la clé (aide au diagnostic) : ~/Library/Logs/zeste-goldapi.log
+JOURNAL=~/Library/Logs/zeste-goldapi.log
+note(){ printf '%s  %s  %s\n' "$(date '+%d/%m/%Y %H:%M:%S')" "PRODUCTION" "$1" >> "$JOURNAL" 2>/dev/null; }
+case "$CLE" in goldapi-*) DEBUT="oui" ;; *) DEBUT="non" ;; esac
+echo "Clé reçue : ${#CLE} caractères (commence par « goldapi- » : $DEBUT)$([ "$RETIRES" -gt 0 ] && echo " — $RETIRES caractère(s) invisible(s) retiré(s)")."
 if ! printf '%s' "$CLE" | grep -Eq '^[A-Za-z0-9_-]{16,128}$'; then
-  echo "❌ Ça ne ressemble pas à une clé GoldAPI. Rien n'a été envoyé."
+  note "format refusé (${#CLE} caractères, début goldapi- : $DEBUT) — rien envoyé"
+  echo "❌ Ça ne ressemble pas à une clé GoldAPI (trop courte ou vide). Rien n'a été envoyé."
+  echo "   Recopie la clé depuis ton espace GoldAPI (bouton copier) et relance ce fichier."
   unset CLE; read -n1 -rsp "Appuie sur une touche pour fermer."; exit 1
 fi
+note "envoi de la clé (${#CLE} caractères, début goldapi- : $DEBUT)"
 # 1re ligne du flux : la clé ; la suite : le script exécuté sur le serveur (lu par « bash -s »)
 if { printf '%s\n' "$CLE"; cat <<'SUR_LE_SERVEUR'
 set -e
@@ -43,10 +54,12 @@ printf "%s\n" \
 unset K
 SUR_LE_SERVEUR
 } | ssh -o BatchMode=yes -o ConnectTimeout=15 engco 'IFS= read -r K; export K; bash -s'; then
+  note "enregistrée dans le coffre-fort"
   echo "✅ Clé enregistrée dans le coffre-fort (aucun redémarrage)."
   echo "   Écris simplement à Claude : « clé GoldAPI ajoutée »."
 else
-  echo "❌ L'enregistrement a échoué : rien n'a changé. Préviens Claude."
+  note "échec de l'enregistrement (connexion au serveur ou base)"
+  echo "❌ L'enregistrement a échoué : rien n'a changé. Préviens Claude (il peut lire le journal, sans la clé)."
 fi
 unset CLE
 read -n1 -rsp "Appuie sur une touche pour fermer."
