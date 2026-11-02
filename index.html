@@ -403,6 +403,7 @@
   .debt-thing-tag{font-size:12.5px;font-weight:800;color:var(--orange);background:hsl(35 90% 92%);padding:2px 8px;border-radius:20px}
   :root[data-theme="dark"] .debt-thing-tag{background:hsl(35 50% 20%)}
   @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .debt-thing-tag{background:hsl(35 50% 20%)}}
+<<<<<<< HEAD
   /* remboursements reçus */
   .row .debt-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
   .row .debt-rest-lab{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
@@ -437,6 +438,38 @@
   .remb-lab{display:block;font-size:13px;font-weight:800;color:var(--muted);margin:12px 2px 6px}
   .remb-hint{font-size:13px;color:var(--muted);font-weight:600;margin:6px 2px 0}
   .submit:disabled{opacity:.55}
+=======
+  /* remboursements partiels */
+  .row .debt-right{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+  .row .debt-amt-init{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:1px}
+  .row.done .debt-amt-init{text-decoration:line-through}
+  .remb-btn{border:none;background:var(--soft);color:var(--purple);font-weight:800;font-size:12px;
+    padding:5px 10px;border-radius:11px;cursor:pointer;white-space:nowrap}
+  .remb-btn:active{transform:scale(.94)}
+  .hist-toggle{display:inline-flex;align-items:center;gap:5px;margin:2px 0 0 auto;border:none;background:none;
+    color:var(--muted);font-weight:800;font-size:12px;cursor:pointer;padding:2px 0}
+  .hist-toggle .cx{transition:transform .2s}
+  .hist-toggle.open .cx{transform:rotate(180deg)}
+  .debt-hist{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;
+    margin:2px 4px 10px;padding:6px 4px;overflow:hidden}
+  .debt-hist .hl{display:flex;align-items:center;gap:10px;padding:7px 10px;font-size:13.5px;font-weight:700}
+  .debt-hist .hl+.hl{border-top:1px solid var(--line)}
+  .debt-hist .hl .hd{color:var(--muted);font-weight:800;flex:none}
+  .debt-hist .hl .hm{color:var(--green-d);font-weight:800;flex:none}
+  .debt-hist .hl .hn{color:var(--muted);font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .debt-hist .hl .hx{flex:none;border:none;background:var(--card);color:var(--pink);font-weight:800;
+    width:26px;height:26px;border-radius:9px;cursor:pointer;box-shadow:var(--shadow-s)}
+  .debt-hist .hl .hx:active{transform:scale(.9)}
+  .remb-recap{background:var(--soft);color:var(--purple);border-radius:14px;padding:12px 14px;
+    font-size:14px;font-weight:700;margin-bottom:14px}
+  .remb-lab{display:block;font-size:13px;font-weight:800;color:var(--muted);margin:2px 2px 6px}
+  .debt-fold-h{display:flex;align-items:center;gap:8px;margin:22px 2px 4px;font-weight:800;font-size:15px;
+    color:var(--muted);cursor:pointer;user-select:none}
+  .debt-fold-h .cx{margin-left:auto;transition:transform .2s}
+  .debt-fold-h.open .cx{transform:rotate(180deg)}
+  .debt-fold-h .n{background:var(--line);color:var(--muted);font-size:12.5px;font-weight:800;
+    padding:1px 9px;border-radius:20px}
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
 
   /* films */
   .plat-tag{font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:20px;display:inline-flex;gap:3px;
@@ -1004,6 +1037,25 @@
   <div class="grab"></div>
   <h3 id="moveTitle">Déplacer</h3>
   <div class="cat-pick" id="movePick"></div>
+</div>
+
+<!-- fenêtre remboursement (prêt d'argent) -->
+<div class="sheet-bg" id="rembBg"></div>
+<div class="sheet" id="rembSheet">
+  <button class="sheet-x" id="rembX" aria-label="Fermer">✕</button>
+  <div class="grab"></div>
+  <div class="sheet-body">
+    <h3 id="rembTitle">Remboursement</h3>
+    <div class="remb-recap" id="rembRecap"></div>
+    <div class="field-wrap">
+      <input class="field" id="rembAmount" type="number" inputmode="decimal" step="0.01" placeholder="Montant remboursé" enterkeyhint="done" />
+      <span class="field-emo" id="rembCurEmo">€</span>
+    </div>
+    <label class="remb-lab" for="rembDate">Date du remboursement</label>
+    <input class="field" id="rembDate" type="date" />
+    <input class="field auth-inp" id="rembNote" placeholder="Note (facultatif : espèces, virement…)" autocomplete="off" />
+  </div>
+  <button class="submit" id="rembBtn">Enregistrer le remboursement</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1781,6 +1833,7 @@ function curOf(d){ return (d && d.cur==='ILS') ? 'ILS' : 'EUR'; }
 function fmtMoney(n, cur){ n=Math.round((+n||0)*100)/100; return n.toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:2})+' '+(CUR_SYM[cur]||'€'); }
 function eur(n){ return fmtMoney(n,'EUR'); }
 function personKey(w){ return (w||'').trim().toLowerCase(); }
+<<<<<<< HEAD
 /* remboursements reçus : d.repays = [{id, amount, date:'AAAA-MM-JJ', note, ts}]
    Le montant initial (d.amount) n'est JAMAIS modifié : le reste dû est calculé.
    Tous les calculs se font en centimes entiers (pas d'erreur d'arrondi). */
@@ -1795,12 +1848,32 @@ function restOf(d){ return loanStats(d).rest/100; }
 function syncLoanStatus(d){ if(d && d.kind==='money') d.done = loanStats(d).rest<=0; }
 function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function frDate(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); return m ? m[3]+'/'+m[2]+'/'+m[1] : (iso||''); }
+=======
+/* --- remboursements partiels (argent uniquement) --- */
+function rembList(d){ return Array.isArray(d.remboursements) ? d.remboursements : []; }
+function cents(n){ return Math.round((+n||0)*100); }
+function rembCents(d){ return rembList(d).reduce((s,r)=>s+cents(r.montant),0); }
+function resteCents(d){ return Math.max(0, cents(d.amount) - rembCents(d)); }
+function resteOf(d){ return resteCents(d)/100; }
+// un prêt est "soldé" : argent → reste 0 (ou coché manuellement) ; objet → coché
+function debtSettled(d){ return d.kind==='money' ? (d.done || resteCents(d)<=0) : d.done; }
+function todayISO(){ const n=new Date(); return n.getFullYear()+'-'+pad2(n.getMonth()+1)+'-'+pad2(n.getDate()); }
+function frDate(iso){ if(!iso) return ''; const p=String(iso).split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : iso; }
+let debtFoldOpen=false;              // section "Réglés" repliée par défaut
+const histOpen={};                   // id prêt → historique déplié ?
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
 function renderDebt(){
   const el = document.getElementById('view-debt');
   const debts = S.debts || [];
+  // total dû = reste dû (après remboursements), séparé par devise
   const totals = {};
+<<<<<<< HEAD
   debts.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); totals[c]=(totals[c]||0)+restOf(d); });
   const thingsN = debts.filter(d=>!d.done && d.kind==='thing').length;
+=======
+  debts.filter(d=>!debtSettled(d) && d.kind==='money').forEach(d=>{ const c=curOf(d); totals[c]=(totals[c]||0)+resteOf(d); });
+  const thingsN = debts.filter(d=>!debtSettled(d) && d.kind==='thing').length;
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
   const totVal = Object.keys(totals).length
     ? Object.keys(totals).map(c=>fmtMoney(totals[c],c)).join('  •  ')
     : fmtMoney(0,'EUR');
@@ -1813,27 +1886,45 @@ function renderDebt(){
     el.innerHTML = h + (searchQ ? emptyState('🔍','Aucun résultat','Essaie un autre mot') : emptyState('🤝','Personne ne te doit rien','Appuie sur + pour noter un prêt'));
     return;
   }
-  const active = all.filter(d=>!d.done), done = all.filter(d=>d.done);
+  const active = all.filter(d=>!debtSettled(d)), done = all.filter(d=>debtSettled(d));
   const groups={}, order=[];
   active.forEach(d=>{ const k=personKey(d.who); if(!groups[k]){groups[k]=[];order.push(k);} groups[k].push(d); });
   order.forEach(k=>{
     const list=groups[k], name=list[0].who||'—';
+<<<<<<< HEAD
     const psums={}; list.filter(d=>d.kind==='money').forEach(d=>{ const c=curOf(d); psums[c]=(psums[c]||0)+restOf(d); });
+=======
+    const psums={}; list.filter(d=>d.kind==='money').forEach(d=>{ const c=curOf(d); psums[c]=(psums[c]||0)+resteOf(d); });
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
     const pt = Object.keys(psums).map(c=>fmtMoney(psums[c],c)).join(' • ');
     h += `<div class="debt-person" style="--ch:${catHue(name)}"><span class="pp">${esc((name.trim()[0]||'?'))}</span>${esc(name)}${pt?`<span class="pt">${pt}</span>`:''}</div>`;
     h += list.map(rowDebt).join('');
   });
   if(done.length){
-    h += `<div class="cat-h" style="margin-top:22px;--ch:145"><span class="e">✅</span>Réglés<span class="n">${done.length}</span></div>`;
-    h += done.map(rowDebt).join('');
-    h += `<button class="clearbtn" id="clearDebt">🧹 Effacer les prêts réglés (${done.length})</button>`;
+    h += `<div class="debt-fold-h${debtFoldOpen?' open':''}" id="debtFold"><span>✅ Réglés</span><span class="n">${done.length}</span><span class="cx">⌄</span></div>`;
+    if(debtFoldOpen){
+      h += done.map(rowDebt).join('');
+      h += `<button class="clearbtn" id="clearDebt">🧹 Effacer les prêts réglés (${done.length})</button>`;
+    }
   }
   el.innerHTML = h;
   bindRows(el,'debts');
-  const cd=document.getElementById('clearDebt'); if(cd) cd.onclick=()=>{ S.debts=S.debts.filter(d=>!d.done); render(); toast('Nettoyé 🎉'); };
+  bindDebtExtras(el);
+  const fold=document.getElementById('debtFold'); if(fold) fold.onclick=()=>{ debtFoldOpen=!debtFoldOpen; renderDebt(); };
+  const cd=document.getElementById('clearDebt'); if(cd) cd.onclick=()=>{ S.debts=S.debts.filter(d=>!debtSettled(d)); render(); toast('Nettoyé 🎉'); };
+}
+// boutons propres aux prêts d'argent : « Remboursé », dépli historique, suppression d'une ligne
+function bindDebtExtras(el){
+  el.querySelectorAll('[data-remb]').forEach(b=>{ b.onclick=(e)=>{ e.stopPropagation();
+    const d=S.debts.find(x=>x.id===b.dataset.remb); if(d) openRemb(d); }; });
+  el.querySelectorAll('[data-hist]').forEach(b=>{ b.onclick=(e)=>{ e.stopPropagation();
+    const idd=b.dataset.hist; histOpen[idd]=!histOpen[idd]; renderDebt(); }; });
+  el.querySelectorAll('[data-delremb]').forEach(b=>{ b.onclick=(e)=>{ e.stopPropagation();
+    const [dId,rId]=b.dataset.delremb.split('|'); delRemb(dId,rId); }; });
 }
 function rowDebt(d){
   const money = d.kind==='money';
+<<<<<<< HEAD
   const label = money ? (d.note?esc(d.note):'Prêt d\'argent') : esc(d.txt||'Objet prêté');
   const st = money ? loanStats(d) : null, cur = curOf(d);
   // dès qu'un remboursement existe : on affiche le reste dû, et le montant initial en dessous
@@ -1843,13 +1934,49 @@ function rowDebt(d){
   const prog = (money && st.paid) ? `<div class="debt-prog">Prêté ${fmtMoney(st.init/100,cur)} · remboursé ${fmtMoney(st.paid/100,cur)}</div>` : '';
   const noteThing = (!money && d.note) ? `<div class="debt-note">${esc(d.note)}</div>` : '';
   const rembBtn = (money && st.rest>0) ? `<button class="remb-btn" data-remb title="Enregistrer un remboursement" aria-label="Enregistrer un remboursement">💸</button>` : '';
+=======
+  const settled = debtSettled(d);
+  if(!money){
+    const noteThing = d.note ? `<div class="debt-note">${esc(d.note)}</div>` : '';
+    return `<div class="swipe"><div class="del">Réglé <span class="t">✅</span></div>
+      <div class="row ${settled?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
+      <div class="check" data-check>${chk()}</div>
+      <span class="emo">📦</span>
+      <div class="label">${esc(d.txt||'Objet prêté')}${noteThing}</div>
+    </div></div>`;
+  }
+  // --- prêt d'argent ---
+  const cur = curOf(d);
+  const rembs = rembList(d);
+  const nb = rembs.length;
+  const rembSum = rembCents(d)/100;
+  const open = !!histOpen[d.id];
+  const histToggle = nb ? `<button class="hist-toggle${open?' open':''}" data-hist="${d.id}">🧾 ${nb} remb. · ${fmtMoney(rembSum,cur)} remboursé<span class="cx"> ⌄</span></button>` : '';
+  const initLine = nb ? `<span class="debt-amt-init">sur ${fmtMoney(+d.amount||0,cur)}</span>` : '';
+  const rembBtn = settled ? '' : `<button class="remb-btn" data-remb="${d.id}">＋ Remboursé</button>`;
+  const histPanel = (nb && open) ? `<div class="debt-hist">${rembs.map(r=>
+      `<div class="hl"><span class="hd">${frDate(r.date)}</span><span class="hm">${fmtMoney(r.montant,cur)}</span><span class="hn">${r.note?esc(r.note):''}</span><button class="hx" data-delremb="${d.id}|${r.id}" title="Retirer">✕</button></div>`
+    ).join('')}</div>` : '';
+  const label = d.note ? esc(d.note) : 'Prêt d\'argent';
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
   return `<div class="swipe"><div class="del">Réglé <span class="t">✅</span></div>
-    <div class="row ${d.done?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
+    <div class="row ${settled?'done':''}" data-id="${d.id}" style="--ch:${catHue(d.who)}">
     <div class="check" data-check>${chk()}</div>
+<<<<<<< HEAD
     <span class="emo">${money?'💶':'📦'}</span>
     <div class="label">${label}${noteThing}${prog}</div>
     ${right}${rembBtn}
   </div></div>`;
+=======
+    <span class="emo">💶</span>
+    <div class="label">${label}${histToggle}</div>
+    <div class="debt-right">
+      <span class="debt-amt">${fmtMoney(resteOf(d),cur)}</span>
+      ${initLine}
+      ${rembBtn}
+    </div>
+  </div>${histPanel}</div>`;
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
 }
 
 /* ---------- DÉTAIL D'UN PRÊT + REMBOURSEMENTS REÇUS ---------- */
@@ -2174,23 +2301,33 @@ function addSuggestion(m){
   render(); toast('Ajouté à ta liste 🎬');
 }
 
-let lastDel=null, snackT=null;
-function showSnack(msg){
+let snackT=null, snackUndoFn=null;
+function showSnack(msg, undoFn){
   const s=document.getElementById('snack'); document.getElementById('snackMsg').textContent=msg;
-  s.classList.add('show'); clearTimeout(snackT); snackT=setTimeout(()=>s.classList.remove('show'),5000);
+  snackUndoFn = undoFn||null;
+  s.classList.add('show'); clearTimeout(snackT); snackT=setTimeout(()=>{ s.classList.remove('show'); snackUndoFn=null; },5000);
 }
 function delItem(key,itemId){
   const idx = S[key].findIndex(x=>x.id===itemId); if(idx<0) return;
   const item = S[key][idx];
-  S[key].splice(idx,1); lastDel={key,item,index:idx}; render();
-  showSnack('🗑️ « '+item.txt+' » supprimé');
+  S[key].splice(idx,1); render();
+  const nm = item.txt || item.who || 'élément';
+  showSnack('🗑️ « '+nm+' » supprimé', ()=>{ S[key].splice(Math.min(idx,S[key].length),0,item); render(); toast('Restauré ↩︎'); });
+  if(navigator.vibrate) navigator.vibrate(15);
+}
+// retirer une ligne d'historique de remboursement (avec annulation)
+function delRemb(debtId, rembId){
+  const d = S.debts.find(x=>x.id===debtId); if(!d || !Array.isArray(d.remboursements)) return;
+  const idx = d.remboursements.findIndex(r=>r.id===rembId); if(idx<0) return;
+  const entry = d.remboursements[idx];
+  d.remboursements.splice(idx,1); render();
+  showSnack('🗑️ Remboursement retiré', ()=>{ if(!Array.isArray(d.remboursements)) d.remboursements=[]; d.remboursements.splice(Math.min(idx,d.remboursements.length),0,entry); render(); toast('Restauré ↩︎'); });
   if(navigator.vibrate) navigator.vibrate(15);
 }
 document.getElementById('snackUndo').onclick = ()=>{
-  if(!lastDel) return;
-  const {key,item,index}=lastDel; lastDel=null;
-  S[key].splice(Math.min(index,S[key].length),0,item);
-  document.getElementById('snack').classList.remove('show'); render(); toast('Restauré ↩︎');
+  const f=snackUndoFn; snackUndoFn=null;
+  document.getElementById('snack').classList.remove('show');
+  if(f) f();
 };
 function bindRows(el,key){
   el.querySelectorAll('.row').forEach(row=>{
@@ -2208,7 +2345,11 @@ function bindRows(el,key){
     // --- gestes tactiles : glisser à gauche = supprimer, tap = modifier ---
     let sx=0, sy=0, dx=0, dragging=false, horizontal=false, decided=false, moved=false, lp=null;
     row.addEventListener('touchstart', e=>{
+<<<<<<< HEAD
       if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],[data-remb],.stars')) return;
+=======
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],[data-remb],[data-hist],[data-delremb],.stars')) return;
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
       const t=e.touches[0]; sx=t.clientX; sy=t.clientY; dx=0;
       dragging=true; horizontal=false; decided=false; moved=false;
       row.style.transition='';
@@ -2236,7 +2377,11 @@ function bindRows(el,key){
     });
     // clic souris (desktop) = modifier
     row.addEventListener('click', e=>{
+<<<<<<< HEAD
       if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],[data-remb],.stars')) return;
+=======
+      if(e.target.closest('[data-check],[data-cal],[data-trailer],[data-drag],[data-remb],[data-hist],[data-delremb],.stars')) return;
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
       if('ontouchstart' in window) return;
       openItem(item, key);
     });
@@ -2303,10 +2448,15 @@ function renderProgress(){
     D.textContent = cs.length ? `${cs.length} carton${cs.length>1?'s':''} · ${objs} objet${objs>1?'s':''}` : 'Aucun carton';
   }else if(tab==='debt'){
     const dl = S.debts||[];
+<<<<<<< HEAD
     // reste dû (montant initial − remboursements reçus), par devise
     const owedBy = {}; dl.filter(d=>!d.done && d.kind==='money').forEach(d=>{ const c=curOf(d); owedBy[c]=(owedBy[c]||0)+restOf(d); });
     const owed = Object.keys(owedBy).length ? Object.keys(owedBy).map(c=>fmtMoney(owedBy[c],c)).join(' • ') : eur(0);
     const nActive = dl.filter(d=>!d.done).length;
+=======
+    const owed = dl.filter(d=>!debtSettled(d) && d.kind==='money').reduce((s,d)=>s+resteOf(d),0);
+    const nActive = dl.filter(d=>!debtSettled(d)).length;
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
     T.textContent = '🤝 On me doit';
     D.textContent = dl.length ? (owed + (nActive? ` · ${nActive} en cours` : ' · tout est réglé 🎉')) : 'Rien pour l\'instant';
   }else{
@@ -2497,6 +2647,39 @@ function openMove(item, key){
 }
 function closeMove(){ moveBg.classList.remove('open'); moveSheet.classList.remove('open'); moveTarget=null; }
 moveBg.onclick = closeMove;
+
+/* ----- Remboursement d'un prêt d'argent ----- */
+const rembBg = document.getElementById('rembBg'), rembSheet = document.getElementById('rembSheet');
+let rembTargetId = null;
+function openRemb(d){
+  rembTargetId = d.id;
+  const cur = curOf(d);
+  document.getElementById('rembCurEmo').textContent = CUR_SYM[cur]||'€';
+  document.getElementById('rembTitle').textContent = 'Remboursement · '+(d.who||'—');
+  document.getElementById('rembRecap').innerHTML = 'Reste dû : <b>'+fmtMoney(resteOf(d),cur)+'</b> sur '+fmtMoney(+d.amount||0,cur);
+  document.getElementById('rembAmount').value = '';
+  document.getElementById('rembNote').value = '';
+  document.getElementById('rembDate').value = todayISO();
+  rembBg.classList.add('open'); rembSheet.classList.add('open');
+  setTimeout(()=>document.getElementById('rembAmount').focus(),300);
+}
+function closeRemb(){ rembBg.classList.remove('open'); rembSheet.classList.remove('open'); rembTargetId=null; }
+rembBg.onclick = closeRemb;
+document.getElementById('rembX').onclick = closeRemb;
+document.getElementById('rembBtn').onclick = ()=>{
+  const d = S.debts.find(x=>x.id===rembTargetId); if(!d) return;
+  const amt = parseFloat((document.getElementById('rembAmount').value||'').replace(',','.'));
+  if(isNaN(amt) || amt<=0){ toast('Entre un montant 💶'); document.getElementById('rembAmount').focus(); return; }
+  const date = document.getElementById('rembDate').value || todayISO();
+  const note = document.getElementById('rembNote').value.trim();
+  if(!Array.isArray(d.remboursements)) d.remboursements = [];
+  d.remboursements.push({ id:id(), date, montant:Math.round(amt*100)/100, note });
+  const solde = resteCents(d)<=0;
+  if(solde){ debtFoldOpen = true; }        // on montre la section Réglés pour qu'il voie le prêt soldé
+  burst(document.getElementById('rembBtn'));  // confetti + son de validation
+  closeRemb(); render();
+  toast(solde ? 'Prêt soldé 🎉' : 'Remboursement noté ✅');
+};
 
 /* ============ AJOUT RAPIDE (langage naturel) ============ */
 const magicBg=document.getElementById('magicBg'), magicSheet=document.getElementById('magicSheet'), magicTa=document.getElementById('magicText');
@@ -3223,8 +3406,12 @@ enableSwipeDown(setSheet, closeSettings);
 enableSwipeDown(moveSheet, closeMove);
 enableSwipeDown(magicSheet, closeMagic);
 enableSwipeDown(suggSheet, closeSugg);
+<<<<<<< HEAD
 enableSwipeDown(document.getElementById('loanSheet'), closeLoan);
 enableSwipeDown(document.getElementById('rembSheet'), closeRemb);
+=======
+enableSwipeDown(rembSheet, closeRemb);
+>>>>>>> 5dddc17 (Prêts : remboursements partiels (reste dû, historique daté, prêt soldé → section Réglés))
 
 /* Clavier iOS : les fenêtres remontent au-dessus du clavier (API visualViewport) */
 if(window.visualViewport){
