@@ -198,4 +198,15 @@ test('verrouillage des anciennes versions (après publication complète) : plus 
   const lu = await rpc(d9, 'zeste_load_mine_v2', {}, asA);
   assert.equal(lu.data.todos[0].txt, 'Tâche encore accepté');                              // le faux n'est pas enregistré
   await rpc(d9, 'zeste_save_mine_v2', { p_data: etat('nouvelle appli'), p_base_rev: lu.rev }, asA); // la nouvelle appli enregistre
+  // compte qui n'a encore AUCUNE ligne (créé depuis une ancienne version) : refusé lui aussi, rien n'est créé
+  await creerUtilisateur(d9, B, 'b@t');
+  await refuse(rpc(d9, 'zeste_save_mine', { p_data: etat('nouveau compte, ancienne appli') }, asB), /version de Zeste périmée/);
+  assert.equal((await d9.query(`select count(*)::int n from zeste.user_data where user_id = '${B}'`)).rows[0].n, 0);
+  assert.equal(await rpc(d9, 'zeste_save_mine_v2', { p_data: etat('nouveau compte, nouvelle appli'), p_base_rev: null }, asB), 1);
+  assert.equal((await d9.query(`select bool_and(v2_only) ok from zeste.user_data`)).rows[0].ok, true);
+  // retour arrière du verrou : zeste_save_mine redevient exactement celle de la synchro v2
+  const ref = await nouvelleBase([...DEJA_EN_PROD, ...A_APPLIQUER]);
+  const fn = (b) => b.query(`select md5(pg_get_functiondef('public.zeste_save_mine(jsonb)'::regprocedure)) h`).then(r => r.rows[0].h);
+  await d9.exec(lireSql('zeste-verrou-anciennes-versions-retour.sql'));
+  assert.equal(await fn(d9), await fn(ref));
 });
