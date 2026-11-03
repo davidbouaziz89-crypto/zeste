@@ -70,6 +70,17 @@ else
       v "$(curl -s -o /dev/null -w '%{http_code}' -X POST "https://api.srv.proformationplus.fr/rest/v1/rpc/$f" -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H 'Content-Type: application/json' -d '{}')" "401" "visiteur anonyme refusé : $f"
     done
     unset ANON
+    # clé GoldAPI posée : elle ne doit apparaître nulle part (lue dans le coffre, comparée ici, jamais affichée)
+    K=$(q "select coalesce((select decrypted_secret from vault.decrypted_secrets where name='zeste_goldapi' limit 1), '')")
+    if [ -n "$K" ]; then
+      c(){ grep -c -F -f <(printf '%s\n' "$K"); }
+      v "$(sudo -n docker logs --since 3h supabase-edge-functions 2>&1 | c)" "0" "clé absente du journal des fonctions serveur"
+      v "$(sudo -n docker logs --since 3h supabase-db 2>&1 | c)" "0" "clé absente du journal de la base"
+      v "$(q "select query from pg_stat_statements" | c)" "0" "clé absente des statistiques de requêtes"
+      v "$(sudo -n journalctl --since '-3 hours' 2>/dev/null | c)" "0" "clé absente des journaux système"
+      v "$(curl -s https://davidbouaziz89-crypto.github.io/zeste/ | c)" "0" "clé absente de la page publiée"
+    fi
+    unset K
   fi
 fi
 echo "== $ok contrôle(s) conforme(s), $ko écart(s) =="

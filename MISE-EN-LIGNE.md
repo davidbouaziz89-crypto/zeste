@@ -44,65 +44,111 @@ puis la version complète par-dessus (`tests/sync/serveur.test.mjs`), et en cond
 - Interruption : aucune. Retour arrière : `sql/zeste-securite-retour.sql` (remet exactement l'état actuel,
   failles comprises) ; `git revert` du correctif d'appli. Aucune perte de données.
 
-## B. Publication complète — ordre imposé par les dépendances
+## B. Publication complète — procédure du jour J (préparée le 03/11/2026, NON exécutée)
 
-| # | Étape | Pourquoi à ce moment | Interruption | Retour arrière (réaliste) |
-|---|---|---|---|---|
-| 1 | **Sauvegarde vérifiée** : `outils/sauvegarde-zeste.sh` (serveur) puis `outils/verifier-sauvegarde.mjs` (rechargement dans une base jetable, empreintes comparées) | avant toute écriture | aucune | — |
-| 2 | **Contrôles de sécurité préalables** (lecture seule) : aucune fonction zeste pour anon ; empreintes = production après correctif (`zeste_save_mine 4dae0c3f…`, `zeste_save_sub a9ad1482…`, `zeste_sync_reminders 096bb726…`, liste complète dans `tests/sync/serveur.test.mjs`, test 12) ; verrou libre ; aucune session longue | détecter une modification faite entre-temps par une autre session | aucune | — |
-| 3 | **Migrations** sous verrou (`outils/verrou-deploiement.sh prendre`, jeton en tête de session), essai à blanc `begin…rollback` puis réel : `zeste-sync-v2.sql` → `zeste-securite.sql` (n'ajoute plus que `zeste_rev_mine`) → `zeste-or.sql` | l'appli en ligne (correctif) reste compatible (testé) | quelques millisecondes de verrou sur la seule table `zeste.user_data` (ajout de 2 colonnes à valeur par défaut, sans réécriture) | `zeste-or-retour.sql` → `zeste-securite-retour-apres-correctif.sql` → `zeste-sync-v2-retour.sql` : retour **exact** à la production actuelle, failles toujours fermées (empreintes testées) ; les 2 colonnes et les tables `or_*` restent (sans effet). **Aucune perte.** ⛔ ne plus utiliser `zeste-securite-retour.sql` (rouvrirait les failles). |
-| 4 | **Fonction serveur `zeste-or-cours`** (copie dans `volumes/functions/`) | doit exister avant l'appli pour l'onglet Or | aucune (pas de redémarrage) | supprimer le dossier : onglet Or en mode « cours indisponible » |
-| 5 | **Publication de Zeste** : fusion `integration-zeste` → `main` (GitHub Pages, ~1-2 min) | la base est prête | aucune ; chaque appareil prend la nouvelle version à sa réouverture | voir ci-dessous ⚠️ |
-| 5c | **Verrouillage des anciennes versions** : `sql/zeste-verrou-anciennes-versions.sql` (drapeau `v2_only` pour chaque compte), sous verrou, **dès que la nouvelle appli est en ligne** | ferme côté serveur l'ancien canal public : une ancienne instance (y compris le correctif du 02/11) ne peut plus enregistrer, donc plus rien diffuser (seul envoi = après enregistrement réussi), et un état falsifié reçu par ce canal ne peut plus être enregistré | les appareils encore sur l'ancienne version affichent « version périmée, ferme et rouvre l'appli » ; rien n'est enregistré tant qu'ils ne sont pas rouverts | `update zeste.user_data set v2_only = false` (réautorise les anciennes versions, rouvre l'exposition) |
-| 5b | **`zeste-suggest`** (idées IA réservées aux connectés) | APRÈS l'appli (l'ancienne n'envoie pas la session) | aucune | recopier l'ancienne version (`main` d'avant) |
-| 6 | **Clé GoldAPI** : ⚠️ passer d'abord la version PRODUCTION en appli Mac comme `outils/cle-goldapi/` (le script Terminal n'a jamais fonctionné chez David) ; à défaut David double-clique `outils/ajouter-cle-goldapi.command` (version PRODUCTION : il doit taper `PRODUCTION` pour confirmer) → coffre-fort Vault de la production | possible dès l'étape 4 | **aucune** (pas de redémarrage, autres applis non touchées). Une nouvelle version de code de fonction est prise en compte en ≤ 6 min (durée de vie des « workers ») | `delete from vault.secrets where name='zeste_goldapi'` : « Cours indisponible » / dernier cours réel connu |
-| 7 | **Recette de la version publiée** (non destructive) : page servie contient `zeste_rev_mine` ; appels anonymes refusés ; David : connexion, « Synchronisé », un remboursement, Films, onglet Or (source GoldAPI) ; `v2_only` passe à vrai après sa 1re modification | | aucune | — |
-| 8 | **Autres applis** : conteneur des fonctions non redémarré (même heure de démarrage qu'avant) ; une fonction témoin répond ; portail accessible ; verrou rendu ; aucune session bloquée | | aucune | — |
+Compatible avec la production actuelle (correctif du 02/11 appliqué) : le contrôle « avant » vérifie qu'elle n'a
+pas bougé (validé sur une copie fidèle : les 10 empreintes de fonctions relevées le 02/11 sont retrouvées à
+l'identique). **Une seule conversation sur la base et le serveur** pendant toute la durée (~45 min).
+Toutes les commandes se lancent depuis le Mac, à la racine du dépôt (branche `integration-zeste`).
 
-⚠️ **Retour arrière de l'appli après l'étape 5** : dès que David a enregistré avec la nouvelle version, la base
-refuse les écritures des anciennes versions (`v2_only`). Revenir en arrière demande donc **deux gestes** :
-republier `correctif-securite` (et non l'ancienne `main`, pour ne pas rouvrir le canal public) **et** appliquer
-`sql/zeste-sync-v2-retour.sql`. Aucune perte de listes (même format) ; les données de l'onglet Or restent en base,
-invisibles dans l'ancienne version.
+### Préalables (avant le jour J)
+- David a validé sur iPhone l'onglet Or de l'environnement de test avec le cours réel (consigne courte sur le Bureau).
+- David a donné les autorisations listées en fin de section ; aucune autre conversation ne travaille sur le serveur.
 
-**Restauration de la sauvegarde** : uniquement en cas de données abîmées. Elle remet l'état de l'étape 1 et
-**perd tout ce qui a été saisi depuis** (pas de restauration sans perte possible dans ce cas).
+### Déroulé
 
-## Ancien canal temps réel : ce que le correctif règle et ne règle pas
+| # | Qui | Étape | Commande / geste | Interruption | Si ça se passe mal |
+|---|---|---|---|---|---|
+| 1 | Claude | **Coordination** : verrou de déploiement libre, aucune session longue | `git -C ~/comptes-engco show origin/main:outils/verrou-deploiement.sh > <scratch>/verrou.sh` puis `bash <scratch>/verrou.sh etat` | aucune | on attend / on reporte |
+| 2 | Claude | **Sauvegarde vérifiée** | `ssh engco 'bash -s' < outils/sauvegarde-zeste.sh` puis `node outils/verifier-sauvegarde.mjs` (rechargement dans une base jetable, empreintes comparées) | aucune | on s'arrête |
+| 3 | Claude | **Contrôle « avant »** (lecture seule) : rien n'a bougé depuis le correctif | `ssh engco 'MODE=avant bash -s' < outils/controle-production.sh` → 8 conformes ; **noter** l'empreinte des données et l'heure de démarrage du conteneur des fonctions | aucune | un seul écart = on s'arrête et on analyse |
+| 4 | Claude | **Prendre le verrou de déploiement** (jeton en tête de chaque session psql) | `bash <scratch>/verrou.sh prendre` | aucune | — |
+| 5 | Claude | **Migrations**, chacune essayée à blanc (`begin … rollback`) puis réelle : `zeste-sync-v2.sql` → `zeste-securite.sql` → `zeste-or.sql` | psql sous jeton | aucune : l'appli en ligne (correctif) continue de fonctionner (testé) ; verrou de quelques millisecondes sur `zeste.user_data` | `zeste-or-retour.sql` → `zeste-securite-retour-apres-correctif.sql` → `zeste-sync-v2-retour.sql` : retour **exact** à la production actuelle, failles toujours fermées (testé) |
+| 6 | Claude | **Fonction `zeste-or-cours`** | `bash outils/deployer-fonctions.sh production zeste-or-cours` (sauvegarde + empreinte, sans redémarrage) | aucune ; onglet Or en « Cours indisponible » jusqu'à l'étape 12 | `bash outils/deployer-fonctions.sh retour production <dossier de sauvegarde affiché>` |
+| 7a | Claude | ⏱ **Début de la fenêtre de 5 min** (David n'utilise pas Zeste) — **verrou des anciennes versions** | `sql/zeste-verrou-anciennes-versions.sql` sous jeton | l'appli encore en ligne ne peut plus enregistrer (message « version périmée ») pendant ≤ 3 min : **voulu** | voir « Retours arrière » |
+| 7b | Claude | **Publication de l'appli** : fusion `integration-zeste` → `main`, poussée ; attendre GitHub Pages (1-2 min) | `git merge` + `git push` ; la page servie doit contenir `zeste_save_mine_v2` | fin de la fenêtre | publier `retour-securise` (voir plus bas) |
+| 8 | Claude | **`zeste-suggest`** (idées IA réservées aux connectés) — APRÈS l'appli (l'ancienne n'envoie pas la session) | `bash outils/deployer-fonctions.sh production zeste-suggest` | aucune | `deployer-fonctions.sh retour production <dossier>` |
+| 9 | Claude | **Rendre le verrou de déploiement** | `bash <scratch>/verrou.sh rendre` | — | — |
+| 10 | Claude | **Contrôle « après »** (lecture seule) | `ssh engco "MODE=apres DONNEES=<…> DEMARRAGE=<…> F_OR=$(md5 -q supabase/functions/zeste-or-cours/index.ts) F_SUGGEST=$(md5 -q supabase/functions/zeste-suggest/index.ts) bash -s" < outils/controle-production.sh` : colonnes, données identiques, verrou complet, 8 tables Or, fonctions identiques au dépôt, **conteneur des fonctions non redémarré**, page publiée, 5 appels anonymes refusés | aucune | selon l'écart |
+| 11 | David | **iPhone (2 min)** : fermer complètement Zeste (balayer vers le haut), rouvrir → « ● Synchronisé » ; une petite modification ; elle apparaît sur un 2ᵉ appareil ; onglet Or : « Cours indisponible » (normal avant la clé). Fermer/rouvrir Zeste sur **chaque** appareil (et recharger les onglets d'ordinateur) | — | aucune | Claude |
+| 12a | Claude | **Bascule du quota GoldAPI** : l'environnement de test cesse d'utiliser la clé | `ssh engco 'bash -s' < outils/cle-goldapi/bascule-quota.sh` → clé de test retirée, repère posé, **preuve : 0 requête** avec cache vieilli et ⟳ forcé | aucune (test seulement) | — |
+| 12b | Claude | Appli TEST retirée du Mac ; alias de l'appli PRODUCTION posé sur le Bureau | `rm -rf ~/Applications/"Zeste TEST – clé GoldAPI.app"` + alias ; `bash outils/cle-goldapi/fabriquer-appli.sh PRODUCTION --alias` | — | — |
+| 12c | David | **Clé en production** : double-clic sur « Zeste PRODUCTION – clé GoldAPI » (citron barré « PROD »), coller la clé (⌘V), Enregistrer, confirmer « Oui, enregistrer en PRODUCTION » → ✅ avec le cours de l'or | — | **aucune** (coffre-fort seulement, aucun redémarrage) | `delete from vault.secrets where name='zeste_goldapi'` (« Cours indisponible ») |
+| 12d | Claude | **Contrôle « après » refait** : clé présente, report du quota du test, clé absente des journaux (fonctions, base, statistiques, système) et de la page | même commande qu'en 10 | aucune | — |
+| 12e | David | Onglet Or : le vrai cours, la valeur et les gains s'affichent | — | — | — |
 
-- Réglé : l'appli en ligne ne diffuse plus rien et n'écoute plus rien ; plus aucun accès anonyme aux fonctions.
-- **Pas réglé côté serveur** : le service temps réel (commun à toutes les applis) accepte toujours les canaux
-  publics. Une **ancienne instance** de Zeste encore ouverte (appli iPhone restée en arrière-plan, onglet
-  d'ordinateur jamais rechargé) continue d'écouter `zeste-user-<uid>`, d'y diffuser l'état complet après
-  chaque enregistrement et d'appliquer ce qu'elle y reçoit. Le journal du service ne nomme pas les canaux :
-  impossible de savoir à distance s'il en reste une.
-- Démontré en simulation (base identique à la production, version d'avant le correctif) : une ancienne instance
-  diffuse l'état complet à chaque enregistrement (lisible par un inconnu), applique un faux état reçu, puis
-  l'enregistre — la base l'accepte aujourd'hui. Aucun message n'est conservé en base (`realtime.messages` vide) :
-  rien n'est lisible après coup.
-- Fermeture : (1) immédiate — fermer complètement Zeste sur chaque appareil (balayer l'appli, recharger les onglets) ;
-  (2) côté serveur — étape 5c (`zeste-verrou-anciennes-versions.sql`) : démontré en simulation, plus aucune diffusion,
-  le faux état n'est plus enregistré. Ne peut pas être appliquée AVANT la publication complète : l'appli en ligne
-  (correctif) utilise le même enregistrement que les anciennes versions et serait bloquée aussi.
-  Couper les canaux publics pour tout le serveur (`private_only`) n'est PAS envisagé : cela casserait les autres applis.
+### Pourquoi cet ordre
+- **Migrations avant l'appli** : la nouvelle appli a besoin de `zeste_save_mine_v2` ; l'appli en ligne reste compatible
+  avec les migrations (testé). La fonction du cours avant l'appli : l'onglet Or doit la trouver.
+- **Verrou des anciennes versions AVANT la publication (7a puis 7b)** : l'exposition par les anciennes instances
+  s'arrête à la seconde où le verrou est posé (au lieu de rester ouverte pendant la publication). Prix : ≤ 3 min
+  pendant lesquelles l'appli encore en ligne ne peut pas enregistrer, à une heure choisie avec David.
+- **`zeste-suggest` après l'appli** : sa nouvelle version exige la session, que seule la nouvelle appli envoie.
+- **GoldAPI en dernier**, une fois tout le reste vérifié ; **test désactivé avant la production** : à aucun moment
+  les deux environnements n'utilisent la clé ensemble (l'appli PRODUCTION refuse tant que le test a une clé).
+
+### Retours arrière — aucun ne rouvre une faille
+
+| Situation | Geste | Effet |
+|---|---|---|
+| Migration en échec (étape 5) | transaction annulée d'elle-même ; sinon les 3 scripts `*-retour*` dans l'ordre inverse | production exactement comme aujourd'hui, failles fermées. ⛔ **jamais** `zeste-securite-retour.sql` (rouvrirait les failles du 02/11) |
+| Problème dans la nouvelle appli (après 7b) | publier la branche **`retour-securise`** sur `main` (`index.html` + `sw.js`) | l'appli redevient celle du 02/11 (sans canal public), branchée sur la synchro v2 : **le verrou reste**, la base ne change pas, aucune donnée perdue (les nouveautés restent en base, invisibles ; essayé : synchro avec la nouvelle appli, conflit détecté sans écrasement) |
+| Fonction serveur fautive | `deployer-fonctions.sh retour production <dossier>` | version précédente remise, sans redémarrage |
+| Clé GoldAPI à retirer | `delete from vault.secrets where name='zeste_goldapi'` | « Cours indisponible » / dernier cours réel connu |
+| Verrou des anciennes versions | `sql/zeste-verrou-anciennes-versions-retour.sql` — ⛔ **rouvre l'exposition** ; seulement sur décision écrite de David, en dernier recours | — |
+| Données abîmées | restauration de la sauvegarde de l'étape 2 | remet l'état de l'étape 2 et **perd ce qui a été saisi depuis** |
+
+### Autorisations à donner par David (le jour J)
+1. Migrations de production `zeste-sync-v2.sql`, `zeste-securite.sql`, `zeste-or.sql` et **verrou des anciennes versions**
+   (`zeste-verrou-anciennes-versions.sql`), sous verrou de déploiement, après sauvegarde vérifiée et contrôle « avant » conforme.
+2. Installation des fonctions serveur `zeste-or-cours` et `zeste-suggest` (copie de fichiers, sans redémarrage).
+3. Publication de `integration-zeste` sur `main`.
+4. Bascule GoldAPI : retrait de la clé de l'environnement de test, puis activation en production (David colle lui-même la clé).
+5. (recommandé) Retour arrière sécurisé sans redemander : publication de `retour-securise` et retour des fonctions
+   si la recette échoue (jamais le retour du verrou ni celui du correctif).
+
+## Ancien canal temps réel : ce qui est réglé, ce qui ne l'est pas
+
+- **Vérifié dans le code** : les 28 versions publiées du 05/08 au 01/10/2026 diffusent l'état COMPLET du compte sur le
+  canal public `zeste-user-<uid>`, par un seul `send()`, placé **juste après un `zeste_save_mine` réussi** ; elles
+  appliquent aussi ce qu'elles reçoivent sur ce canal et l'enregistrent à la modification suivante.
+- **Réglé par le correctif (02/11)** : l'appli en ligne ne diffuse et n'écoute plus rien ; plus aucun accès anonyme.
+- **Réglé par le verrou (jour J, étape 7a)** : `zeste_save_mine` refuse tout, pour tous les comptes, même un compte sans
+  ligne (le simple drapeau par compte laissait passer un compte créé depuis une ancienne version — corrigé le 03/11).
+  Une ancienne instance encore ouverte ne peut donc **plus rien diffuser** et **plus rien enregistrer**, y compris un
+  état falsifié reçu par le canal. Démontré sur le banc local : 0 diffusion, 2 enregistrements refusés, faux état non enregistré.
+- **Pas réglé côté serveur (risque résiduel)** : une ancienne instance restée ouverte écoute toujours le canal public.
+  Quelqu'un qui connaîtrait l'identifiant interne du compte (un uuid, jamais affiché) pourrait y **afficher** un faux
+  état **sur cet appareil seulement** — rien n'est enregistré, rien ne fuit — jusqu'à sa fermeture. Le service temps réel
+  est commun à toutes les applis : couper les canaux publics (`private_only`) casserait les autres applis, exclu.
+- **Avant le jour J** : toute ancienne instance d'avant le 02/11 encore ouverte diffuse encore à chaque enregistrement.
+  Parade immédiate et gratuite : fermer complètement Zeste sur chaque appareil (balayer l'appli, recharger les onglets).
 
 ## Risques résiduels
 
-- Un appareil resté ouvert sur l'ancienne version n'enregistre plus rien tant qu'il n'est pas rouvert (message à l'écran).
-- Conflit entre deux appareils : pas de fusion automatique ; choix de David, l'autre version gardée en copie de secours.
+- Ancienne instance restée ouverte après le verrou : peut afficher un faux état injecté (cet appareil seulement, rien
+  d'enregistré ni de divulgué) ; n'enregistre plus rien ; disparaît à la réouverture.
+- Fenêtre de ≤ 3 min (7a → 7b) où l'appli encore en ligne n'enregistre pas : choisie, annoncée.
+- Retour arrière sécurisé : en cas de conflit entre deux appareils, le serveur fait foi (message affiché, la saisie
+  concurrente de l'appareil en retard est perdue) ; l'onglet Or n'y existe pas (données conservées en base).
+- Conflit dans la nouvelle appli : pas de fusion automatique ; choix de David, l'autre version gardée en copie de secours.
 - Les 2 foyers de juillet restent en base, fermés (suppression possible plus tard, sur demande).
-- GoldAPI gratuit : CGU sans durée limite (lues le 02/11/2026) ; mention « for evaluation » dans leur doc technique
-  (option temps réel). Quota protégé à 280/300 ; au-delà : dernier cours connu, jamais de facturation.
+- GoldAPI gratuit : CGU sans durée limite (lues le 02/11/2026). Panne : dernier cours réel avec sa date ; jamais de facturation.
 
-## Cours de l'or (GoldAPI) — réglages retenus (testés sur l'environnement de test)
+## Cours de l'or (GoldAPI) — réglages et quota
 
-- Source : GoldAPI.io, `GET /api/price/XAU/EUR` (cours spot de l'or pur en euros, champ `price_per_unit.gram` ;
-  à défaut `price` ÷ 31,1034768). Aucune conversion de devise côté Zeste.
-- Cache serveur partagé : cours redemandé au plus toutes les **3 h** ; bouton ⟳ : au plus **1 fois par heure** ;
-  **9 requêtes par jour au maximum** et **280 par mois** (offre gratuite : 300) ; verrou contre les appels simultanés.
-- Aucune requête d'historique par défaut (plus de graphique) : seulement sur demande explicite (`historique: true`).
-- Sans cours réel : « Cours indisponible » ; fournisseur en panne / quota / clé refusée : dernier cours réel avec sa date
-  et son ancienneté, motif affiché. Jamais de valeur inventée.
-- Environnement de test : fonctions servies par le conteneur `zt-functions` (même image que la production),
-  clé dans le coffre de la base de TEST (appli Mac `outils/cle-goldapi/`, qui fait vérifier la clé par GoldAPI avant de l'enregistrer ; l'ancien `outils/ajouter-cle-goldapi-test.command` n'a jamais tourné sur le Mac de David), contrôles par
-  `tests/or/test-cours-reel.sh` (la clé n'est jamais affichée).
+- Source : GoldAPI.io, `GET /api/price/XAU/EUR`, champ `price_per_unit.gram` (vérifié le 03/11 : = `price` ÷ 31,1034768,
+  devise EUR, horodatage Unix ; écart avec Swissquote 0,005 %). Aucune conversion de devise côté Zeste.
+- Cache serveur partagé : cours redemandé au plus toutes les **3 h** ; ⟳ au plus **1 fois par heure** ; verrou contre les
+  appels simultanés (testés en réel le 03/11).
+- **Quota de la clé : 300 requêtes/mois, commun à tous les environnements.** Garde-fous :
+  - un seul environnement à la fois : bascule (12a) puis activation (12c) ; l'appli PRODUCTION refuse tant que le test a
+    une clé ; l'appli TEST refuse après la bascule (repère `~/zeste-test/GOLDAPI-DESACTIVE`) ;
+  - plafond **9 requêtes par jour** : quel que soit le jour de renouvellement chez GoldAPI, 31 jours × 9 = 279 < 300 ;
+  - plafond **280 par mois**, et le quota déjà consommé par le test ce mois-ci est reporté dans le journal de production
+    (une fois) ;
+  - aucune requête d'historique par défaut.
+- Sans cours réel : « Cours indisponible » ; fournisseur en panne / quota / clé refusée : dernier cours réel avec sa date.
+- Outils : appli Mac `outils/cle-goldapi/` (versions TEST et PRODUCTION, `fabriquer-appli.sh`), banc
+  `tests/or/test-appli-cle-production.sh` (2 bases jetables, 15 contrôles), contrôles réels sur le test
+  `tests/or/test-cours-reel.sh` et `tests/or/test-cache-quota-reel.sh` (la clé n'est jamais affichée).
