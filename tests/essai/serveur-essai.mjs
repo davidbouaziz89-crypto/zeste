@@ -2,7 +2,8 @@
 // - sert index.html en remplaçant supabase-js par un bouchon et l'adresse du serveur par le local ;
 // - base Postgres jetable en mémoire chargée avec TOUTE la chaîne sql/ (comme après la mise en ligne) ;
 // - VRAIE edge function zeste-or-cours, branchée sur un FAUX GoldAPI (cours FICTIFS, marqués comme tels) ;
-// - /ancienne.html = la version actuellement en ligne (origin/main), pour tester les anciens appareils.
+// - /ancienne.html = la version actuellement en ligne (origin/main), pour tester les anciens appareils ;
+//   /avant-correctif.html = version d'avant le correctif ; /retour-securise.html = version de retour arrière sécurisé.
 // Aucune donnée réelle, aucune requête vers la production ni vers GoldAPI.
 //
 // Lancer : PGLITE_DIR=<dossier pglite> node --experimental-strip-types tests/essai/serveur-essai.mjs [port]
@@ -108,6 +109,8 @@ const pageAncienne = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'o
 const pageCorrectif = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/correctif-securite:index.html'], { encoding: 'utf8' }));
 // version d'AVANT le correctif de sécurité (celle qu'une ancienne instance peut encore exécuter)
 const pageAvantCorrectif = () => adapter(execFileSync('git', ['-C', RACINE, 'show', '9b8ed9a:index.html'], { encoding: 'utf8' }));
+// version de RETOUR ARRIÈRE sécurisé (correctif du 02/11 + synchro v2), branche retour-securise
+const pageRetour = () => adapter(execFileSync('git', ['-C', RACINE, 'show', 'origin/retour-securise:index.html'], { encoding: 'utf8' }));
 const BOUCHON = `
 window.supabase = { createClient(){
   const U = { id: '${U}', email: 'essai@zeste.local' };
@@ -150,6 +153,7 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/ancienne.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageAncienne()); }
     if (u.pathname === '/correctif.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageCorrectif()); }
     if (u.pathname === '/avant-correctif.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageAvantCorrectif()); }
+    if (u.pathname === '/retour-securise.html') { res.writeHead(200, { 'Content-Type': TYPES['.html'] }); return res.end(pageRetour()); }
     if (u.pathname === '/essai/canal' && req.method === 'POST') {   // n'importe qui (clé publique) diffuse sur un sujet
       const m = JSON.parse(await lireCorps(req) || '{}'); m.n = messages.length + 1; messages.push(m); return ok(res, { n: m.n }); }
     if (u.pathname === '/essai/canal') { const apres = Number(u.searchParams.get('apres') || 0); return ok(res, messages.filter(m => m.n > apres)); }
