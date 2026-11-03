@@ -1,5 +1,5 @@
 /* Service Worker Zeste — hors-ligne + base pour notifications push */
-const CACHE = 'zeste-v2';
+const CACHE = 'zeste-v4-retour'; // retour arrière sécurisé : version du 02/11, synchro v2 (remplace v3 sur les appareils)
 const ASSETS = [
   './',
   './index.html',

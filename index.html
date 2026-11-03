@@ -3018,25 +3018,34 @@ function applyRemote(data){
   if(!data || !(data.todos||data.shop||data.films)) return;
   cloud.applying=true; S=data; ensureShape(); saveLocal(); render(); cloud.applying=false; flashSync();
 }
+/* RETOUR ARRIÈRE SÉCURISÉ : cette version (celle du correctif du 02/11) passe par la synchro v2
+   (zeste_load_mine_v2 / zeste_save_mine_v2, avec numéro de version) au lieu de l'ancien
+   enregistrement zeste_save_mine, refusé depuis le verrouillage des anciennes versions.
+   Ainsi on peut revenir à cette version SANS rouvrir l'ancien enregistrement, donc sans rouvrir
+   l'exposition des très anciennes instances (canal public). Conflit entre deux appareils : le
+   serveur fait foi, l'appareil se réaligne et le signale. */
+let cloudRev = null;
 async function cloudPull(){
   if(!cloud.on || !cloud.sb) return;
   try{
-    const {data,error} = await cloud.sb.rpc('zeste_load_mine');
+    const {data,error} = await cloud.sb.rpc('zeste_load_mine_v2');
     if(error){ console.warn('load',error); toast('⚠️ Synchro indisponible'); return; }
-    if(data && (data.todos||data.shop||data.films)) applyRemote(data);
+    const d = data||{}; cloudRev = (d.rev==null ? null : d.rev);
+    if(d.data && (d.data.todos||d.data.shop||d.data.films)) applyRemote(d.data);
     else cloudPush(); // compte neuf → on y met le contenu local actuel
   }catch(e){ console.warn(e); }
 }
 async function cloudPush(){
   if(!cloud.on || !cloud.sb) return;
   try{
-    const {error} = await cloud.sb.rpc('zeste_save_mine',{ p_data:S });
+    const {data,error} = await cloud.sb.rpc('zeste_save_mine_v2',{ p_data:S, p_base_rev: cloudRev });
     if(error){
       console.warn('save',error);
-      // refus du contrôle serveur des remboursements : on prévient et on se réaligne sur le serveur
-      if(/Remboursement refus/.test(error.message||'')){ toast('⚠️ '+error.message); cloudPull(); }
+      // refus du contrôle serveur (remboursements) ou autre appareil plus récent : on prévient et on se réaligne
+      if(/Remboursement refus|Conflit de synchronisation/.test(error.message||'')){ toast('⚠️ '+error.message); cloudPull(); }
       return;
     }
+    cloudRev = data;
     syncReminders(); // met à jour les rappels côté serveur (push appli fermée)
   }catch(e){ console.warn(e); }
 }
