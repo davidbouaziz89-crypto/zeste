@@ -1,19 +1,29 @@
-// Zeste 🍋 — petite appli Mac « Zeste TEST – clé GoldAPI » : enregistre la clé GoldAPI dans le
-// coffre-fort chiffré de l'environnement de TEST, sans Terminal et sans jamais l'afficher.
-// Fabriquée par outils/cle-goldapi/fabriquer-appli.sh (osacompile, JavaScript for Automation).
+// Zeste 🍋 — petite appli Mac « clé GoldAPI » : enregistre la clé GoldAPI dans le coffre-fort chiffré
+// de Zeste, sans Terminal et sans jamais l'afficher. Deux versions fabriquées par
+// outils/cle-goldapi/fabriquer-appli.sh (osacompile, JavaScript for Automation) :
+//   « Zeste TEST – clé GoldAPI »        → environnement de test (serveur-test.sh)
+//   « Zeste PRODUCTION – clé GoldAPI »  → ta vraie Zeste (serveur-production.sh), confirmation obligatoire
+// Le fichier Resources/environnement.txt de l'appli dit laquelle elle est.
 //
 // Parcours : 1. connexion au serveur vérifiée AVANT de demander la clé ; 2. fenêtre de saisie masquée
 // (des points s'affichent) ; 3. nettoyage (espaces, retours à la ligne, caractères invisibles) et
 // contrôle du format ; 4. envoi par SSH dans le flux d'entrée — jamais en argument de commande ;
-// 5. côté serveur (serveur-test.sh) : GoldAPI doit accepter la clé, sinon rien n'est enregistré ;
+// 5. côté serveur (serveur-commun.sh + serveur-test.sh / serveur-production.sh) : garde-fous, GoldAPI doit
+//    accepter la clé (sinon rien n'est enregistré), relecture sans afficher la clé ;
 // 6. message clair, avec le cours réel obtenu.
 // Journal de diagnostic SANS la clé : ~/Library/Logs/zeste-goldapi.log
 //
 // Banc d'essai (Claude uniquement, jamais par double-clic) :
-//   osascript -l JavaScript appli.js --essai <serveur-test.sh> [sans-goldapi]   ← clé lue sur l'entrée
+//   osascript -l JavaScript appli.js --essai TEST|PRODUCTION <dossier des scripts> [sans-goldapi] [base-isolee]
+//   (clé lue sur l'entrée standard ; base-isolee : conteneurs jetables, jamais la production)
 ObjC.import('Foundation');
 
-var TITRE = 'Zeste TEST — clé GoldAPI';
+var ENV = 'TEST', PROD = false, TITRE = '', LIEU = '';
+function choisirEnv(nom) {
+  PROD = nom === 'PRODUCTION'; ENV = PROD ? 'PRODUCTION' : 'TEST';
+  TITRE = PROD ? '⛔ PRODUCTION — clé GoldAPI de ta VRAIE Zeste' : 'Zeste TEST — clé GoldAPI';
+  LIEU = PROD ? 'dans le coffre-fort de ta VRAIE Zeste (PRODUCTION)' : 'dans le coffre-fort de l\'environnement de TEST';
+}
 var JOURNAL = $.NSHomeDirectory().js + '/Library/Logs/zeste-goldapi.log';
 var SSH = ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15', '-o', 'ServerAliveInterval=10', 'engco'];
 var COMMANDE = 'IFS= read -r K; export K; bash -s';
@@ -38,7 +48,7 @@ function noter(msg) {
   try {
     var d = new Date();
     var ligne = deux(d.getDate()) + '/' + deux(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' +
-      deux(d.getHours()) + ':' + deux(d.getMinutes()) + ':' + deux(d.getSeconds()) + '  TEST  appli  ' + msg + '\n';
+      deux(d.getHours()) + ':' + deux(d.getMinutes()) + ':' + deux(d.getSeconds()) + '  ' + ENV + '  appli  ' + msg + '\n';
     var fm = $.NSFileManager.defaultManager;
     if (!fm.fileExistsAtPath(JOURNAL)) fm.createFileAtPathContentsAttributes(JOURNAL, $(), $());
     var h = $.NSFileHandle.fileHandleForWritingAtPath(JOURNAL);
@@ -119,9 +129,11 @@ function lireFichier(chemin) {
   return s.isNil() ? null : s.js;
 }
 
-// envoi : 1re ligne = la clé, puis le script exécuté sur le serveur
-function envoyer(cle, scriptServeur, sansGoldapi) {
-  var commande = sansGoldapi ? 'IFS= read -r K; export K; ESSAI_SANS_GOLDAPI=1 bash -s' : COMMANDE;
+// envoi : 1re ligne = la clé, puis les scripts exécutés sur le serveur (commun + test ou production)
+function envoyer(cle, scriptServeur, essai) {
+  essai = essai || {};
+  var commande = 'IFS= read -r K; export K; ' + (essai.sansGoldapi ? 'ESSAI_SANS_GOLDAPI=1 ' : '') +
+    (essai.baseIsolee ? 'ESSAI_BASE_ISOLEE=1 ' : '') + 'bash -s';
   var res = ssh([commande], cle + '\n' + scriptServeur);
   var r = lireLignes(res.out, cle);
   r.code = res.code;
@@ -130,27 +142,37 @@ function envoyer(cle, scriptServeur, sansGoldapi) {
 }
 
 function messageResultat(r) {
-  var fin = '\n\nTu peux fermer : écris simplement à Claude « clé GoldAPI ajoutée ».';
+  var fin = '\n\nTu peux fermer : écris simplement à Claude « ' + (PROD ? 'clé GoldAPI de production ajoutée' : 'clé GoldAPI ajoutée') + ' ».';
+  var relue = r.VERIFIE === 'oui' ? ', puis relue avec succès (sans l\'afficher)' : '';
+  if (r.STOCKAGE === 'ok' && r.VERIFIE !== 'oui')
+    return { ok: false, texte: '❌ La clé a été envoyée, mais sa relecture ne correspond pas. Préviens Claude avant toute autre action.' };
   if (r.STOCKAGE === 'ok' && r.VERIF === 'ok') {
     var g = parseFloat(r.COURS_G), cote = new Date(parseInt(r.COTE_LE, 10) * 1000);
-    return { ok: true, texte: '✅ C\'est fait !\n\nGoldAPI a accepté ta clé, et elle est enregistrée dans le coffre-fort ' +
-      'de l\'environnement de TEST.\n\nCours de l\'or reçu à l\'instant : 1 g = ' + euros(g) +
+    return { ok: true, texte: '✅ C\'est fait !\n\nGoldAPI a accepté ta clé. Elle est enregistrée ' + LIEU + relue +
+      '.\n\nCours de l\'or reçu à l\'instant : 1 g = ' + euros(g) +
       ' (coté le ' + dateFr(cote) + ').\nPour te repérer : l\'or d\'un Napoléon 20 F (5,81 g) vaut environ ' +
       euros(g * GRAMMES_NAPOLEON) + '.' + fin };
   }
   if (r.STOCKAGE === 'ok' && r.VERIF === 'quota')
-    return { ok: true, texte: '✅ Clé enregistrée dans le coffre-fort de TEST.\n\nGoldAPI répond que le quota de ' +
+    return { ok: true, texte: '✅ Clé enregistrée ' + LIEU + relue + '.\n\nGoldAPI répond que le quota de ' +
       'requêtes du mois est atteint : le cours reviendra au renouvellement de ton forfait.' + fin };
   if (r.STOCKAGE === 'ok')
-    return { ok: true, texte: '✅ Clé enregistrée dans le coffre-fort de TEST.\n\n⚠️ GoldAPI n\'a pas pu la confirmer ' +
+    return { ok: true, texte: '✅ Clé enregistrée ' + LIEU + relue + '.\n\n⚠️ GoldAPI n\'a pas pu la confirmer ' +
       'à l\'instant (' + (r.VERIF === 'injoignable' ? 'site GoldAPI injoignable' : (r.DETAIL || r.VERIF)) +
       ') : Claude la testera.' + fin };
   if (r.VERIF === 'refusee')
     return { ok: false, refusee: true, texte: '❌ GoldAPI refuse cette clé' + (r.DETAIL ? ' (réponse : « ' + r.DETAIL + ' »)' : '') +
       '.\nRien n\'a été enregistré.\n\nOuvre ton espace GoldAPI (bouton ci-dessous), clique sur l\'icône de copie ' +
       'à côté de « API Key », puis relance cette appli.' };
-  if (r.ETAPE === 'base-test-arretee')
-    return { ok: false, texte: '❌ La base de l\'environnement de TEST est arrêtée. Rien n\'a été enregistré.\n\nPréviens Claude.' };
+  var etapes = {
+    'or-pas-en-ligne': 'La mise en ligne de l\'onglet Or n\'est pas encore faite sur ta vraie Zeste. Rien n\'a été envoyé à GoldAPI ni enregistré.\n\nAttends le feu vert de Claude.',
+    'cle-test-active': 'Ta clé est encore active dans l\'environnement de TEST : les deux consommeraient le même quota de 300 requêtes par mois. Rien n\'a été envoyé à GoldAPI ni enregistré.\n\nClaude doit d\'abord désactiver la clé de test.',
+    'test-desactive': 'L\'environnement de TEST n\'utilise plus GoldAPI depuis la mise en ligne (pour ne pas consommer ton quota). Rien n\'a été envoyé.',
+    'base-arretee': 'La base de l\'environnement de TEST est arrêtée. Rien n\'a été enregistré.\n\nPréviens Claude.',
+    'base-injoignable': 'La base de ta Zeste n\'a pas répondu. Rien n\'a été envoyé à GoldAPI ni enregistré.\n\nPréviens Claude.',
+    'test-injoignable': 'Impossible de vérifier que l\'environnement de TEST n\'utilise plus ta clé. Rien n\'a été envoyé à GoldAPI ni enregistré.\n\nPréviens Claude.'
+  };
+  if (etapes[r.ETAPE]) return { ok: false, texte: '❌ ' + etapes[r.ETAPE] };
   return { ok: false, texte: '❌ L\'enregistrement n\'a pas abouti (' + (r.STOCKAGE === 'echec' ? 'coffre-fort' : (r.err || 'serveur')) +
     '). Rien n\'a changé.\n\nPréviens Claude : il lira le journal de diagnostic (sans la clé).' };
 }
@@ -160,9 +182,11 @@ function icone() {
   return $.NSFileManager.defaultManager.fileExistsAtPath(p) ? Path(p) : 'note';
 }
 
-function fenetre(texteMessage, boutons, defaut) {
+function fenetre(texteMessage, boutons, defaut, annuler) {
   try {
-    return app.displayDialog(texteMessage, { withTitle: TITRE, buttons: boutons, defaultButton: defaut, withIcon: icone() }).buttonReturned;
+    var o = { withTitle: TITRE, buttons: boutons, defaultButton: defaut, withIcon: icone() };
+    if (annuler) o.cancelButton = annuler;
+    return app.displayDialog(texteMessage, o).buttonReturned;
   } catch (e) { return null; }
 }
 
@@ -175,15 +199,29 @@ function demanderCle(texteMessage) {
   } catch (e) { return null; }   // Annuler ou fenêtre fermée
 }
 
-var INTRO = 'Colle ta clé GoldAPI ci-dessous (Cmd ⌘ + V), puis clique sur « Enregistrer ».\n\n' +
-  'Des points s\'affichent à la place des caractères : c\'est normal, la clé reste cachée.\n\n' +
-  'Environnement de TEST uniquement : ta vraie Zeste n\'est pas touchée.';
+function intro() {
+  return (PROD ? '⛔ PRODUCTION — ta VRAIE Zeste ⛔\n\n' : '') +
+    'Colle ta clé GoldAPI ci-dessous (Cmd ⌘ + V), puis clique sur « Enregistrer ».\n\n' +
+    'Des points s\'affichent à la place des caractères : c\'est normal, la clé reste cachée.\n\n' +
+    (PROD ? 'Une confirmation te sera demandée avant tout enregistrement.'
+          : 'Environnement de TEST uniquement : ta vraie Zeste n\'est pas touchée.');
+}
+function lireEnv() {
+  var e = lireFichier($.NSBundle.mainBundle.resourcePath.js + '/environnement.txt');
+  return (e || '').trim();
+}
 
 function interactif() {
+  var env = lireEnv();
+  choisirEnv(env);
   app.activate();
   noter('lancement');
-  var scriptServeur = lireFichier($.NSBundle.mainBundle.resourcePath.js + '/serveur-test.sh');
-  if (!scriptServeur) { noter('appli incomplète (serveur-test.sh absent)'); fenetre('❌ Appli incomplète : préviens Claude.', ['OK'], 'OK'); return; }
+  var res = $.NSBundle.mainBundle.resourcePath.js;
+  var commun = lireFichier(res + '/serveur-commun.sh'), propre = lireFichier(res + '/serveur.sh');
+  if (!commun || !propre || (env !== 'TEST' && env !== 'PRODUCTION')) {
+    noter('appli incomplète (scripts ou environnement absents)'); fenetre('❌ Appli incomplète : préviens Claude.', ['OK'], 'OK'); return;
+  }
+  var scriptServeur = commun + '\n' + propre;
 
   var c = ssh(['echo zeste-ok'], '');
   if (c.out.indexOf('zeste-ok') < 0) {
@@ -195,7 +233,7 @@ function interactif() {
   }
   noter('connexion au serveur : OK');
 
-  var texteMessage = INTRO;
+  var texteMessage = intro();
   for (var tour = 0; tour < 5; tour++) {
     var brut = demanderCle(texteMessage);
     if (brut === null) { noter('annulé — rien envoyé'); return; }
@@ -216,9 +254,19 @@ function interactif() {
           : '⚠️ Ce qui a été collé ne ressemble pas à une clé GoldAPI (' + n.cle.length + ' caractères utiles). Rien n\'a été envoyé.' + aide;
       continue;
     }
-    var r = envoyer(n.cle, scriptServeur, false);
+    if (PROD) {
+      var ok = fenetre('⛔ CONFIRMATION — PRODUCTION ⛔\n\nTu vas enregistrer ta clé GoldAPI dans ta VRAIE Zeste.\n\n' +
+        '• GoldAPI vérifie d\'abord la clé (1 requête sur ton quota) : si elle est refusée, rien n\'est enregistré.\n' +
+        '• Seul le coffre-fort de Zeste est modifié : aucune autre appli, aucun redémarrage.\n' +
+        '• La clé est ensuite relue pour vérification, sans jamais être affichée.\n\nConfirmes-tu ?',
+        ['Annuler', 'Oui, enregistrer en PRODUCTION'], 'Annuler', 'Annuler');
+      if (ok !== 'Oui, enregistrer en PRODUCTION') { n = null; noter('confirmation PRODUCTION refusée — rien envoyé'); fenetre('Annulé : rien n\'a été envoyé ni enregistré.', ['OK'], 'OK'); return; }
+      noter('confirmation PRODUCTION donnée');
+    }
+    var r = envoyer(n.cle, scriptServeur);
     n = null;
     noter('résultat : vérification GoldAPI = ' + (r.VERIF || r.ETAPE || '?') + ', coffre-fort = ' + (r.STOCKAGE || '?') +
+      ', relecture = ' + (r.VERIFIE || '—') + (r.REPORT_TEST ? ', report du quota de test = ' + r.REPORT_TEST : '') +
       (r.DETAIL ? ', détail : ' + r.DETAIL : '') + (r.err ? ', ssh : ' + r.err : '') + ' (code ' + r.code + ')');
     var m = messageResultat(r);
     if (m.refusee) {
@@ -233,7 +281,8 @@ function interactif() {
 }
 
 // banc d'essai sans fenêtre : clé lue sur l'entrée standard, résultat affiché sans la clé
-function essai(cheminServeur, sansGoldapi) {
+function essai(envNom, dossier, options) {
+  choisirEnv(envNom);
   var brut = texte($.NSFileHandle.fileHandleWithStandardInput.readDataToEndOfFile);
   var n = nettoyer(brut.replace(/\n$/, ''));
   var lignes = ['nettoyage : texte de ' + n.collee + ' caractères, clé ' + (n.extraite ? 'trouvée dedans' : 'telle quelle') +
@@ -241,7 +290,9 @@ function essai(cheminServeur, sansGoldapi) {
   if (n.valide) {
     var c = ssh(['echo zeste-ok'], '');
     lignes.push('connexion : ' + (c.out.indexOf('zeste-ok') >= 0 ? 'OK' : 'échec (' + raisonConnexion(c.err) + ')'));
-    var r = envoyer(n.cle, lireFichier(cheminServeur), sansGoldapi);
+    var propre = lireFichier(dossier + (PROD ? '/serveur-production.sh' : '/serveur-test.sh'));
+    var r = envoyer(n.cle, lireFichier(dossier + '/serveur-commun.sh') + '\n' + propre,
+      { sansGoldapi: options.indexOf('sans-goldapi') >= 0, baseIsolee: options.indexOf('base-isolee') >= 0 });
     lignes.push('serveur : ' + JSON.stringify(r));
     lignes.push('message : ' + messageResultat(r).texte.replace(/\n+/g, ' ⏎ '));
   }
@@ -249,6 +300,6 @@ function essai(cheminServeur, sansGoldapi) {
 }
 
 function run(argv) {
-  if (argv && argv.length && argv[0] === '--essai') return essai(argv[1], argv[2] === 'sans-goldapi');
+  if (argv && argv.length && argv[0] === '--essai') return essai(argv[1], argv[2], argv.slice(3));
   interactif();
 }
