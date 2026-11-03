@@ -66,8 +66,12 @@ else
     [ -n "$DEMARRAGE" ] && v "$(sudo -n docker inspect -f '{{.State.StartedAt}}' supabase-edge-functions 2>/dev/null)" "$DEMARRAGE" "conteneur des fonctions NON redémarré (autres applis non touchées)"
     v "$(curl -s https://davidbouaziz89-crypto.github.io/zeste/ | grep -c "zeste_save_mine_v2")" "1" "page publiée = nouvelle version"
     ANON=$(grep -E '^ANON_KEY=' /opt/supabase/.env | cut -d= -f2-)
-    for f in zeste_load_mine_v2 zeste_save_mine_v2 zeste_or_lire zeste_or_cle_fournisseur zeste_save_mine; do
-      v "$(curl -s -o /dev/null -w '%{http_code}' -X POST "https://api.srv.proformationplus.fr/rest/v1/rpc/$f" -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H 'Content-Type: application/json' -d '{}')" "401" "visiteur anonyme refusé : $f"
+    # chaque fonction appelée AVEC ses paramètres (sinon « fonction introuvable », 404, et le droit n'est pas testé)
+    for fa in 'zeste_load_mine_v2|{}' 'zeste_save_mine_v2|{"p_data":{},"p_base_rev":0}' 'zeste_or_lire|{}' 'zeste_or_cle_fournisseur|{}' \
+              'zeste_save_mine|{"p_data":{}}' 'zeste_load|{"p_id":"00000000-0000-0000-0000-000000000000"}' \
+              'zeste_sync_reminders|{"p_household":"00000000-0000-0000-0000-000000000000","p_items":[]}'; do
+      f=${fa%%|*}; a=${fa#*|}
+      v "$(curl -s -o /dev/null -w '%{http_code}' -X POST "https://api.srv.proformationplus.fr/rest/v1/rpc/$f" -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H 'Content-Type: application/json' -d "$a")" "401" "visiteur anonyme refusé : $f"
     done
     unset ANON
     # clé GoldAPI posée : elle ne doit apparaître nulle part (lue dans le coffre, comparée ici, jamais affichée)

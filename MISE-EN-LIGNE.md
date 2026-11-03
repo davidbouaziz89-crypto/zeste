@@ -4,6 +4,25 @@
 sur la base et le serveur à la fois. Branches : `integration-zeste` (version complète),
 `correctif-securite` (correctif urgent seul, partant de la version en ligne).
 
+## Déjà fait : publication complète (accord écrit de David du 03/11/2026)
+
+- 13 h 39 : contrôle « avant » conforme (9/9 : 10 empreintes = production d'après le correctif, page servie = `cc2f96f`) ;
+  verrou de déploiement libre, aucune session longue. Sauvegarde `~/sauvegardes/zeste-20261103-124005` (serveur),
+  rechargée dans une base jetable : identique (5/5).
+- 13 h 40 : verrou de déploiement pris. Essai à blanc des 4 scripts dans une transaction annulée : conforme.
+- **13 h 41 min 02 s / 03 s / 04 s** : `zeste-sync-v2.sql`, `zeste-securite.sql`, `zeste-or.sql` (transaction unique) appliqués.
+  Données identiques (empreinte `6ae7face…` avant et après).
+- 13 h 41 min 18 s : fonction `zeste-or-cours` installée (`2387e957…`), sans redémarrage.
+- **13 h 41 min 39 s** : verrou des anciennes versions appliqué. **13 h 41 min 41 s** : `main` = `4739584` poussé ;
+  **13 h 42 min 28 s** : page servie = nouvelle version (identique à `4739584`). Écritures impossibles pendant 49 s.
+- 13 h 42 min 43 s : `zeste-suggest` installée (`8595f134…`, ancienne version sauvegardée). Verrou rendu.
+- Contrôle « après » : conforme (2 écarts = défaut du script, appels sans paramètres → 404 ; refaits avec
+  paramètres : 401 ; script corrigé). Recette en production dans une transaction annulée
+  (`tests/prod/recette-production.sql`) : conforme, données identiques après annulation.
+- 13 h 46 : bascule du quota GoldAPI (clé retirée du test, 0 requête prouvée) ; appli TEST retirée du Mac ;
+  « Zeste PRODUCTION – clé GoldAPI » posée sur le Bureau (essai à vide sur la vraie cible : garde-fous passés,
+  fausse clé refusée par GoldAPI, rien enregistré). **Clé à saisir par David.**
+
 ## Déjà fait : correctif de sécurité urgent (accord écrit de David du 02/11/2026)
 
 - **20 h 10 min 46 s** : `sql/zeste-correctif-securite.sql` appliqué sous verrou (essai à blanc puis réel).
