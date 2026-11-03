@@ -8,7 +8,7 @@ cd ~/zeste-test || exit 1
 . ./.env
 API=https://zeste-test.srv.proformationplus.fr
 ANON=$(cat anon.key)
-P="docker exec -i zt-db psql -U supabase_admin -d postgres -At"
+P="docker exec zt-db psql -U supabase_admin -d postgres -At"   # sans -i : lancé par « bash -s », psql ne doit pas lire la suite du script
 b64url(){ openssl base64 -A | tr '+/' '-_' | tr -d '='; }
 jwt(){ h=$(printf '{"alg":"HS256","typ":"JWT"}' | b64url); p=$(printf '{"sub":"%s","role":"authenticated","aud":"authenticated","iss":"supabase","iat":%s,"exp":%s}' "$1" "$(date +%s)" "$(( $(date +%s) + 600 ))" | b64url); s=$(printf '%s.%s' "$h" "$p" | openssl dgst -sha256 -hmac "$JWT_SECRET" -binary | b64url); printf '%s.%s.%s' "$h" "$p" "$s"; }
 E=$($P -c "select id from auth.users where email='essai@zeste-test.fr'")
