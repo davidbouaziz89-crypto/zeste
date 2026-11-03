@@ -28,8 +28,10 @@ framework, pas de `npm install`. Les librairies sont chargées **depuis un CDN**
 | `icon-192.png`, `icon-512.png`, `favicon-32.png`, `apple-touch-icon.png` | icônes |
 | `GOOGLE-SETUP.md`, `PUSH-SETUP.md` | procédures d'installation |
 | `sql/zeste-sync-v2.sql`, `sql/zeste-securite.sql`, `sql/zeste-or.sql` (+ `*-retour.sql`) | synchro à numéro de version, fermeture des accès anon, onglet Or — ordre et procédure : `MISE-EN-LIGNE.md` |
-| `supabase/functions/zeste-or-cours/` | cours de l'or (GoldAPI ; clé dans le coffre Vault, secret `zeste_goldapi`, posée en TEST par la petite appli Mac `outils/cle-goldapi/` (fabriquer-appli.sh → ~/Applications + alias Bureau ; David n'utilise jamais le Terminal), en production par `outils/ajouter-cle-goldapi.command` — aucun redémarrage ; quota protégé) |
+| `supabase/functions/zeste-or-cours/` | cours de l'or (GoldAPI ; clé dans le coffre Vault, secret `zeste_goldapi`, posée par la petite appli Mac `outils/cle-goldapi/` (`fabriquer-appli.sh TEST|PRODUCTION` → ~/Applications + alias Bureau ; David n'utilise jamais le Terminal ; quota de 300/mois commun : un seul environnement à la fois, `bascule-quota.sh`) — aucun redémarrage ; quota protégé) |
 | `outils/sauvegarde-zeste.sh`, `outils/verifier-sauvegarde.mjs` | sauvegarde du schéma `zeste` (lecture seule) et vérification par rechargement |
+| `outils/controle-production.sh`, `outils/deployer-fonctions.sh` | contrôle de la production en lecture seule (avant/après mise en ligne) ; installation des fonctions serveur avec sauvegarde et retour — procédure : `MISE-EN-LIGNE.md` |
+| branche `retour-securise` | retour arrière SANS rouvrir de faille : version du 02/11 (sans canal public) branchée sur la synchro v2 ; le verrou des anciennes versions reste |
 | `tests/` | bancs de tests (voir « Vérifier son travail ») |
 
 ## Backend
