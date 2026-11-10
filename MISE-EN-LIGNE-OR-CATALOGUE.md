@@ -1,7 +1,20 @@
 # Mise en ligne — Onglet Or : cours réparé, catalogue de pièces, tableau de bord
 
 Branche `or-cours-catalogue` (partie de `main` = `4739584`, version en ligne depuis le 03/11/2026).
-**Rien n'est publié tant que David n'a pas donné son accord.**
+
+## ✅ FAIT le 11/11/2026 (accord de David)
+
+- 00 h 43 : verrou de déploiement pris (base libre, aucune session longue). Témoin poussé à la main : le script
+  copié hors de `comptes-engco` ne trouve pas le dépôt (`cd ${0:A:h}/..`) — il prend le verrou mais n'affiche pas le jeton.
+- 00 h 44 : sauvegarde `~/sauvegardes/zeste-20261110-234453` (serveur), rechargée et identique (13/13).
+  (`zeste-20261110-234440` = essai incomplet : `ssh 'bash -s'` + `docker exec` avale la suite du script → lancer le fichier.)
+- Essai à blanc conforme ; **00 h 45 min 27 s** : `sql/zeste-or-catalogue.sql` appliqué — 81 fiches, empreinte des achats
+  identique avant/après (`c14f1299…`), 2 achats existants inchangés.
+- 00 h 45 min 36 s : fonction `zeste-or-cours` installée (`43ee7b7a…`, ancienne version sauvegardée dans
+  `/opt/supabase/volumes/functions/.sauvegardes-zeste/20261111-004536`), sans redémarrage ; répond 401 sans connexion ;
+  le conteneur des fonctions joint Swissquote (port 443).
+- **00 h 45 min 54 s** : `main` = `736be88` poussé ; **00 h 46 min 32 s** : page servie identique au dépôt.
+- Verrou rendu, témoin retiré. Reste : premier relevé réel à l'ouverture de l'onglet Or par David.
 
 ## Pourquoi le cours ne s'affichait pas
 
