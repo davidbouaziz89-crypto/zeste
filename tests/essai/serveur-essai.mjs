@@ -8,7 +8,7 @@
 //
 // Lancer : PGLITE_DIR=<dossier pglite> node --experimental-strip-types tests/essai/serveur-essai.mjs [port]
 // ZESTE_BASE=correctif : base « production actuelle + correctif seul », à utiliser avec /correctif.html.
-// Pilotage (GET) : /essai/decor (remise à zéro), /essai/panne?on=1|0 (fournisseur de cours en panne),
+// Pilotage (GET) : /essai/decor (remise à zéro), /essai/panne?on=1|0 (fournisseurs de cours en panne), /essai/cours?g=120 (cours fictif imposé),
 //   /essai/vieillir (cours relevé il y a 3 h), /essai/perdre?n=1 (la réponse des n prochains enregistrements
 //   est perdue APRÈS l'écriture), /essai/coupure?on=1|0 (serveur injoignable), /essai/journal (diffusions temps réel, écritures)
 import http from 'node:http';
@@ -21,7 +21,7 @@ import { traiter, ajouterJours } from '../../supabase/functions/zeste-or-cours/i
 const PORT = Number(process.argv[2] || 8765);
 const U = '44444444-4444-4444-8444-444444444444';
 const SOURCE_ESSAI = 'Banc d\'essai — cours FICTIF';
-let panne = false, coupure = false, aPerdre = 0;
+let panne = false, coupure = false, aPerdre = 0, coursForce = null;   // coursForce : €/g imposé aux faux fournisseurs
 const journal = { diffusions: 0, ecritures: [] };
 const messages = [];   // relais du faux canal temps réel : { n, de, sujet, event, payload }
 
@@ -54,7 +54,7 @@ function fauxGoldapi(u){
 // --- faux Swissquote : même courbe fictive, cotation XAU/EUR en € par once ---
 function fauxSwissquote(){
   if (panne) return new Response('panne simulée', { status: 503 });
-  const m = (prixFictifG(new Date().toISOString().slice(0, 10)) + 0.41) * 31.1034768;
+  const m = (coursForce || (prixFictifG(new Date().toISOString().slice(0, 10)) + 0.41)) * 31.1034768;
   return new Response(JSON.stringify([{ topo: { platform: 'Essai' }, ts: Date.now() - 20_000,
     spreadProfilePrices: [{ spreadProfile: 'premium', bid: m - 0.6, ask: m + 0.6 }] }]));
 }
@@ -174,6 +174,7 @@ http.createServer(async (req, res) => {
     if (u.pathname === '/bouchon-supabase.js') { res.writeHead(200, { 'Content-Type': TYPES['.js'] }); return res.end(BOUCHON); }
     if (u.pathname === '/sw.js') { res.writeHead(404); return res.end(); }       // pas de cache hors-ligne pendant l'essai
     if (u.pathname === '/essai/panne') { panne = u.searchParams.get('on') === '1'; return ok(res, { panne }); }
+    if (u.pathname === '/essai/cours') { coursForce = Number(u.searchParams.get('g')) || null; return ok(res, { coursForce }); }
     if (u.pathname === '/essai/coupure') { coupure = u.searchParams.get('on') === '1'; return ok(res, { coupure }); }
     if (u.pathname === '/essai/perdre') { aPerdre = Number(u.searchParams.get('n') || 1); return ok(res, { aPerdre }); }
     if (u.pathname === '/essai/vieillir') { await db.exec(`update zeste.or_cours_actuel set releve_le = releve_le - interval '3 hours', cote_le = cote_le - interval '3 hours'`); return ok(res, 'vieilli'); }
