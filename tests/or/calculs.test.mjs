@@ -38,8 +38,9 @@ test('fiches des pièces identiques au serveur (sql/zeste-or.sql puis sql/zeste-
       assert.equal(t.titre, Number(titre), code + ' titre');
       assert.equal(t.fin, Number(fin), code + ' fin');
       assert.ok(t.fin <= t.brut, code + ' : or fin > poids brut');
-      // pièces anciennes : or fin = brut × titre ; pièces d'investissement (≥ 999 ‰) : contenu garanti par la Monnaie
-      const tol = t.titre >= 999 ? 0.02 : 0.0006;
+      // pièces anciennes : or fin = brut × titre (poids légaux) ; pièces d'investissement (≥ 999 ‰) : contenu GARANTI
+      // par la Monnaie (1 once = 31,1035 g), le poids brut publié pouvant être un peu plus fort (Britannia 31,21 g)
+      const tol = (t.titre >= 999 || /once/.test(t.nom)) ? 0.005 * t.fin : 0.0006;
       assert.ok(Math.abs(t.brut * t.titre / 1000 - t.fin) <= tol, code + ' : brut × titre ≠ or fin');
     }
   }
@@ -274,7 +275,7 @@ test('même pièce achetée deux fois à des prix différents : achats conservé
   assert.equal(p.coutDetenu, 442000);                            // 2 800 + 1 600 + 20 €
   assert.equal(p.puAchat, 147333);                               // 4 420 € / 3 = 1 473,33 €
   assert.equal(p.finPiece, 37.4999);
-  assert.equal(p.valeurPiece, Math.round(37.4999 * 116.05 * 100)); // 4 351,86 €
+  assert.equal(p.valeurPiece, Math.round(37.4999 * 116.05 * 100)); // 4 351,86 € (or fin de l'achat, tel qu'enregistré)
   assert.equal(p.valeur, 3 * p.valeurPiece);                     // par pièce × quantité = total, au centime
   assert.equal(p.latent, p.valeur - 442000);
   // le portefeuille = somme des références
