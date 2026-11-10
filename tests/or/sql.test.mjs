@@ -52,7 +52,7 @@ test('achat : création, poids imposés par la fiche serveur, idempotence', asyn
   await rpc(db, 'zeste_or_lot_enregistrer', { p }, asA); // double appui
   const lu = await rpc(db, 'zeste_or_lire', {}, asA);
   assert.equal(lu.lots.length, 1);
-  assert.equal(lu.types.length, 8);
+  assert.equal(lu.types.length, (await db.query('select count(*)::int n from zeste.or_types')).rows[0].n);   // tout le catalogue
 });
 
 test('cloisonnement entre comptes', async () => {

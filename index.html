@@ -901,6 +901,80 @@
   .or-d-liens{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;margin:18px 0 4px}
   .or-lien{border:none;background:none;font-weight:800;font-size:14.5px;color:var(--purple);cursor:pointer;padding:10px 6px;min-height:44px}
   .or-lien.rouge{color:var(--red)}
+  /* tableau de bord : cours + 3 indicateurs */
+  .or-cours{display:flex;align-items:flex-start;gap:10px}
+  .or-cours-g{flex:1;min-width:0}
+  .or-cours-g small,.or-kpis small{display:block;font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;opacity:.78}
+  .or-cours-g b{display:block;font-size:31px;font-weight:800;letter-spacing:-.6px;line-height:1.15;margin-top:2px;
+    background:linear-gradient(100deg,#fff1c1,#ffd23f 45%,#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .or-cours-g b .or-indispo{font-size:22px;color:#ffd2a6;-webkit-text-fill-color:#ffd2a6}
+  .or-cours-g>span{display:block;font-size:12.5px;font-weight:700;opacity:.8;margin-top:1px}
+  .or-actu{flex:none;border:none;border-radius:14px;padding:8px 11px;min-height:44px;font-weight:800;font-size:12.5px;line-height:1.15;
+    color:#3b2a00;background:linear-gradient(135deg,#ffe08a,#f5b800);cursor:pointer;display:flex;align-items:center;gap:6px;text-align:left}
+  .or-actu .i{font-size:18px;line-height:1}
+  .or-actu.spin .i{display:inline-block;animation:orspin 1s linear infinite}
+  .or-actu:active{transform:scale(.95)}
+  .or-cours-maj{margin-top:9px;font-size:12.5px;font-weight:700;line-height:1.4;opacity:.9}
+  .or-cours-maj.vieux{opacity:1;background:rgba(255,159,69,.2);color:#ffd2a6;padding:7px 10px;border-radius:12px}
+  .or-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:14px}
+  .or-kpis>div{background:rgba(255,255,255,.09);border-radius:16px;padding:10px 11px;min-width:0}
+  .or-kpis b{display:block;font-size:19px;font-weight:800;margin-top:3px;overflow-wrap:anywhere;line-height:1.2}
+  .or-kpis span{display:block;font-size:12px;font-weight:700;opacity:.75;margin-top:1px}
+  .or-kpis .or-kpi-pl{grid-column:1/-1;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px}
+  .or-kpis .or-kpi-pl small{width:100%}
+  .or-kpis .or-kpi-pl b{font-size:22px}
+  .or-kpis .or-kpi-pl span{font-size:16px;font-weight:800;opacity:1}
+  .or-kpis .or-kpi-pl.g b,.or-kpis .or-kpi-pl.g span{color:#6ff2ae}
+  .or-kpis .or-kpi-pl.p b,.or-kpis .or-kpi-pl.p span{color:#ff9a9d}
+  .or-hero>.or-hero-real{margin-top:10px;font-size:13px;font-weight:700;opacity:.9}
+  @media(min-width:460px){ .or-kpis{grid-template-columns:repeat(3,minmax(0,1fr))} .or-kpis .or-kpi-pl{grid-column:auto;display:block} }
+  /* mes pièces : une carte-tableau par référence */
+  .or-ref{background:var(--card);border-radius:18px;box-shadow:var(--shadow-s);margin-bottom:10px;border:1.5px solid var(--line);overflow:hidden}
+  .or-ref-top{display:flex;align-items:center;gap:11px;width:100%;border:none;background:none;padding:11px 12px 6px;text-align:left;color:inherit;font:inherit;cursor:pointer}
+  .or-ref-top .r-mid{flex:1;min-width:0}
+  .or-ref-top .r-name{font-weight:800;font-size:15.5px;line-height:1.2;overflow-wrap:anywhere}
+  .or-ref-top .r-sub{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:3px}
+  .or-ref-top .r-pct{flex:none;font-weight:800;font-size:14px;padding:4px 9px;border-radius:20px;background:var(--line)}
+  .or-ref .l-q,.or-achats .l-q{display:inline-block;white-space:nowrap;font-size:12.5px;font-weight:800;color:var(--or-ink);background:hsl(45 100% 92%);padding:1px 7px;border-radius:10px}
+  :root[data-theme="dark"] .or-ref .l-q{background:hsl(45 50% 20%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .or-ref .l-q{background:hsl(45 50% 20%)}}
+  .or-mini{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;table-layout:fixed}
+  .or-mini th,.or-mini td{padding:5px 8px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .or-mini thead th{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding-top:2px}
+  .or-mini tbody th{text-align:left;font-size:12px;font-weight:800;color:var(--muted);width:25%}
+  .or-mini td{font-weight:700;width:25%}
+  .or-mini tr.tot td{font-weight:800;font-size:13.5px}
+  .or-mini tbody tr{border-top:1px solid var(--line)}
+  .or-mini tbody tr:last-child th,.or-mini tbody tr:last-child td{padding-bottom:9px}
+  .or-ref-achats{display:block;width:100%;border:none;border-top:1px solid var(--line);background:none;color:var(--purple);font-weight:800;font-size:13.5px;padding:10px 12px;text-align:left;cursor:pointer;min-height:44px}
+  .or-achats{padding:0 10px 10px}
+  .or-achat-l{display:grid;grid-template-columns:1fr auto auto;gap:2px 10px;align-items:center;width:100%;border:2px solid var(--line);background:var(--field);
+    border-radius:13px;padding:8px 10px;margin-top:6px;font:inherit;font-size:13px;font-weight:700;color:inherit;cursor:pointer;text-align:left}
+  .or-achat-l b{font-weight:800}
+  .or-achat-l i{grid-column:1/-1;font-style:normal;font-size:12px;color:var(--muted)}
+  .or-achat-l.sold{opacity:.6}
+  /* saisie : recherche dans le catalogue */
+  .or-res{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .or-res-t{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin:4px 2px 0}
+  .or-res-i{display:flex;align-items:center;gap:10px;border:2px solid var(--line);background:var(--chip);border-radius:15px;padding:8px 10px;
+    text-align:left;font:inherit;color:inherit;cursor:pointer;min-height:52px;width:100%}
+  .or-res-i .or-coin{width:38px;height:38px;font-size:11px}
+  .or-res-i .ri{flex:1;min-width:0}
+  .or-res-i .ri b{display:block;font-size:14.5px;font-weight:800;line-height:1.2}
+  .or-res-i .ri span{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-top:2px}
+  .or-res-i.manuel{border-style:dashed}
+  .or-res-vide{font-size:13.5px;font-weight:700;color:var(--muted);margin:6px 2px 0}
+  .or-fiche{display:flex;align-items:center;gap:11px;border:2px solid var(--or2);background:hsl(45 100% 95%);border-radius:16px;padding:10px 11px;margin-top:2px}
+  :root[data-theme="dark"] .or-fiche{background:hsl(45 50% 15%)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .or-fiche{background:hsl(45 50% 15%)}}
+  .or-fiche .fi{flex:1;min-width:0}
+  .or-fiche .fi b{display:block;font-size:15px;font-weight:800;line-height:1.2}
+  .or-fiche .fi span{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-top:2px;line-height:1.35}
+  .or-fiche .fi span.v{color:var(--or-ink)}
+  .or-fiche button{flex:none;border:none;background:none;color:var(--purple);font-weight:800;font-size:14px;cursor:pointer;padding:10px 4px;min-height:44px}
+  .or-sugg{margin-top:12px;border:2px dashed var(--or2);border-radius:14px;padding:10px 12px;font-size:13.5px;font-weight:700;line-height:1.4}
+  .or-sugg button{margin-top:8px}
+  .or-d-fiche{font-size:13px;font-weight:700;color:var(--muted);margin:10px 2px 0;line-height:1.45}
   /* fenêtres Or */
   #orAchatBg,#orLotBg,#orVenteBg,#orOpsBg{z-index:52}
   .sheet.or-sheet{z-index:53}
@@ -1240,8 +1314,11 @@
   <div class="grab"></div>
   <div class="sheet-body">
     <h3 id="orAchatTitre">Nouvel achat 🪙</h3>
-    <label class="remb-lab">Type de pièce *</label>
-    <div class="or-types" id="orTypes"></div>
+    <label class="remb-lab" for="orCherche">Ma pièce *</label>
+    <div id="orChoix">
+      <div class="field-wrap"><input class="field" id="orCherche" placeholder="Ex : 50 pesos, Napoléon, 10 dollars…" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" /><span class="field-emo">🔎</span></div>
+      <div class="or-res" id="orTypes"></div>
+    </div>
     <div id="orFiche"></div>
     <div id="orPerso" style="display:none">
       <label class="remb-lab" for="orNom" id="orNomLab">Nom de la pièce *</label>
@@ -4296,26 +4373,125 @@ if('serviceWorker' in navigator){
    ================================================================ */
 
 // ==== OR-CALCUL-DEBUT (fonctions pures, sans DOM — testées par tests/or/calculs.test.mjs) ====
-// Fiches des pièces : DOIVENT rester identiques à zeste.or_types (sql/zeste-or.sql) — vérifié par le test.
+// Fiches des pièces : DOIVENT rester identiques à zeste.or_types (sql/zeste-or.sql + sql/zeste-or-catalogue.sql) — vérifié par le test.
+// Poids légaux vérifiés (Numista / Monnaies émettrices) : voir sql/zeste-or-catalogue.sql. « mots » = termes de recherche.
 const OR_TYPES = [
-  { code:'napoleon20',   nom:'Napoléon 20 francs', court:'Napoléon 20 F', jeton:'20F', brut:6.4516, titre:900, fin:5.8064,
-    info:'France, 1803-1914 (Napoléon Ier, Napoléon III, Génie, Cérès…). Souvent appelé « louis » dans le langage courant : ce n\'est pas un Louis d\'or historique.' },
-  { code:'francs10',     nom:'10 francs or', court:'10 francs or', jeton:'10F', brut:3.2258, titre:900, fin:2.9032,
-    info:'France, 1850-1914 (Napoléon III, Cérès, Marianne Coq).' },
-  { code:'marianne_coq', nom:'Marianne Coq 20 francs', court:'Marianne Coq 20 F', jeton:'Coq', brut:6.4516, titre:900, fin:5.8064,
-    info:'France, 1899-1914. Mêmes caractéristiques que le Napoléon 20 F.' },
-  { code:'louis_xvi',    nom:'Louis d\'or Louis XVI au buste (1785-1792)', court:'Louis d\'or Louis XVI', jeton:'XVI', brut:7.649, titre:917, fin:7.0141,
-    info:'Monnaie royale « au buste », frappée de 1785 à 1792. À ne pas confondre avec le Napoléon 20 F, souvent appelé « louis ».' },
-  { code:'louis_autre',  nom:'Louis d\'or historique — autre type', court:'Louis d\'or historique', jeton:'L', libre:true,
-    info:'Le poids d\'un Louis d\'or dépend du règne et du type (ex. Louis XV « aux lunettes », environ 8,16 g à 917 ‰). Indique les caractéristiques de ta pièce : rien n\'est deviné.' },
-  { code:'souverain',    nom:'Souverain britannique', court:'Souverain', jeton:'£', brut:7.9881, titre:916.67, fin:7.3224,
-    info:'Royaume-Uni, or 22 carats (916,7 ‰).' },
-  { code:'vreneli20',    nom:'20 francs suisse (Vreneli)', court:'20 F suisse Vreneli', jeton:'CH', brut:6.4516, titre:900, fin:5.8064,
-    info:'Suisse, 1897-1949.' },
-  { code:'autre',        nom:'Autre pièce', court:'Autre pièce', jeton:'?', libre:true,
-    info:'Indique le nom de la pièce et son poids d\'or fin (ou son poids brut et son titre).' },
+  { code:'napoleon20', nom:'Napoléon 20 francs', court:'Napoléon 20 F', jeton:'20F', pays:'France', annees:'1803-1914', brut:6.4516, titre:900, fin:5.8064, ordre:10, mots:'louis louisdor napo napoleons 20f genie ceres coq louis-philippe louis-xviii charles-x empire republique', info:'Souvent appelé « louis » dans le langage courant : ce n\'est pas un Louis d\'or historique.' },
+  { code:'pesos50', nom:'50 pesos Centenario', court:'50 pesos Centenario', jeton:'50P', pays:'Mexique', annees:'1921-1947 (+ refrappes)', brut:41.6666, titre:900, fin:37.4999, ordre:12, mots:'peso pesos mexique mexico mexicain mexicaine mexicains mexicaines centenario centenaire' },
+  { code:'souverain', nom:'Souverain britannique', court:'Souverain', jeton:'£', pays:'Royaume-Uni', annees:'1817-', brut:7.9881, titre:916.67, fin:7.3224, ordre:14, mots:'souverain souverains sovereign livre livres angleterre anglais anglaise britannique royaume-uni uk', info:'Mêmes caractéristiques quel que soit l\'atelier (Londres, Sydney, Melbourne, Perth, Pretoria, Ottawa, Bombay).' },
+  { code:'dollars20', nom:'20 dollars Double Eagle (Liberty, Saint-Gaudens)', court:'20 $ Double Eagle', jeton:'$20', pays:'États-Unis', annees:'1850-1933', brut:33.437, titre:900, fin:30.0933, ordre:16, mots:'dollar dollars usd us usa etats-unis americain americaine double eagle liberty saint-gaudens st-gaudens 20$' },
+  { code:'vreneli20', nom:'20 francs suisse (Vreneli)', court:'20 F suisse Vreneli', jeton:'CH', pays:'Suisse', annees:'1897-1949', brut:6.4516, titre:900, fin:5.8064, ordre:18, mots:'vreneli 20f suisse suisses helvetia franc' },
+  { code:'krugerrand1', nom:'Krugerrand 1 once', court:'Krugerrand 1 once', jeton:'KR', pays:'Afrique du Sud', annees:'1967-', brut:33.9305, titre:916.67, fin:31.1035, ordre:20, mots:'krugerrand kruger once oz 1oz afrique sud sud-africain springbok' },
+  { code:'dollars10', nom:'10 dollars Eagle (Liberty, Indian Head)', court:'10 $ Eagle', jeton:'$10', pays:'États-Unis', annees:'1838-1933', brut:16.7185, titre:900, fin:15.0466, ordre:22, mots:'dollar dollars usd us usa etats-unis americain americaine eagle liberty indian 10$' },
+  { code:'marianne_coq', nom:'Marianne Coq 20 francs', court:'Marianne Coq 20 F', jeton:'Coq', pays:'France', annees:'1899-1914', brut:6.4516, titre:900, fin:5.8064, ordre:24, mots:'marianne coq 20f republique louis napoleon', info:'Mêmes caractéristiques que le Napoléon 20 F.' },
+  { code:'francs10', nom:'10 francs or', court:'10 francs or', jeton:'10F', pays:'France', annees:'1850-1914', brut:3.2258, titre:900, fin:2.9032, ordre:26, mots:'10f demi napoleon napo ceres marianne coq' },
+  { code:'maple1', nom:'Maple Leaf 1 once (or 999,9)', court:'Maple Leaf 1 once', jeton:'ML', pays:'Canada', annees:'1982-', brut:31.1035, titre:999.9, fin:31.1035, ordre:28, mots:'maple leaf feuille erable once oz 1oz canada canadien canadienne' },
+  { code:'philharmonique1', nom:'Philharmonique de Vienne 1 once', court:'Philharmonique 1 once', jeton:'PH', pays:'Autriche', annees:'1989-', brut:31.1035, titre:999.9, fin:31.1035, ordre:30, mots:'philharmonique philharmoniker vienne once oz 1oz autriche autrichien' },
+  { code:'eagle1', nom:'American Eagle 1 once (50 $)', court:'American Eagle 1 once', jeton:'AE', pays:'États-Unis', annees:'1986-', brut:33.931, titre:916.67, fin:31.1035, ordre:32, mots:'american eagle once oz 1oz 50 dollar dollars usd us usa etats-unis americain 50$' },
+  { code:'mark20', nom:'20 marks (Empire)', court:'20 marks', jeton:'20M', pays:'Allemagne', annees:'1871-1915', brut:7.965, titre:900, fin:7.1685, ordre:34, mots:'mark marks mark allemagne allemand allemande empire prusse guillaume wilhelm reich' },
+  { code:'lire20', nom:'20 lires (Victor-Emmanuel II, Humbert Ier)', court:'20 lires', jeton:'20L', pays:'Italie', annees:'1861-1912', brut:6.4516, titre:900, fin:5.8064, ordre:36, mots:'lire lira lires italie italienne italiennes italien umberto vittorio emanuele humbert victor-emmanuel union latine' },
+  { code:'belge20', nom:'20 francs belges (Léopold Ier/II, Albert Ier)', court:'20 francs belges', jeton:'BE', pays:'Belgique', annees:'1865-1914', brut:6.4516, titre:900, fin:5.8064, ordre:38, mots:'belge belges belgique leopold albert 20f union latine' },
+  { code:'dollars5', nom:'5 dollars Half Eagle (Liberty, Indian Head)', court:'5 $ Half Eagle', jeton:'$5', pays:'États-Unis', annees:'1839-1929', brut:8.3592, titre:900, fin:7.5233, ordre:40, mots:'dollar dollars usd us usa etats-unis americain americaine half eagle liberty indian 5$' },
+  { code:'demi_souverain', nom:'Demi-souverain', court:'Demi-souverain', jeton:'½£', pays:'Royaume-Uni', annees:'1817-', brut:3.994, titre:916.67, fin:3.6612, ordre:42, mots:'demi souverain half sovereign livre angleterre anglais britannique royaume-uni uk' },
+  { code:'pesos20', nom:'20 pesos (calendrier aztèque)', court:'20 pesos Mexique', jeton:'20P', pays:'Mexique', annees:'1917-1959', brut:16.6666, titre:900, fin:15, ordre:44, mots:'peso pesos mexique mexico mexicain mexicaine mexicains mexicaines azteque calendrier' },
+  { code:'pesos10', nom:'10 pesos Hidalgo', court:'10 pesos Mexique', jeton:'10P', pays:'Mexique', annees:'1905-1959', brut:8.3333, titre:900, fin:7.5, ordre:46, mots:'peso pesos mexique mexico mexicain mexicaine mexicains mexicaines hidalgo' },
+  { code:'britannia1', nom:'Britannia 1 once (or 999,9)', court:'Britannia 1 once', jeton:'BR', pays:'Royaume-Uni', annees:'2013-', brut:31.1035, titre:999.9, fin:31.1035, ordre:50, mots:'britannia once oz 1oz angleterre anglais britannique royaume-uni uk royal mint' },
+  { code:'buffalo1', nom:'American Buffalo 1 once (50 $)', court:'American Buffalo 1 once', jeton:'BUF', pays:'États-Unis', annees:'2006-', brut:31.108, titre:999.9, fin:31.1035, ordre:52, mots:'american buffalo bison once oz 1oz 50 dollar dollars usd us usa etats-unis americain 50$' },
+  { code:'libertad1', nom:'Libertad 1 once (or 999)', court:'Libertad 1 once', jeton:'LIB', pays:'Mexique', annees:'1991-', brut:31.1035, titre:999, fin:31.1035, ordre:54, mots:'libertad once oz 1oz onza peso pesos mexique mexico mexicain mexicaine' },
+  { code:'kangourou1', nom:'Kangourou (Nugget) 1 once', court:'Kangourou 1 once', jeton:'KG', pays:'Australie', annees:'1986-', brut:31.1035, titre:999.9, fin:31.1035, ordre:56, mots:'kangourou kangaroo nugget once oz 1oz australie australien perth' },
+  { code:'panda30', nom:'Panda 30 g', court:'Panda 30 g', jeton:'PDA', pays:'Chine', annees:'2016-', brut:30, titre:999, fin:29.97, ordre:58, mots:'panda chine chinois chinoise 30g' },
+  { code:'louis_xvi', nom:'Louis d\'or Louis XVI au buste (1785-1792)', court:'Louis d\'or Louis XVI', jeton:'XVI', pays:'France', annees:'1785-1792', brut:7.649, titre:917, fin:7.0141, ordre:60, mots:'louis louisdor xvi royal buste', info:'Monnaie royale « au buste », frappée de 1785 à 1792. À ne pas confondre avec le Napoléon 20 F, souvent appelé « louis ».' },
+  { code:'francs5_fr', nom:'5 francs or Napoléon III', court:'5 francs or', jeton:'5F', pays:'France', annees:'1854-1869', brut:1.6129, titre:900, fin:1.4516, ordre:120, mots:'5f napoleon napo' },
+  { code:'francs40_fr', nom:'40 francs or', court:'40 francs or', jeton:'40F', pays:'France', annees:'1803-1839', brut:12.9032, titre:900, fin:11.6129, ordre:122, mots:'40f napoleon napo louis-philippe charles-x louis-xviii' },
+  { code:'francs50_fr', nom:'50 francs or (Napoléon III, Génie)', court:'50 francs or', jeton:'50F', pays:'France', annees:'1855-1904', brut:16.129, titre:900, fin:14.5161, ordre:124, mots:'50f napoleon napo genie' },
+  { code:'francs100_fr', nom:'100 francs or (Napoléon III, Génie) — hors 100 F « Bazor » 1929-1936', court:'100 francs or', jeton:'100', pays:'France', annees:'1855-1914', brut:32.2581, titre:900, fin:29.0323, ordre:126, mots:'100f napoleon napo genie', info:'Le 100 francs « Bazor » (1929-1936, 5,9 g d\'or fin) est une autre pièce : utilise « Autre pièce ».' },
+  { code:'vreneli10', nom:'10 francs Vreneli', court:'10 F suisse Vreneli', jeton:'CH', pays:'Suisse', annees:'1911-1922', brut:3.2258, titre:900, fin:2.9032, ordre:128, mots:'vreneli 10f suisse suisses franc' },
+  { code:'vreneli100', nom:'100 francs Vreneli', court:'100 F suisse Vreneli', jeton:'CH', pays:'Suisse', annees:'1925', brut:32.2581, titre:900, fin:29.0323, ordre:130, mots:'vreneli 100f suisse suisses franc' },
+  { code:'helvetia20', nom:'20 francs Helvetia', court:'20 F suisse Helvetia', jeton:'CH', pays:'Suisse', annees:'1883-1896', brut:6.4516, titre:900, fin:5.8064, ordre:132, mots:'helvetia 20f suisse suisses franc' },
+  { code:'pesetas20', nom:'20 pesetas (Alphonse XIII)', court:'20 pesetas', jeton:'ES', pays:'Espagne', annees:'1887-1904', brut:6.4516, titre:900, fin:5.8064, ordre:134, mots:'peseta pesetas espagne espagnol espagnole alphonse alfonso' },
+  { code:'pesetas25', nom:'25 pesetas (Alphonse XII)', court:'25 pesetas', jeton:'ES', pays:'Espagne', annees:'1876-1885', brut:8.0645, titre:900, fin:7.2581, ordre:136, mots:'peseta pesetas espagne espagnol espagnole alphonse alfonso' },
+  { code:'drachmes20', nom:'20 drachmes', court:'20 drachmes', jeton:'GR', pays:'Grèce', annees:'1876-1884', brut:6.4516, titre:900, fin:5.8064, ordre:138, mots:'drachme drachmes grece grecque georges' },
+  { code:'florins8', nom:'8 florins / 20 francs', court:'8 florins / 20 F', jeton:'AT', pays:'Autriche-Hongrie', annees:'1870-1892', brut:6.4516, titre:900, fin:5.8064, ordre:140, mots:'florin florins forint gulden autriche hongrie autrichien 20f' },
+  { code:'florins4', nom:'4 florins / 10 francs', court:'4 florins / 10 F', jeton:'AT', pays:'Autriche-Hongrie', annees:'1870-1892', brut:3.2258, titre:900, fin:2.9032, ordre:142, mots:'florin florins forint gulden autriche hongrie autrichien 10f' },
+  { code:'couronnes20_at', nom:'20 couronnes (François-Joseph)', court:'20 couronnes Autriche', jeton:'AT', pays:'Autriche', annees:'1892-1916', brut:6.7751, titre:900, fin:6.0976, ordre:144, mots:'couronne couronnes corona kronen autriche autrichienne francois-joseph' },
+  { code:'couronnes10_at', nom:'10 couronnes (François-Joseph)', court:'10 couronnes Autriche', jeton:'AT', pays:'Autriche', annees:'1892-1912', brut:3.3875, titre:900, fin:3.0488, ordre:146, mots:'couronne couronnes corona kronen autriche autrichienne francois-joseph' },
+  { code:'couronnes100_at', nom:'100 couronnes (François-Joseph, refrappe 1915)', court:'100 couronnes Autriche', jeton:'AT', pays:'Autriche', annees:'1908-1915', brut:33.8753, titre:900, fin:30.4878, ordre:148, mots:'couronne couronnes corona kronen autriche autrichienne francois-joseph' },
+  { code:'ducat1_at', nom:'1 ducat (refrappe 1915)', court:'1 ducat Autriche', jeton:'DU', pays:'Autriche', annees:'1872-1915', brut:3.4909, titre:986, fin:3.442, ordre:150, mots:'ducat ducats dukat autriche autrichien' },
+  { code:'ducats4_at', nom:'4 ducats (refrappe 1915)', court:'4 ducats Autriche', jeton:'DU', pays:'Autriche', annees:'1872-1915', brut:13.9636, titre:986, fin:13.7681, ordre:152, mots:'ducat ducats dukaten autriche autrichien' },
+  { code:'korona20_hu', nom:'20 korona', court:'20 korona Hongrie', jeton:'HU', pays:'Hongrie', annees:'1892-1916', brut:6.7751, titre:900, fin:6.0976, ordre:154, mots:'korona couronne couronnes hongrie hongroise' },
+  { code:'mark10', nom:'10 marks (Empire)', court:'10 marks', jeton:'10M', pays:'Allemagne', annees:'1872-1914', brut:3.9825, titre:900, fin:3.5843, ordre:156, mots:'mark marks allemagne allemand allemande empire prusse guillaume wilhelm reich' },
+  { code:'florins10_nl', nom:'10 florins', court:'10 florins Pays-Bas', jeton:'NL', pays:'Pays-Bas', annees:'1875-1933', brut:6.729, titre:900, fin:6.0561, ordre:158, mots:'florin florins gulden pays-bas hollande neerlandais wilhelmine' },
+  { code:'kroner20_dk', nom:'20 couronnes', court:'20 couronnes Danemark', jeton:'DK', pays:'Danemark', annees:'1873-1931', brut:8.9606, titre:900, fin:8.0645, ordre:160, mots:'couronne couronnes kroner danemark danoise' },
+  { code:'kroner10_dk', nom:'10 couronnes', court:'10 couronnes Danemark', jeton:'DK', pays:'Danemark', annees:'1873-1917', brut:4.4803, titre:900, fin:4.0323, ordre:162, mots:'couronne couronnes kroner danemark danoise' },
+  { code:'kronor20_se', nom:'20 couronnes', court:'20 couronnes Suède', jeton:'SE', pays:'Suède', annees:'1873-1925', brut:8.9606, titre:900, fin:8.0645, ordre:164, mots:'couronne couronnes kronor suede suedoise oscar' },
+  { code:'kroner20_no', nom:'20 couronnes', court:'20 couronnes Norvège', jeton:'NO', pays:'Norvège', annees:'1874-1910', brut:8.9606, titre:900, fin:8.0645, ordre:166, mots:'couronne couronnes kroner norvege norvegienne' },
+  { code:'roubles5', nom:'5 roubles Nicolas II', court:'5 roubles Nicolas II', jeton:'RU', pays:'Russie', annees:'1897-1911', brut:4.3013, titre:900, fin:3.8712, ordre:168, mots:'rouble roubles russie russe nicolas tsar' },
+  { code:'roubles10', nom:'10 roubles Nicolas II', court:'10 roubles Nicolas II', jeton:'RU', pays:'Russie', annees:'1898-1911', brut:8.6026, titre:900, fin:7.7423, ordre:170, mots:'rouble roubles russie russe nicolas tsar' },
+  { code:'chervonets', nom:'Tchervonets (10 roubles)', court:'Tchervonets', jeton:'RU', pays:'URSS', annees:'1923, 1975-1982', brut:8.6026, titre:900, fin:7.7423, ordre:172, mots:'tchervonets chervonets chervonetz rouble roubles urss russie russe semeur' },
+  { code:'kurush100', nom:'100 kurush (piastres)', court:'100 kurush', jeton:'TR', pays:'Turquie', annees:'1923-', brut:7.216, titre:916.67, fin:6.6147, ordre:174, mots:'kurush kurus piastre piastres turquie turc turque ataturk' },
+  { code:'livres2_gb', nom:'2 livres (double souverain)', court:'2 livres or', jeton:'2£', pays:'Royaume-Uni', annees:'1820-', brut:15.9761, titre:916.67, fin:14.6448, ordre:176, mots:'2 livres double souverain sovereign angleterre anglais britannique royaume-uni uk' },
+  { code:'livres5_gb', nom:'5 livres (quintuple souverain)', court:'5 livres or', jeton:'5£', pays:'Royaume-Uni', annees:'1820-', brut:39.9403, titre:916.67, fin:36.6119, ordre:178, mots:'5 livres quintuple souverain sovereign angleterre anglais britannique royaume-uni uk' },
+  { code:'libra_pe', nom:'1 libra', court:'1 libra Pérou', jeton:'PE', pays:'Pérou', annees:'1898-1969', brut:7.9881, titre:916.67, fin:7.3224, ordre:180, mots:'libra libras perou peruvien peruvienne' },
+  { code:'dollars10_1795', nom:'10 dollars Eagle Capped Bust', court:'10 $ Capped Bust', jeton:'$10', pays:'États-Unis', annees:'1795-1804', brut:17.496, titre:916.67, fin:16.0378, ordre:182, mots:'dollar dollars usd us usa etats-unis americain americaine eagle capped bust draped 10$' },
+  { code:'dollars3', nom:'3 dollars Indian Princess', court:'3 $ Indian Princess', jeton:'$3', pays:'États-Unis', annees:'1854-1889', brut:5.0155, titre:900, fin:4.514, ordre:184, mots:'dollar dollars usd us usa etats-unis americain americaine indian princess 3$' },
+  { code:'dollars2_5', nom:'2,5 dollars Quarter Eagle (Liberty, Indian Head)', court:'2,5 $ Quarter Eagle', jeton:'$2½', pays:'États-Unis', annees:'1840-1929', brut:4.1796, titre:900, fin:3.7616, ordre:186, mots:'dollar dollars usd us usa etats-unis americain americaine quarter eagle liberty indian 2.5$' },
+  { code:'dollars1', nom:'1 dollar or', court:'1 $ or', jeton:'$1', pays:'États-Unis', annees:'1849-1889', brut:1.6718, titre:900, fin:1.5046, ordre:188, mots:'dollar dollars usd us usa etats-unis americain americaine liberty indian princess 1$' },
+  { code:'eagle_demi', nom:'American Eagle 1/2 once (25 $)', court:'American Eagle 1/2 once', jeton:'AE', pays:'États-Unis', annees:'1986-', brut:16.966, titre:916.67, fin:15.5517, ordre:190, mots:'american eagle once oz 25 dollar dollars usd us usa etats-unis americain 25$ demi' },
+  { code:'eagle_quart', nom:'American Eagle 1/4 once (10 $)', court:'American Eagle 1/4 once', jeton:'AE', pays:'États-Unis', annees:'1986-', brut:8.483, titre:916.67, fin:7.7759, ordre:192, mots:'american eagle once oz 10 dollar dollars usd us usa etats-unis americain 10$ quart' },
+  { code:'eagle_dixieme', nom:'American Eagle 1/10 once (5 $)', court:'American Eagle 1/10 once', jeton:'AE', pays:'États-Unis', annees:'1986-', brut:3.393, titre:916.67, fin:3.1103, ordre:194, mots:'american eagle once oz 5 dollar dollars usd us usa etats-unis americain 5$ dixieme' },
+  { code:'pesos5', nom:'5 pesos Hidalgo', court:'5 pesos Mexique', jeton:'5P', pays:'Mexique', annees:'1905-1955', brut:4.1666, titre:900, fin:3.75, ordre:196, mots:'peso pesos mexique mexico mexicain mexicaine mexicains mexicaines hidalgo' },
+  { code:'pesos2_5', nom:'2,5 pesos Hidalgo', court:'2,5 pesos Mexique', jeton:'2½P', pays:'Mexique', annees:'1918-1948', brut:2.0833, titre:900, fin:1.875, ordre:198, mots:'peso pesos mexique mexico mexicain mexicaine mexicains mexicaines hidalgo' },
+  { code:'pesos2', nom:'2 pesos', court:'2 pesos Mexique', jeton:'2P', pays:'Mexique', annees:'1919-1945', brut:1.6666, titre:900, fin:1.5, ordre:200, mots:'peso pesos mexique mexico mexicain mexicaine mexicains mexicaines' },
+  { code:'pesos100_cl', nom:'100 pesos', court:'100 pesos Chili', jeton:'CL', pays:'Chili', annees:'1926-1980', brut:20.3397, titre:900, fin:18.3057, ordre:202, mots:'peso pesos chili chilien chilienne' },
+  { code:'pesos50_cl', nom:'50 pesos', court:'50 pesos Chili', jeton:'CL', pays:'Chili', annees:'1926-1962', brut:10.1698, titre:900, fin:9.1528, ordre:204, mots:'peso pesos chili chilien chilienne' },
+  { code:'pesos20_cl', nom:'20 pesos', court:'20 pesos Chili', jeton:'CL', pays:'Chili', annees:'1926-1980', brut:4.0679, titre:900, fin:3.6611, ordre:206, mots:'peso pesos chili chilien chilienne' },
+  { code:'krugerrand_demi', nom:'Krugerrand 1/2 once', court:'Krugerrand 1/2 once', jeton:'KR', pays:'Afrique du Sud', annees:'1980-', brut:16.9653, titre:916.67, fin:15.5517, ordre:208, mots:'krugerrand kruger once oz afrique sud sud-africain demi' },
+  { code:'krugerrand_quart', nom:'Krugerrand 1/4 once', court:'Krugerrand 1/4 once', jeton:'KR', pays:'Afrique du Sud', annees:'1980-', brut:8.4826, titre:916.67, fin:7.7759, ordre:210, mots:'krugerrand kruger once oz afrique sud sud-africain quart' },
+  { code:'krugerrand_dixieme', nom:'Krugerrand 1/10 once', court:'Krugerrand 1/10 once', jeton:'KR', pays:'Afrique du Sud', annees:'1980-', brut:3.3931, titre:916.67, fin:3.1103, ordre:212, mots:'krugerrand kruger once oz afrique sud sud-africain dixieme' },
+  { code:'maple_demi', nom:'Maple Leaf 1/2 once', court:'Maple Leaf 1/2 once', jeton:'ML', pays:'Canada', annees:'1982-', brut:15.5517, titre:999.9, fin:15.5517, ordre:214, mots:'maple leaf feuille erable once oz canada canadien canadienne demi' },
+  { code:'maple_quart', nom:'Maple Leaf 1/4 once', court:'Maple Leaf 1/4 once', jeton:'ML', pays:'Canada', annees:'1982-', brut:7.7759, titre:999.9, fin:7.7759, ordre:216, mots:'maple leaf feuille erable once oz canada canadien canadienne quart' },
+  { code:'maple_dixieme', nom:'Maple Leaf 1/10 once', court:'Maple Leaf 1/10 once', jeton:'ML', pays:'Canada', annees:'1982-', brut:3.1103, titre:999.9, fin:3.1103, ordre:218, mots:'maple leaf feuille erable once oz canada canadien canadienne dixieme' },
+  { code:'philharmonique_demi', nom:'Philharmonique 1/2 once', court:'Philharmonique 1/2 once', jeton:'PH', pays:'Autriche', annees:'1989-', brut:15.5517, titre:999.9, fin:15.5517, ordre:220, mots:'philharmonique philharmoniker vienne once oz autriche autrichien demi' },
+  { code:'philharmonique_quart', nom:'Philharmonique 1/4 once', court:'Philharmonique 1/4 once', jeton:'PH', pays:'Autriche', annees:'1989-', brut:7.7759, titre:999.9, fin:7.7759, ordre:222, mots:'philharmonique philharmoniker vienne once oz autriche autrichien quart' },
+  { code:'philharmonique_dixieme', nom:'Philharmonique 1/10 once', court:'Philharmonique 1/10 once', jeton:'PH', pays:'Autriche', annees:'1991-', brut:3.1103, titre:999.9, fin:3.1103, ordre:224, mots:'philharmonique philharmoniker vienne once oz autriche autrichien dixieme' },
+  { code:'panda1oz', nom:'Panda 1 once', court:'Panda 1 once', jeton:'PDA', pays:'Chine', annees:'1982-2015', brut:31.1035, titre:999, fin:31.1035, ordre:226, mots:'panda chine chinois chinoise once oz 1oz' },
+  { code:'louis_autre', nom:'Louis d\'or historique — autre type', court:'Louis d\'or historique', jeton:'L', pays:'France', annees:'1640-1792', libre:true, ordre:890, mots:'louis louisdor royal ancien regime louis-xiii louis-xiv louis-xv lunettes', info:'Le poids d\'un Louis d\'or dépend du règne et du type (ex. Louis XV « aux lunettes », environ 8,16 g à 917 ‰). Indique les caractéristiques de ta pièce : rien n\'est deviné.' },
+  { code:'autre', nom:'Autre pièce', court:'Autre pièce', jeton:'?', pays:'', annees:'', libre:true, ordre:999, mots:'autre', info:'Indique le nom de la pièce et son poids d\'or fin (ou son poids brut et son titre).' },
 ];
 const OR_TYPE = Object.fromEntries(OR_TYPES.map(t=>[t.code,t]));
+
+/* Recherche d'une pièce : « 50 pesos », « 10 dollars or », « Napoléon 20 francs », « 20F », « krugerrand 1/2 »…
+   Chaque mot tapé (hors mots vides) doit se retrouver dans la fiche : un nombre à l'identique,
+   un mot par son début. Pluriels ignorés. Tri : pertinence, puis pièces les plus courantes. */
+const OR_MOTS_VIDES = new Set(['or','d','de','du','des','en','la','le','les','l','piece','pieces','gold','coin','coins','monnaie','monnaies','un','une','et','a']);
+function orNorm(s){
+  return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/½/g,' 1/2 ').replace(/(\d),(\d)/g,'$1.$2')
+    .replace(/(\d)\s*\$/g,'$1 dollar ').replace(/\$\s*(\d)/g,' dollar $1').replace(/\$/g,' dollar ').replace(/£/g,' livre ')
+    .replace(/\b(\d+)\s*(f|fr|frs)\b/g,'$1 franc ').replace(/\b(\d+)\s*(oz|g)\b/g,'$1 $2 ')
+    .replace(/\b(oz|onces?|ounces?)\b/g,' once ')
+    .replace(/[^a-z0-9./]+/g,' ').trim();
+}
+function orRacine(m){ return m.length>3 ? m.replace(/[sx]$/,'') : m; }
+function orJetons(s){ return orNorm(s).split(' ').filter(Boolean).map(orRacine); }
+function orChercher(q, types){
+  const mots = orJetons(q).filter(m=>!OR_MOTS_VIDES.has(m));
+  if(!mots.length) return [];
+  const res = [];
+  for(const t of (types || OR_TYPES)){
+    const h = orJetons([t.nom, t.court, t.pays, t.annees, t.mots].join(' '));
+    let score = 0, ok = true;
+    for(const m of mots){
+      if(h.includes(m)) score += 2;
+      else if(!/^[\d./]+$/.test(m) && m.length>=2 && h.some(x=>x.startsWith(m))) score += 1;
+      else { ok = false; break; }
+    }
+    if(ok) res.push({ t, score });
+  }
+  return res.sort((a,b)=> b.score-a.score || a.t.ordre-b.t.ordre).map(x=>x.t);
+}
+// pièces proposées avant toute saisie
+function orCourantes(n){ return OR_TYPES.filter(t=>!t.libre).sort((a,b)=>a.ordre-b.ordre).slice(0, n||8); }
 
 function orC(n){ return Math.round((+n||0)*100); }                  // euros → centimes entiers
 function orJ1(j, n){ const d=new Date(j+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+(n==null?1:n)); return d.toISOString().slice(0,10); }
@@ -4344,7 +4520,8 @@ function orStatsLot(lot, ventesTriees, coursG, jusquau){
   }
   const detenu = Math.max(0, Q-cumQ), coutDetenu = cout - cumBase;
   const poidsFin = detenu * (+lot.poids_fin_g||0);
-  const valeur = detenu===0 ? 0 : (coursG>0 ? Math.round(poidsFin*coursG*100) : null);
+  // valeur d'une pièce arrondie au centime, puis × quantité : « par pièce × quantité = total » se vérifie à l'œil
+  const valeur = detenu===0 ? 0 : (coursG>0 ? detenu*Math.round((+lot.poids_fin_g||0)*coursG*100) : null);
   const latent = valeur==null ? null : valeur - coutDetenu;
   const realise = vs.reduce((s,x)=>s+x.gain, 0);
   return { Q, cout, vendu:cumQ, detenu, coutDetenu, coutVendu:cumBase, poidsFin, valeur, latent,
@@ -4370,6 +4547,35 @@ function orPortefeuille(lots, ventes, coursG){
   r.bilan = r.latent==null ? null : r.latent + r.realise;                    // latent + réalisé
   r.bilanPct = (r.bilan==null || r.coutTotal<=0) ? null : r.bilan/r.coutTotal*100; // sur tout le capital engagé
   return r;
+}
+
+/* Mes pièces regroupées par RÉFÉRENCE : même fiche du catalogue (ou, pour une pièce saisie à la main,
+   même nom et même poids d'or fin). Plusieurs achats à des prix différents restent des lots distincts ;
+   prix d'achat unitaire = moyenne pondérée = coût des pièces encore détenues ÷ nombre de pièces détenues. */
+function orCleGroupe(l){
+  const t = OR_TYPE[l.type];
+  return (t && !t.libre) ? l.type : l.type+'|'+String(l.nom||'').trim().toLowerCase()+'|'+(+l.poids_fin_g||0);
+}
+function orGroupes(lots, ventes, coursG){
+  const pl = orParLot(ventes), m = new Map();
+  for(const l of (lots||[])){
+    const k = orCleGroupe(l), s = orStatsLot(l, pl[l.id]||[], coursG);
+    let g = m.get(k);
+    if(!g){ g = { cle:k, type:l.type, lot:l, achats:[], detenu:0, coutDetenu:0, valeur:0, inconnu:false, fins:new Set(), realise:0, vendu:0, cout:0 }; m.set(k, g); }
+    g.achats.push({ l, s }); g.detenu += s.detenu; g.coutDetenu += s.coutDetenu; g.realise += s.realise; g.vendu += s.vendu; g.cout += s.cout;
+    if(s.detenu>0){ g.fins.add(+l.poids_fin_g||0); if(s.valeur==null) g.inconnu = true; else g.valeur += s.valeur; }
+  }
+  return [...m.values()].map(g=>{
+    const fin = g.fins.size===1 ? [...g.fins][0] : null;
+    const valeur = g.detenu===0 ? 0 : (g.inconnu ? null : g.valeur);
+    const latent = (valeur==null || g.detenu===0) ? null : valeur - g.coutDetenu;
+    g.achats.sort((a,b)=> String(a.l.date_achat).localeCompare(String(b.l.date_achat)));
+    return { cle:g.cle, type:g.type, lot:g.lot, achats:g.achats, detenu:g.detenu, coutDetenu:g.coutDetenu, cout:g.cout,
+      puAchat: g.detenu>0 ? Math.round(g.coutDetenu/g.detenu) : null,
+      finPiece: fin, valeurPiece: (fin!=null && coursG>0) ? Math.round(fin*coursG*100) : null,
+      valeur, latent, latentPct: (latent==null || g.coutDetenu<=0) ? null : latent/g.coutDetenu*100,
+      realise:g.realise, vendu:g.vendu };
+  });
 }
 
 /* Cours d'un jour : celui du jour, sinon le dernier coté dans les 5 jours
@@ -4429,8 +4635,9 @@ function orEur(c, signe){
 }
 function orPct(p){
   if(p==null || !isFinite(p)) return '—';
-  return (p<0 ? '−' : p>0 ? '+' : '') + Math.abs(p).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1})+' %';
+  return (p<0 ? '−' : p>0 ? '+' : '') + Math.abs(p).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' %';
 }
+function orEurG(n){ return (+n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €/g'; }
 function orG(n, dec){ return (+n||0).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:dec==null?4:dec}); }
 // ==== OR-CALCUL-FIN ====
 
@@ -4556,56 +4763,103 @@ function renderOr(){
     document.getElementById('orLogin').onclick = ()=>{ const w=document.getElementById('welcome'); if(w) w.classList.add('show'); else openSettings(); };
     return;
   }
-  const g = orCoursG(), P = orPortefeuille(OR.lots, OR.ventes, g);
+  const g = orCoursG(), P = orPortefeuille(OR.lots, OR.ventes, g), a = orActuel(), E = orEtatCours();
   const hasLots = OR.lots.length > 0;
   const plCls = P.latent==null ? '' : P.latent>=0 ? 'g' : 'p';
-  // récapitulatif simple : valeur estimée, gain ou perte, total investi (le détail technique n'est plus affiché)
-  let h = `<div class="or-hero"><div class="or-hero-top"><span class="or-hero-lab">🪙 Valeur estimée de mes pièces</span>
-      <button class="or-refresh${OR.majCours?' spin':''}" id="orRefresh" aria-label="Actualiser le cours"><span>⟳</span></button></div>
-    <div class="or-hero-val">${!hasLots ? orEur(0) : P.valeur==null ? '<span class="or-indispo">Cours indisponible</span>' : orEur(P.valeur)}</div>
-    ${hasLots && P.investi>0 && P.latent!=null ? `<div class="or-hero-pl ${plCls}">${orEur(P.latent,true)} · ${orPct(P.latentPct)}</div>` : ''}
-    <div class="or-hero-sub"><span>Investi <b>${orEur(P.investi)}</b></span><span><b>${P.pieces}</b> pièce${P.pieces>1?'s':''}</span>${P.nbVentes ? `<span class="or-hero-real">Gains réalisés sur ventes : <b>${orEur(P.realise,true)}</b></span>` : ''}</div>
-    <div class="or-hero-note">${orNoteEstimation()}</div>
+  const plLab = P.latent==null ? 'Plus / moins-value' : P.latent>=0 ? 'Plus-value' : 'Moins-value';
+  // 1. tableau de bord : cours, total investi, valeur actuelle (métal), plus ou moins-value
+  let h = `<div class="or-hero">
+    <div class="or-cours">
+      <div class="or-cours-g"><small>Cours de l'or</small>
+        <b>${a ? orEurG(a.eur_g) : '<span class="or-indispo">Indisponible</span>'}</b>
+        <span>${a ? 'par gramme d\'or fin (24 carats)' : 'aucun cours fiable pour le moment'}</span></div>
+      <button class="or-actu${OR.majCours?' spin':''}" id="orRefresh"><span class="i">⟳</span> Actualiser<br>le cours</button>
+    </div>
+    <div class="or-cours-maj${E.vieux?' vieux':''}">${E.html}</div>
+    <div class="or-kpis">
+      <div><small>Total investi</small><b>${orEur(P.investi)}</b><span>${P.pieces} pièce${P.pieces>1?'s':''} détenue${P.pieces>1?'s':''}</span></div>
+      <div><small>Valeur actuelle</small><b>${!hasLots ? orEur(0) : P.valeur==null ? '—' : orEur(P.valeur)}</b><span>valeur métal</span></div>
+      <div class="or-kpi-pl ${plCls}"><small>${plLab}</small><b>${hasLots && P.latent!=null ? orEur(P.latent,true) : '—'}</b><span>${hasLots && P.latent!=null ? orPct(P.latentPct) : (hasLots ? 'cours indisponible' : '')}</span></div>
+    </div>
+    ${P.nbVentes ? `<div class="or-hero-real">Gains réalisés sur ventes : <b>${orEur(P.realise,true)}</b></div>` : ''}
     ${OR.erreur ? `<div class="or-warn">⚠️ ${esc(OR.erreur)}</div>` : ''}
   </div>
-  <button class="or-btn add or-add-seul" id="orAdd">＋ Ajouter un achat</button>`;
-  // mes pièces : une carte par achat
+  <button class="or-btn add or-add-seul" id="orAdd">＋ Ajouter une pièce</button>`;
+  // 2. mes pièces : une carte par référence (achats multiples regroupés, prix moyen pondéré)
   if(!hasLots){
     h += OR.chargement && !OR.charge ? `<div class="or-empty">Chargement…</div>`
-      : `<div class="or-empty"><div class="big">🪙</div><b>Aucune pièce pour l'instant</b>Ajoute ton premier achat : la valeur s'estime toute seule.</div>`;
+      : `<div class="or-empty"><div class="big">🪙</div><b>Aucune pièce pour l'instant</b>Ajoute ta première pièce : sa valeur se calcule toute seule d'après le cours de l'or.</div>`;
   } else {
-    const pl = orParLot(OR.ventes);
-    const rows = OR.lots.map(l=>({ l, s: orStatsLot(l, pl[l.id]||[], g) }))
-      .filter(x=> matchQ(orNomLot(x.l)) || matchQ(x.l.vendeur) || matchQ(x.l.commentaire))
-      .sort((x,y)=> (y.s.detenu>0) - (x.s.detenu>0) || String(y.l.date_achat).localeCompare(String(x.l.date_achat)));
-    h += `<div class="or-h">Mes pièces<span class="n">${OR.lots.length} achat${OR.lots.length>1?'s':''}</span></div>`;
-    if(!rows.length) h += `<div class="or-empty">🔍 Aucun résultat</div>`;
-    h += rows.map(({l,s})=>{
-      const sold = s.detenu===0;
-      const right = sold
-        ? `<div class="l-val">Vendu</div><div class="l-pl ${orClasse(s.realise)}">${orEur(s.realise,true)} · ${orPct(s.realisePct)}</div>`
-        : s.valeur==null ? `<div class="l-val">—</div>`   // pas de cours réel : rien d'estimé, rien d'inventé
-        : `<div class="l-val">${orEur(s.valeur)}</div><div class="l-pl ${orClasse(s.latent)}">${orEur(s.latent,true)} · ${orPct(s.latentPct)}</div>`;
-      // quantité détenue et prix payé pour ces pièces : la valeur et le gain de la carte se comparent directement
-      return `<button class="or-lot${sold?' sold':''}" data-lot="${esc(String(l.id))}">${orCoin(l)}
-        <div class="l-mid"><div class="l-name">${esc(orNomLot(l))} <span class="l-q">×${sold ? s.Q : s.detenu}</span></div>
-        <div class="l-sub">${frDate(l.date_achat)} · <span class="nw">coût d'achat ${orEur(sold ? s.cout : s.coutDetenu)}</span></div></div>
-        <div class="l-right">${right}</div></button>`;
+    const G = orGroupes(OR.lots, OR.ventes, g)
+      .filter(x=> matchQ(orNomGroupe(x)) || x.achats.some(({l})=> matchQ(l.vendeur) || matchQ(l.commentaire)));
+    const det = G.filter(x=>x.detenu>0).sort((x,y)=> (y.valeur||0)-(x.valeur||0) || y.coutDetenu-x.coutDetenu);
+    const vendus = G.filter(x=>x.detenu===0);
+    h += `<div class="or-h">Mes pièces<span class="n">${det.length} référence${det.length>1?'s':''}</span></div>`;
+    if(!G.length) h += `<div class="or-empty">🔍 Aucun résultat</div>`;
+    h += det.map(orCarteGroupe).join('');
+    if(vendus.length) h += `<div class="or-h">Pièces vendues</div>` + vendus.map(x=>{
+      const l = x.lot;
+      return `<button class="or-lot sold" data-grp="${esc(x.cle)}">${orCoin(l)}
+        <div class="l-mid"><div class="l-name">${esc(orNomGroupe(x))} <span class="l-q">×${x.vendu}</span></div>
+        <div class="l-sub">vendue${x.vendu>1?'s':''} · coût d'achat ${orEur(x.cout)}</div></div>
+        <div class="l-right"><div class="l-val">Vendu</div><div class="l-pl ${orClasse(x.realise)}">${orEur(x.realise,true)}</div></div></button>`;
     }).join('');
+    h += `<p class="or-foot">💡 <b>Valeur métal</b> = poids d'or fin × cours de l'or. C'est une estimation, pas un prix de revente garanti (un comptoir rachète en général un peu en dessous, et certaines pièces rares valent plus). Prix d'achat : frais d'achat compris.</p>`;
   }
   el.innerHTML = h;
   document.getElementById('orRefresh').onclick = ()=>{ orCours(true); };
   document.getElementById('orAdd').onclick = ()=>orOuvrirAchat(null);
-  el.querySelectorAll('[data-lot]').forEach(b=>{ b.onclick = ()=>orOuvrirLot(b.dataset.lot); });
+  el.querySelectorAll('[data-grp]').forEach(b=>{ b.onclick = ()=>orOuvrirGroupe(b.dataset.grp); });
+  el.querySelectorAll('[data-lot]').forEach(b=>{ b.onclick = (e)=>{ e.stopPropagation(); orOuvrirLot(b.dataset.lot); }; });
 }
-function orNoteEstimation(){
+// nom d'une référence (pièce du catalogue ou saisie à la main)
+function orNomGroupe(x){ const t = OR_TYPE[x.type]; return (t && !t.libre) ? t.court : orNomLot(Object.assign({}, x.lot, { millesime:null })); }
+var orGrpOuverts = new Set();
+function orOuvrirGroupe(cle){
+  const x = orGroupes(OR.lots, OR.ventes, orCoursG()).find(y=>y.cle===cle); if(!x) return;
+  if(x.achats.length===1) return orOuvrirLot(x.achats[0].l.id);       // un seul achat : sa fiche directement
+  if(orGrpOuverts.has(cle)) orGrpOuverts.delete(cle); else orGrpOuverts.add(cle);
+  renderOr();
+}
+function orCarteGroupe(x){
+  const t = OR_TYPE[x.type] || OR_TYPE.autre, l = x.lot, cls = orClasse(x.latent);
+  const sous = [t.libre ? '' : t.pays, x.finPiece!=null ? orG(x.finPiece)+' g d\'or fin / pièce' : 'or fin variable'].filter(Boolean).join(' · ');
+  const gainPiece = (x.valeurPiece!=null && x.puAchat!=null) ? x.valeurPiece - x.puAchat : null;
+  const plusieurs = x.achats.length > 1, ouvert = orGrpOuverts.has(x.cle);
+  let h = `<div class="or-ref${ouvert?' ouvert':''}"><button class="or-ref-top" data-grp="${esc(x.cle)}"${plusieurs ? ` aria-expanded="${ouvert}"` : ''}>${orCoin(l)}
+      <div class="r-mid"><div class="r-name">${esc(orNomGroupe(x))} <span class="l-q">×${x.detenu}</span></div>
+      <div class="r-sub">${esc(sous)}</div></div>
+      <div class="r-pct ${cls}">${x.latent==null ? '—' : orPct(x.latentPct)}</div></button>
+    <table class="or-mini"><thead><tr><th></th><th>Achat</th><th>Valeur métal</th><th>${x.latent==null || x.latent>=0 ? 'Gain' : 'Perte'}</th></tr></thead><tbody>
+      <tr><th>${plusieurs ? 'Moy. / pièce' : 'Par pièce'}</th><td>${orEur(x.puAchat)}</td><td>${orEur(x.valeurPiece)}</td><td class="${orClasse(gainPiece)}">${orEur(gainPiece,true)}</td></tr>
+      <tr class="tot"><th>Total ×${x.detenu}</th><td>${orEur(x.coutDetenu)}</td><td>${orEur(x.valeur)}</td><td class="${cls}">${orEur(x.latent,true)}</td></tr>
+    </tbody></table>`;
+  if(plusieurs){
+    h += `<button class="or-ref-achats" data-grp="${esc(x.cle)}">${ouvert ? '▾' : '▸'} ${x.achats.length} achats${ouvert ? '' : ' — voir le détail'}</button>`;
+    if(ouvert) h += `<div class="or-achats">` + x.achats.map(({l, s})=>{
+      const pu = s.Q ? Math.round(s.cout/s.Q) : 0;
+      return `<button class="or-achat-l${s.detenu===0?' sold':''}" data-lot="${esc(String(l.id))}"><span>${frDate(l.date_achat)}${l.millesime ? ' · '+l.millesime : ''}</span>
+        <span>${s.Q} × ${orEur(pu)}</span><b>${orEur(s.cout)}</b>${s.vendu ? `<i>${s.detenu===0 ? 'vendu' : s.vendu+' vendue'+(s.vendu>1?'s':'')}</i>` : ''}</button>`;
+    }).join('') + `</div>`;
+  }
+  return h + `</div>`;
+}
+/* Ligne d'état du cours : heure du dernier relevé RÉUSSI ; jamais une ancienne cotation présentée comme actuelle. */
+function orEtatCours(){
   const a = orActuel();
-  if(!a) return OR.majCours ? 'Recherche du cours de l\'or…' : '⚠️ Cours de l\'or indisponible pour le moment : valeur non estimée.';
-  const src = esc(String(a.source||'').replace(/ — cours spot XAU\/EUR$/, ''));
-  const vieux = OR.alertes.length > 0 || orCoursPerime();
-  const min = Math.max(0, Math.round((Date.now() - Date.parse(a.cote_le)) / 60000));
-  const age = min < 60 ? `il y a ${min} min` : min < 2880 ? `il y a ${Math.round(min/60)} h` : `il y a ${Math.round(min/1440)} jours`;
-  return `${vieux ? '⚠️ Dernier cours connu, du ' : 'Estimation d\'après le cours de l\'or du '}${orDateHeure(a.cote_le)} (${age}, ${src}). Ce n'est pas un prix de revente garanti.`;
+  if(!a){
+    const motif = OR.alertes.length ? ' ('+esc(OR.alertes[0].replace(/^Cours indisponible \(/,'').replace(/\)?\.?$/,''))+')' : '';
+    return { vieux:true, html: OR.majCours ? 'Recherche du cours de l\'or…' : '⚠️ Cours de l\'or indisponible pour le moment'+motif+' : la valeur de tes pièces ne peut pas être calculée.' };
+  }
+  const src = esc(String(a.source||'Source inconnue').replace(/ — .*$/, ''));
+  const releve = Date.parse(a.releve_le || a.cote_le), cote = Date.parse(a.cote_le);
+  const min = Math.max(0, Math.round((Date.now() - releve) / 60000));
+  const age = min < 1 ? 'à l\'instant' : min < 60 ? `il y a ${min} min` : min < 2880 ? `il y a ${Math.round(min/60)} h` : `il y a ${Math.round(min/1440)} jours`;
+  const vieux = OR.alertes.length > 0 || min > 45;
+  const ferme = (releve - cote) > 2*3600e3 ? ` · marché fermé : dernière cotation le ${orDateHeure(a.cote_le)}` : '';
+  return { vieux, html: vieux
+    ? `⚠️ <b>Cours plus à jour</b> — dernier cours fiable relevé le ${orDateHeure(a.releve_le || a.cote_le)} (${age}), source ${src}.${OR.majCours ? ' Nouvelle tentative…' : ''}`
+    : `✅ Mis à jour le ${orDateHeure(a.releve_le || a.cote_le)} (${age}) · source ${src}${ferme}` };
 }
 function orMajBoutonCours(){ const b = document.getElementById('orRefresh'); if(b) b.classList.toggle('spin', !!OR.majCours); }
 
@@ -4712,7 +4966,11 @@ function orRenderLotOuvert(){
       <div><small>Valeur estimée</small><b>${sold ? '—' : orEur(s.valeur)}</b></div>
       <div><small>${sold ? 'Gain sur la vente' : 'Gain / perte'}</small><b class="${orClasse(gain)}">${gain==null ? '—' : orEur(gain,true)}</b><i class="${orClasse(gain)}">${orPct(gainPct)}</i></div>
     </div>
+    ${orFicheLot(l, g)}
     ${l.commentaire ? `<p class="or-d-note">💬 ${esc(String(l.commentaire))}</p>` : ''}`;
+  const sug = orSuggestion(l);
+  if(sug) h += `<div class="or-sugg">🔗 Cette pièce semble être la fiche <b>« ${esc(sug.nom)} »</b> du catalogue (${esc(sug.pays)}, ${orG(sug.fin)} g d'or fin, comme ta saisie).
+    Rattacher l'achat à cette fiche ? Quantité, prix, date, photo et ventes sont conservés.<br><button class="or-lien" id="orRattacher">Rattacher à cette fiche</button></div>`;
   if(s.ventes.length) h += `<div class="or-d-vh">Ventes</div>` + s.ventes.map(x=>`<div class="or-d-v">
       <span>${frDate(x.v.date_vente)} · ${x.v.quantite} pièce${x.v.quantite>1?'s':''} · ${orEur(orC(x.v.prix_total))} <b class="${orClasse(x.gain)}">${orEur(x.gain,true)}</b></span>
       <button data-vedit="${esc(String(x.v.id))}" aria-label="Modifier cette vente">✏️</button><button data-vdel="${esc(String(x.v.id))}" aria-label="Supprimer cette vente">🗑️</button></div>`).join('');
@@ -4720,11 +4978,45 @@ function orRenderLotOuvert(){
   const body = document.getElementById('orLotBody'); body.innerHTML = h;
   const lv = document.getElementById('orLotVente'); if(lv) lv.onclick = ()=>orOuvrirVente(l.id, null);
   document.getElementById('orLotDel').onclick = ()=>orSupprimerLot(l.id);
+  const ra = document.getElementById('orRattacher'); if(ra) ra.onclick = ()=>orRattacher(l.id, sug.code);
   body.querySelectorAll('[data-vedit]').forEach(b=>{ b.onclick = ()=>orOuvrirVente(l.id, b.dataset.vedit); });
   body.querySelectorAll('[data-vdel]').forEach(b=>{ b.onclick = ()=>orSupprimerVente(b.dataset.vdel); });
   // action principale de la fiche : corriger l'achat
   const mb = document.getElementById('orLotVendre'); mb.style.display = ''; mb.onclick = ()=>orOuvrirAchat(l);
   if(l.a_photo) orChargerPhoto(l.id);
+}
+/* Caractéristiques utilisées pour CET achat (copiées à la saisie : un changement de catalogue ne le modifie pas). */
+function orFicheLot(l, g){
+  const t = OR_TYPE[l.type] || OR_TYPE.autre, fin = +l.poids_fin_g||0;
+  const poids = (+l.poids_brut_g && +l.titre_millieme) ? `${orG(+l.poids_brut_g)} g à ${orG(+l.titre_millieme,2)} ‰ → ` : '';
+  const vp = g>0 && fin>0 ? Math.round(fin*g*100) : null;
+  const ref = t.libre ? 'Saisie manuelle' : [t.pays, t.annees].filter(Boolean).join(' · ');
+  return `<p class="or-d-fiche">🪙 ${esc(ref)}<br>${poids}<b>${orG(fin)} g d'or fin</b> par pièce${vp!=null ? ` · valeur métal <b>${orEur(vp)}</b> la pièce` : ''}</p>`;
+}
+/* Pièce saisie à la main : fiche du catalogue proposée seulement si le nom la désigne SANS ambiguïté
+   et si l'or fin saisi concorde (± 1 %). Rien n'est rattaché sans l'accord de l'utilisateur. */
+function orSuggestion(l){
+  const t = OR_TYPE[l.type];
+  if(!t || !t.libre || !String(l.nom||'').trim()) return null;
+  const fin = +l.poids_fin_g||0;
+  const c = orChercher(l.nom).filter(x=>!x.libre);
+  return (c.length===1 && fin>0 && Math.abs(c[0].fin - fin) <= 0.01*c[0].fin) ? c[0] : null;
+}
+async function orRattacher(id, code){
+  const l = orLot(id), t = OR_TYPE[code]; if(!l || !t || orOcc) return;
+  if(!confirm(`Rattacher cet achat à la fiche « ${t.nom} » ?\n\nOr fin retenu : ${orG(t.fin)} g par pièce (au lieu de ${orG(+l.poids_fin_g)} g). Quantité, prix, date, photo et ventes ne changent pas.`)) return;
+  if(orHorsLigne()){ toast('📡 Pas de connexion internet : rien n\'a été modifié'); return; }
+  const pay = { id: l.id, type: code, quantite: l.quantite, date_achat: l.date_achat, prix_total: +l.prix_total, frais: +l.frais||0,
+    millesime: l.millesime || null, vendeur: l.vendeur || '', commentaire: l.commentaire || '', nom: '' };
+  orOcc = true;
+  try{
+    const {data, error} = await cloud.sb.rpc('zeste_or_lot_enregistrer', { p: pay });
+    if(error) throw error;
+    data.a_photo = !!l.a_photo;
+    const i = OR.lots.findIndex(x=>x.id===data.id); if(i>=0) OR.lots[i] = data;
+    orEcrireCache(); renderOr(); orRenderLotOuvert(); renderProgress(); toast('🔗 Achat rattaché à la fiche « '+t.court+' »');
+  }catch(e){ toast('⚠️ '+orMsg(e)); }
+  finally{ orOcc = false; }
 }
 const orPhotos = {};
 async function orChargerPhoto(lid){
@@ -4781,8 +5073,9 @@ var orF = null, orOcc = false;
 function orHorsLigne(){ return typeof navigator!=='undefined' && navigator.onLine===false; }
 function orOuvrirAchat(l){
   if(!cloud.on){ toast('🔒 Connecte-toi pour enregistrer ton or'); return; }
-  orF = { id: l ? l.id : ((crypto && crypto.randomUUID) ? crypto.randomUUID() : null), edit: !!l, type: l ? l.type : 'napoleon20',
+  orF = { id: l ? l.id : ((crypto && crypto.randomUUID) ? crypto.randomUUID() : null), edit: !!l, type: l ? l.type : null,
           mode: 'unit', photo: undefined, aPhoto: !!(l && l.a_photo) };
+  document.getElementById('orCherche').value = '';
   const $ = i=>document.getElementById(i);
   $('orAchatTitre').textContent = l ? 'Modifier l\'achat ✏️' : 'Nouvel achat 🪙';
   $('orAchatOk').textContent = l ? 'Enregistrer la modification' : 'Enregistrer l\'achat';
@@ -4805,18 +5098,52 @@ function orOuvrirAchat(l){
   orRenderTypes(); orSyncMode('orMode', orF.mode); orCalcAchat(); orRenderPhotoIn();
   if(l && l.a_photo && !orPhotos[l.id]) orChargerPhoto(l.id).then(orRenderPhotoIn);
   orOuvrirFen('orAchat');
+  // nouvel achat sur ordinateur : la recherche prend la main (sur iPhone, on laisse l'utilisateur toucher le champ)
+  if(!l && window.matchMedia && window.matchMedia('(hover: hover)').matches) setTimeout(()=>{ const c = document.getElementById('orCherche'); if(c && orF && !orF.type) c.focus(); }, 250);
+}
+function orResultat(t, manuel){
+  const sous = t.libre ? (t.code==='autre' ? 'Saisie manuelle : nom et poids d\'or fin' : t.pays+' · poids à indiquer')
+    : [t.pays, t.annees, orG(t.fin)+' g d\'or fin'].filter(Boolean).join(' · ');
+  return `<button type="button" class="or-res-i${manuel?' manuel':''}" data-t="${t.code}"><span class="or-coin">${esc(t.jeton)}</span>
+    <span class="ri"><b>${esc(t.nom)}</b><span>${esc(sous)}</span></span></button>`;
 }
 function orRenderTypes(){
-  const box = document.getElementById('orTypes');
-  box.innerHTML = OR_TYPES.map(t=>`<button type="button" class="or-type${orF.type===t.code?' sel':''}" data-t="${t.code}">
-    <span class="or-coin">${esc(t.jeton)}</span><span class="tn">${esc(t.court)}</span></button>`).join('');
-  box.querySelectorAll('[data-t]').forEach(b=>{ b.onclick = ()=>{ orF.type = b.dataset.t; orRenderTypes(); orCalcAchat(); }; });
-  const t = OR_TYPE[orF.type];
-  // pièces connues : poids déjà connus, rien à afficher ; pièces à saisir : une ligne d'aide
-  document.getElementById('orFiche').innerHTML = t.libre ? `<p class="or-calc">✍️ Indique le poids d'or fin de ta pièce (ou son poids brut et son titre) : il sert à estimer sa valeur.</p>` : '';
-  document.getElementById('orPerso').style.display = t.libre ? '' : 'none';
-  document.getElementById('orNomLab').textContent = orF.type==='autre' ? 'Nom de la pièce *' : 'Précision (règne, type…)';
-  document.getElementById('orNom').placeholder = orF.type==='autre' ? 'Ex : 50 pesos mexicain' : 'Ex : Louis XV aux lunettes, 1735';
+  const box = document.getElementById('orTypes'), choix = document.getElementById('orChoix'), fiche = document.getElementById('orFiche');
+  const t = orF && orF.type ? OR_TYPE[orF.type] : null;
+  if(t){
+    // pièce choisie : sa fiche (caractéristiques connues, rien à saisir) + « Changer »
+    choix.style.display = 'none';
+    const a = orActuel(), vp = (!t.libre && a) ? Math.round(t.fin*a.eur_g*100) : null;
+    fiche.innerHTML = `<div class="or-fiche"><span class="or-coin">${esc(t.jeton)}</span><div class="fi"><b>${esc(t.nom)}</b>
+      ${t.libre ? `<span>${t.code==='autre' ? 'Pièce absente du catalogue : indique son nom et son poids d\'or fin.' : 'Indique les caractéristiques de ta pièce : rien n\'est deviné.'}</span>`
+        : `<span>${esc([t.pays, t.annees].filter(Boolean).join(' · '))}</span>
+           <span>${orG(t.brut)} g à ${orG(t.titre,2)} ‰ → <b style="display:inline">${orG(t.fin)} g d'or fin</b></span>
+           ${vp!=null ? `<span class="v">Valeur métal : ${orEur(vp)} la pièce</span>` : ''}`}
+      </div><button type="button" id="orChanger">Changer</button></div>
+      ${t.info ? `<p class="or-calc">ℹ️ ${esc(t.info)}</p>` : ''}`;
+    document.getElementById('orChanger').onclick = ()=>{ orF.type = null; orRenderTypes(); orCalcAchat(); const c = document.getElementById('orCherche'); c.focus(); };
+  } else {
+    choix.style.display = ''; fiche.innerHTML = '';
+    const q = document.getElementById('orCherche').value, trouve = orChercher(q);
+    let h = '';
+    if(!q.trim()) h = `<div class="or-res-t">Les plus courantes</div>` + orCourantes(8).map(x=>orResultat(x)).join('');
+    else if(trouve.length){
+      const n = trouve.filter(x=>!x.libre).length;
+      h = (n>1 ? `<div class="or-res-t">${n} pièces correspondent : choisis la tienne</div>` : '') + trouve.slice(0, 15).map(x=>orResultat(x, x.libre)).join('');
+    } else h = `<p class="or-res-vide">Aucune pièce du catalogue ne correspond à « ${esc(q.trim())} ». Essaie un autre mot (pays, valeur, nom), ou saisis-la à la main :</p>`;
+    if(!trouve.some(x=>x.code==='autre')) h += orResultat(OR_TYPE.autre, true);
+    box.innerHTML = h;
+    box.querySelectorAll('[data-t]').forEach(b=>{ b.onclick = ()=>{
+      orF.type = b.dataset.t;
+      // « Autre pièce » : ce qui a été tapé devient le nom proposé
+      if(orF.type==='autre' && !document.getElementById('orNom').value.trim()) document.getElementById('orNom').value = q.trim().slice(0, 80);
+      document.getElementById('orCherche').blur(); orRenderTypes(); orCalcAchat();
+    }; });
+  }
+  const libre = !!(t && t.libre);
+  document.getElementById('orPerso').style.display = libre ? '' : 'none';
+  document.getElementById('orNomLab').textContent = orF && orF.type==='autre' ? 'Nom de la pièce *' : 'Précision (règne, type…)';
+  document.getElementById('orNom').placeholder = orF && orF.type==='autre' ? 'Ex : 20 francs tunisiens' : 'Ex : Louis XV aux lunettes, 1735';
 }
 function orSyncMode(id, m){ document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.toggle('on', b.dataset.m===m)); }
 function orQte(id){ const v = parseInt(document.getElementById(id).value, 10); return isNaN(v) ? null : v; }
@@ -4826,6 +5153,13 @@ function orCalcAchat(){
   else if(orF.mode==='unit') c.textContent = q>1 ? 'Soit '+orEur(p*q)+' au total' : '';
   else c.textContent = q>1 ? 'Soit '+orEur(Math.round(p/q))+' la pièce' : '';
   const t = OR_TYPE[orF.type], fc = document.getElementById('orFinCalc');
+  // valeur métal de l'achat en direct (pièce connue + cours disponible)
+  const a = orActuel();
+  if(t && !t.libre && a && q>=1){
+    const v = q*Math.round(t.fin*a.eur_g*100), paye = (p==null || isNaN(p)) ? null : (orF.mode==='unit' ? p*q : p);
+    c.textContent = (c.textContent ? c.textContent+' · ' : '') + 'valeur métal '+orEur(v)
+      + (paye>0 ? ' ('+orEur(v-paye,true)+', '+orPct((v-paye)/paye*100)+')' : '');
+  }
   if(t && t.libre){
     const b = orLireNb(document.getElementById('orBrut').value), ti = orLireNb(document.getElementById('orTitre').value), f = orLireNb(document.getElementById('orFin').value);
     fc.textContent = (f==null && b>0 && ti>0) ? 'Or fin calculé : '+orG(Math.round(b*ti/1000*10000)/10000)+' g par pièce' : '';
@@ -4862,7 +5196,7 @@ async function orEnregistrerAchat(){
   if(orOcc || !orF) return;
   const $ = i=>document.getElementById(i), err = $('orAchatErr'), btn = $('orAchatOk');
   const fail = (m, f)=>{ err.textContent = '⚠️ '+m; if(f) $(f).focus(); return false; };
-  const t = OR_TYPE[orF.type]; if(!t) return fail('Choisis le type de pièce.');
+  const t = OR_TYPE[orF.type]; if(!t) return fail('Choisis ta pièce : tape son nom (ex : 50 pesos) puis touche-la dans la liste.', 'orCherche');
   const q = orQte('orQte'); if(!q || q<1 || q>100000 || String(q)!==$('orQte').value.trim()) return fail('Indique une quantité entière (au moins 1).', 'orQte');
   const date = $('orDate').value; if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return fail('Indique la date d\'achat.', 'orDate');
   if(date > todayISO()) return fail('La date d\'achat ne peut pas être dans le futur.', 'orDate');
@@ -5007,15 +5341,21 @@ function orProgress(T, D, ring, ringtxt){
   $('orQteM').onclick = ()=>pas('orQte', -1, orCalcAchat); $('orQteP').onclick = ()=>pas('orQte', 1, orCalcAchat);
   $('orVQteM').onclick = ()=>pas('orVQte', -1, orCalcVente); $('orVQteP').onclick = ()=>pas('orVQte', 1, orCalcVente);
   ['orQte','orPrix','orBrut','orTitre','orFin'].forEach(i=>$(i).addEventListener('input', orCalcAchat));
+  $('orCherche').addEventListener('input', ()=>{ if(orF && !orF.type) orRenderTypes(); });
+  $('orCherche').addEventListener('keydown', e=>{   // Entrée : la première pièce proposée
+    if(e.key!=='Enter' || !orF || orF.type) return; e.preventDefault();
+    const b = document.querySelector('#orTypes [data-t]'); if(b && $('orCherche').value.trim()) b.click();
+  });
   ['orVQte','orVPrix','orVFrais','orVDate'].forEach(i=>$(i).addEventListener('input', orCalcVente));
-  // entrée dans l'onglet : cours rafraîchi s'il date de plus de 15 min, courbe redessinée à la bonne largeur
+  // entrée dans l'onglet : cours redemandé s'il date de plus de 5 min, écran redessiné à la bonne largeur
   document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click', ()=>document.body.classList.toggle('tab-or', tab==='or')));
   document.querySelector('.tab.t-or').addEventListener('click', ()=>{
-    if(cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false);
+    if(cloud.on && Date.now() - OR.coursLe > 5*60e3) orCours(false);
     requestAnimationFrame(()=>{ if(tab==='or') renderOr(); });
   });
-  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && tab==='or' && cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false); });
-  setInterval(()=>{ if(!document.hidden && tab==='or' && cloud.on && Date.now() - OR.coursLe > 15*60e3) orCours(false); }, 60e3);
+  // cours redemandé toutes les 5 min onglet ouvert (le serveur le relève au plus toutes les 15 min) ; l'heure affichée vieillit à l'écran
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && tab==='or' && cloud.on && Date.now() - OR.coursLe > 5*60e3) orCours(false); });
+  setInterval(()=>{ if(document.hidden || tab!=='or' || !cloud.on) return; if(Date.now() - OR.coursLe > 5*60e3) orCours(false); else renderOr(); }, 60e3);
   let tRes = null; window.addEventListener('resize', ()=>{ clearTimeout(tRes); tRes = setTimeout(()=>{ if(tab==='or') renderOr(); if(orLotId) orRenderLotOuvert(); }, 200); });
   orAuth();
 })();

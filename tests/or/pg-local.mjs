@@ -44,7 +44,8 @@ const PRELUDE = `
 // (le correctif de sécurité est en production depuis le 02/11/2026 à 20 h 10)
 export const AVANT_CORRECTIF = ['zeste-setup.sql', 'zeste-push.sql', 'zeste-auth.sql', 'zeste-remboursements.sql'];
 export const DEJA_EN_PROD = [...AVANT_CORRECTIF, 'zeste-correctif-securite.sql'];
-export const A_APPLIQUER = ['zeste-sync-v2.sql', 'zeste-securite.sql', 'zeste-or.sql'];
+// (sync-v2, securite et or sont en production depuis le 03/11/2026 ; le catalogue vient ensuite)
+export const A_APPLIQUER = ['zeste-sync-v2.sql', 'zeste-securite.sql', 'zeste-or.sql', 'zeste-or-catalogue.sql'];
 export const lireSql = (f) => readFileSync(path.join(RACINE, 'sql', f), 'utf8');
 
 // etapes : liste de scripts sql/ à charger (par défaut : toute la chaîne, comme après la mise en ligne)

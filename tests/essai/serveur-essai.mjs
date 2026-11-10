@@ -1,10 +1,10 @@
 // Serveur d'ESSAI local de Zeste (recette, captures d'écran, deux « appareils »).
 // - sert index.html en remplaçant supabase-js par un bouchon et l'adresse du serveur par le local ;
 // - base Postgres jetable en mémoire chargée avec TOUTE la chaîne sql/ (comme après la mise en ligne) ;
-// - VRAIE edge function zeste-or-cours, branchée sur un FAUX GoldAPI (cours FICTIFS, marqués comme tels) ;
+// - VRAIE edge function zeste-or-cours, branchée sur de FAUX Swissquote et GoldAPI (cours FICTIFS, marqués comme tels) ;
 // - /ancienne.html = la version actuellement en ligne (origin/main), pour tester les anciens appareils ;
 //   /avant-correctif.html = version d'avant le correctif ; /retour-securise.html = version de retour arrière sécurisé.
-// Aucune donnée réelle, aucune requête vers la production ni vers GoldAPI.
+// Aucune donnée réelle, aucune requête vers la production, Swissquote ni GoldAPI.
 //
 // Lancer : PGLITE_DIR=<dossier pglite> node --experimental-strip-types tests/essai/serveur-essai.mjs [port]
 // ZESTE_BASE=correctif : base « production actuelle + correctif seul », à utiliser avec /correctif.html.
@@ -51,6 +51,13 @@ function fauxGoldapi(u){
   }
   return new Response('?', { status: 404 });
 }
+// --- faux Swissquote : même courbe fictive, cotation XAU/EUR en € par once ---
+function fauxSwissquote(){
+  if (panne) return new Response('panne simulée', { status: 503 });
+  const m = (prixFictifG(new Date().toISOString().slice(0, 10)) + 0.41) * 31.1034768;
+  return new Response(JSON.stringify([{ topo: { platform: 'Essai' }, ts: Date.now() - 20_000,
+    spreadProfilePrices: [{ spreadProfile: 'premium', bid: m - 0.6, ask: m + 0.6 }] }]));
+}
 const uidDe = (auth) => { const m = /^Bearer jeton-([0-9a-f-]{36})$/.exec(auth || ''); return m ? m[1] : null; };
 const marquer = (nom, args) => {   // le cours enregistré par l'edge function est marqué FICTIF
   if (nom === 'zeste_or_cours_maj' && args.p) {
@@ -72,6 +79,7 @@ const fauxReseau = async (url, init = {}) => {
     catch (e) { return new Response(JSON.stringify({ message: e.message }), { status: 400 }); }
   }
   if (u.hostname === 'www.goldapi.io') return fauxGoldapi(u);
+  if (u.hostname === 'forex-data-feed.swissquote.com') return fauxSwissquote();
   throw new Error('requête externe refusée : ' + url);
 };
 const ENV = { SUPABASE_URL: 'http://local', ANON_KEY: 'cle-anon', SERVICE_KEY: 'cle-service', GOLDAPI_KEY: 'cle-fictive' };
@@ -91,6 +99,10 @@ async function decor(){
     { type: 'napoleon20', quantite: 5, date_achat: '2024-06-03', prix_total: 2225, frais: 18 },
     { type: 'souverain', quantite: 2, date_achat: '2025-01-20', prix_total: 1160 },
     { type: 'marianne_coq', quantite: 3, date_achat: '2025-09-10', prix_total: 1860, frais: 12 },
+    { type: 'pesos50', quantite: 2, date_achat: '2025-02-11', prix_total: 6640 },
+    { type: 'pesos50', quantite: 1, date_achat: '2026-03-02', prix_total: 4180, frais: 20 },
+    { type: 'dollars10', quantite: 1, date_achat: '2026-06-18', prix_total: 1690 },
+    { type: 'autre', nom: '50 pesos mexicain', quantite: 1, date_achat: '2024-11-05', prix_total: 3020, poids_brut_g: 41.67, titre_millieme: 900 },
   ];
   const faits = [];
   for (const p of lots) faits.push(await rpc(db, 'zeste_or_lot_enregistrer', { p }, { uid: U }));

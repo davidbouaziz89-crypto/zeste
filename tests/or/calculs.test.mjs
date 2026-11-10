@@ -10,28 +10,44 @@ import { fileURLToPath } from 'node:url';
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const html = readFileSync(path.join(RACINE, 'index.html'), 'utf8');
 const bloc = html.split('// ==== OR-CALCUL-DEBUT')[1].split('// ==== OR-CALCUL-FIN ====')[0].replace(/^[^\n]*\n/, '');
-const O = vm.runInNewContext(bloc + `;({OR_TYPES, OR_TYPE, orC, orJ1, orEcart, orMoisAvant, orStatsLot, orLotStats, orPortefeuille,
+const O = vm.runInNewContext(bloc + `;({OR_TYPES, OR_TYPE, orChercher, orCourantes, orGroupes, orNorm, orEurG, orC, orJ1, orEcart, orMoisAvant, orStatsLot, orLotStats, orPortefeuille,
   orSerie, orDebutPeriode, orLireEur, orLireNb, orEur, orPct})`, {});
 const NB = ' '; // espace fine insécable des milliers (fr-FR)
 
 const lot = (o) => ({ id: 'L1', type: 'napoleon20', quantite: 3, prix_total: 1500, frais: 30, poids_fin_g: 5.8064, date_achat: '2024-03-14', ...o });
 const vente = (o) => ({ id: 'V' + Math.random(), lot_id: 'L1', quantite: 1, prix_total: 600, frais: 0, date_vente: '2025-01-10', cree_le: '2025-01-10T10:00:00Z', ...o });
 
-test('fiches des pièces identiques au serveur (sql/zeste-or.sql)', () => {
-  const sql = readFileSync(path.join(RACINE, 'sql/zeste-or.sql'), 'utf8');
-  const lignes = [...sql.matchAll(/^\s*\('([a-z0-9_]+)',\s*'(?:[^']|'')*',\s*([\d.]+|null),\s*([\d.]+|null),\s*([\d.]+|null),\s*(true|false),/gm)];
-  assert.equal(lignes.length, O.OR_TYPES.length);
-  for (const [, code, brut, titre, fin, libre] of lignes) {
+test('fiches des pièces identiques au serveur (sql/zeste-or.sql puis sql/zeste-or-catalogue.sql)', () => {
+  const re = /^\s*\('([a-z0-9_]+)',\s*'(?:[^']|'')*',\s*([\d.]+|null),\s*([\d.]+|null),\s*([\d.]+|null),\s*(true|false),\s*(\d+)(?:,\s*('(?:[^']|'')*'|null),\s*('(?:[^']|'')*'|null))?/gm;
+  const fiches = new Map();   // le catalogue (appliqué après) remplace la fiche d'origine
+  for (const f of ['sql/zeste-or.sql', 'sql/zeste-or-catalogue.sql']) {
+    for (const m of readFileSync(path.join(RACINE, f), 'utf8').matchAll(re)) fiches.set(m[1], m);
+  }
+  assert.equal(fiches.size, O.OR_TYPES.length);
+  assert.equal(new Set(O.OR_TYPES.map(t => t.code)).size, O.OR_TYPES.length, 'code en double');
+  const txt = (v) => v == null || v === 'null' ? '' : v.slice(1, -1).replace(/''/g, "'");
+  for (const [code, [, , brut, titre, fin, libre, ordre, pays, annees]] of fiches) {
     const t = O.OR_TYPE[code];
     assert.ok(t, 'type absent côté écran : ' + code);
     assert.equal(!!t.libre, libre === 'true', code);
+    assert.equal(t.ordre, Number(ordre), code + ' ordre');
+    assert.equal(t.pays, txt(pays), code + ' pays');
+    assert.equal(t.annees, txt(annees), code + ' années');
     if (!t.libre) {
       assert.equal(t.brut, Number(brut), code + ' brut');
       assert.equal(t.titre, Number(titre), code + ' titre');
       assert.equal(t.fin, Number(fin), code + ' fin');
-      assert.ok(Math.abs(t.brut * t.titre / 1000 - t.fin) < 0.0001, code + ' : brut × titre ≠ or fin');
+      assert.ok(t.fin <= t.brut, code + ' : or fin > poids brut');
+      // pièces anciennes : or fin = brut × titre ; pièces d'investissement (≥ 999 ‰) : contenu garanti par la Monnaie
+      const tol = t.titre >= 999 ? 0.02 : 0.0006;
+      assert.ok(Math.abs(t.brut * t.titre / 1000 - t.fin) <= tol, code + ' : brut × titre ≠ or fin');
     }
   }
+  // les 8 fiches déjà en production gardent leurs poids (les achats existants restent justes)
+  const PROD = { napoleon20: [6.4516, 900, 5.8064], francs10: [3.2258, 900, 2.9032], marianne_coq: [6.4516, 900, 5.8064],
+    louis_xvi: [7.649, 917, 7.0141], souverain: [7.9881, 916.67, 7.3224], vreneli20: [6.4516, 900, 5.8064] };
+  for (const [c, [b, ti, f]] of Object.entries(PROD)) assert.deepEqual([O.OR_TYPE[c].brut, O.OR_TYPE[c].titre, O.OR_TYPE[c].fin], [b, ti, f], c);
+  assert.ok(O.OR_TYPE.louis_autre.libre && O.OR_TYPE.autre.libre);
   // un « louis » familier n'hérite pas des caractéristiques du Louis d'or historique
   assert.notEqual(O.OR_TYPE.napoleon20.fin, O.OR_TYPE.louis_xvi.fin);
   assert.equal(O.OR_TYPE.louis_autre.fin, undefined);
@@ -155,8 +171,8 @@ test('affichage : signes, vert/rouge cohérents, pas de « -0 »', () => {
   assert.equal(O.orEur(5600, true), '+56,00 €');
   assert.equal(O.orEur(0, true), '0,00 €');
   assert.equal(O.orEur(null), '—');
-  assert.equal(O.orPct(13.849), '+13,8 %');
-  assert.equal(O.orPct(-2.04), '−2,0 %');
+  assert.equal(O.orPct(13.849), '+13,85 %');
+  assert.equal(O.orPct(-2.04), '−2,04 %');
   assert.equal(O.orPct(null), '—');
 });
 
@@ -195,4 +211,101 @@ test('aucun double comptage : achats multiples d\'une même pièce, frais à l\'
   // les cartes s'additionnent exactement au récapitulatif
   assert.equal(lots.reduce((s, l) => s + S[l.id].coutDetenu, 0), P.investi);
   assert.equal(lots.reduce((s, l) => s + S[l.id].valeur, 0), P.valeur);
+});
+
+// ---------------------------------------------------------------------------
+//  Catalogue : recherche simple, variantes proposées
+// ---------------------------------------------------------------------------
+const codes = (q) => [...O.orChercher(q).map(t => t.code)];   // tableau recréé ici (sinon autre contexte vm)
+test('recherche : « 50 pesos » trouve la 50 pesos mexicaine en premier (Chili proposé aussi)', () => {
+  assert.equal(codes('50 pesos')[0], 'pesos50');
+  assert.ok(codes('50 pesos').includes('pesos50_cl'));
+  assert.deepEqual(codes('50 pesos mexicains'), ['pesos50']);
+  assert.deepEqual(codes('centenario'), ['pesos50']);
+  assert.equal(codes('pesos mexique')[0], 'pesos50');
+});
+test('recherche : « 10 dollars or » propose les variantes (Eagle 1838-1933, Capped Bust, American Eagle 1/4 once)', () => {
+  const r = codes('10 dollars or');
+  assert.deepEqual([...r].sort(), ['dollars10', 'dollars10_1795', 'eagle_quart'].sort());
+  assert.equal(r[0], 'dollars10');
+  assert.deepEqual(codes('10$'), r);
+  assert.deepEqual(codes('$10'), r);
+  // les poids diffèrent bien d'une variante à l'autre : jamais confondues
+  assert.equal(new Set(r.map(c => O.OR_TYPE[c].fin)).size, 3);
+});
+test('recherche : Napoléon, 20F, louis, souverain, fractions d\'once, accents et majuscules', () => {
+  assert.equal(codes('Napoléon 20 francs')[0], 'napoleon20');
+  assert.equal(codes('NAPOLEON')[0], 'napoleon20');
+  assert.equal(codes('napo 20f')[0], 'napoleon20');
+  assert.ok(codes('20F').includes('napoleon20') && codes('20F').includes('vreneli20'));
+  assert.ok(codes('louis').includes('napoleon20') && codes('louis').includes('louis_xvi'));
+  assert.equal(codes('souverain')[0], 'souverain');
+  assert.deepEqual(codes('krugerrand 1/2'), ['krugerrand_demi']);
+  assert.deepEqual(codes('maple ½ oz'), ['maple_demi']);
+  assert.equal(codes('Krügerrand')[0], 'krugerrand1');
+  assert.deepEqual(codes('pièce de 20 marks or'), ['mark20']);
+  assert.deepEqual(codes('xyzzy'), []);
+  assert.deepEqual(codes('   '), []);
+  assert.equal(O.orCourantes(8).length, 8);
+  assert.ok(O.orCourantes(8).every(t => !t.libre));
+});
+
+// ---------------------------------------------------------------------------
+//  Tableau par référence : prix moyen pondéré, valeur unitaire × quantité = total
+// ---------------------------------------------------------------------------
+test('exemple de David : achat 700 €, valeur 850 € → gain +150,00 € (+21,43 %)', () => {
+  const [g] = O.orGroupes([lot({ type: 'autre', nom: 'Essai', quantite: 1, prix_total: 700, frais: 0, poids_fin_g: 8.5 })], [], 100);
+  assert.equal(O.orEur(g.coutDetenu), '700,00 €');
+  assert.equal(O.orEur(g.valeur), '850,00 €');
+  assert.equal(O.orEur(g.latent, true), '+150,00 €');
+  assert.equal(O.orPct(g.latentPct), '+21,43 %');
+});
+test('même pièce achetée deux fois à des prix différents : achats conservés, coût total et prix moyen pondéré', () => {
+  const lots = [
+    lot({ id: 'A', type: 'pesos50', quantite: 2, prix_total: 2800, frais: 0, poids_fin_g: 37.4999, date_achat: '2024-01-10' }),
+    lot({ id: 'B', type: 'pesos50', quantite: 1, prix_total: 1600, frais: 20, poids_fin_g: 37.4999, date_achat: '2025-05-02' }),
+    lot({ id: 'C', type: 'napoleon20', quantite: 4, prix_total: 2000, frais: 0, poids_fin_g: 5.8064 }),
+  ];
+  const G = O.orGroupes(lots, [], 116.05);
+  assert.equal(G.length, 2);
+  const p = G.find(g => g.type === 'pesos50');
+  assert.equal(p.achats.length, 2);                              // les deux achats restent distincts
+  assert.equal(p.detenu, 3);
+  assert.equal(p.coutDetenu, 442000);                            // 2 800 + 1 600 + 20 €
+  assert.equal(p.puAchat, 147333);                               // 4 420 € / 3 = 1 473,33 €
+  assert.equal(p.finPiece, 37.4999);
+  assert.equal(p.valeurPiece, Math.round(37.4999 * 116.05 * 100)); // 4 351,86 €
+  assert.equal(p.valeur, 3 * p.valeurPiece);                     // par pièce × quantité = total, au centime
+  assert.equal(p.latent, p.valeur - 442000);
+  // le portefeuille = somme des références
+  const P = O.orPortefeuille(lots, [], 116.05);
+  assert.equal(P.valeur, G.reduce((s, g) => s + g.valeur, 0));
+  assert.equal(P.investi, G.reduce((s, g) => s + g.coutDetenu, 0));
+});
+test('changement du cours : toutes les valeurs suivent, les achats ne bougent pas', () => {
+  const lots = [lot({ type: 'pesos50', quantite: 1, prix_total: 4300, frais: 0, poids_fin_g: 37.4999 })];
+  const [a] = O.orGroupes(lots, [], 110), [b] = O.orGroupes(lots, [], 120);
+  assert.equal(a.coutDetenu, b.coutDetenu);
+  assert.equal(a.valeur, Math.round(37.4999 * 110 * 100));
+  assert.equal(b.valeur, Math.round(37.4999 * 120 * 100));
+  assert.ok(a.latent < 0 && b.latent > 0);                       // de la moins-value à la plus-value
+  const [c] = O.orGroupes(lots, [], null);                       // cours inconnu : rien d'inventé
+  assert.equal(c.valeur, null); assert.equal(c.latent, null); assert.equal(c.valeurPiece, null);
+});
+test('pièces saisies à la main : regroupées seulement si même nom ET même or fin', () => {
+  const lots = [
+    lot({ id: 'A', type: 'autre', nom: 'Ducat hollandais', poids_fin_g: 3.4436, quantite: 1 }),
+    lot({ id: 'B', type: 'autre', nom: 'ducat hollandais ', poids_fin_g: 3.4436, quantite: 2 }),
+    lot({ id: 'C', type: 'autre', nom: 'Ducat hollandais', poids_fin_g: 3.49, quantite: 1 }),
+  ];
+  const G = O.orGroupes(lots, [], 100);
+  assert.equal(G.length, 2);
+  assert.equal(G.find(g => g.achats.length === 2).detenu, 3);
+});
+test('référence entièrement vendue : 0 détenue, valeur 0, gain réalisé conservé', () => {
+  const [g] = O.orGroupes([lot()], [vente({ quantite: 3, prix_total: 1800 })], 100);
+  assert.equal(g.detenu, 0);
+  assert.equal(g.valeur, 0);
+  assert.equal(g.latent, null);
+  assert.equal(g.realise, 180000 - 153000);
 });
