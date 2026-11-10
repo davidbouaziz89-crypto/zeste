@@ -1,21 +1,22 @@
-// Zeste 🍋 — Edge function « zeste-or-cours » : cours de l'or en euros par gramme.
+// Zeste 🍋 — Edge function « zeste-or-cours » : cours de l'or en euros par gramme d'or fin.
 //
-// Fournisseur : GoldAPI.io, offre GRATUITE (300 requêtes par mois civil, sans
-// carte bancaire). La clé reste sur le serveur, jamais dans le navigateur :
-// coffre-fort Vault de la base (secret « zeste_goldapi », lu par
-// zeste_or_cle_fournisseur, aucun redémarrage nécessaire), ou à défaut la
-// variable d'environnement GOLDAPI_KEY. Au-delà du quota, GoldAPI refuse simplement : aucun
-// risque de facturation. On garde de toute façon une marge (BUDGET_MOIS).
+// Sources, dans l'ordre :
+//   1. Swissquote (banque suisse) — cotation publique XAU/EUR en continu, sans clé
+//      ni quota : milieu entre prix d'achat et prix de vente, converti en €/g.
+//   2. GoldAPI.io en SECOURS (offre gratuite : 300 requêtes par mois civil, sans
+//      carte bancaire), seulement si Swissquote ne répond pas. La clé reste sur le
+//      serveur : coffre-fort Vault (secret « zeste_goldapi », lu par
+//      zeste_or_cle_fournisseur, aucun redémarrage), ou la variable GOLDAPI_KEY.
+//      Quota protégé (BUDGET_MOIS, MAX_APPELS_JOUR) : aucun risque de facturation.
 //
 // Ce que fait un appel (POST, utilisateur connecté obligatoire) :
-//   1. cours actuel : redemandé au fournisseur au plus toutes les 2 h
-//      (15 min si on appuie sur « Actualiser ») ; sinon le dernier en base ;
-//   2. historique quotidien : complété vers aujourd'hui (une fois par jour)
-//      et vers le passé jusqu'à `depuis` (date du premier achat), par
-//      tranches de 90 jours (limite du fournisseur) ;
+//   1. cours actuel : redemandé au plus toutes les 15 min (cache serveur partagé
+//      par tous les appareils) ; « Actualiser » : au plus une fois par minute ;
+//   2. historique quotidien (GoldAPI) : seulement sur demande explicite ;
 //   3. renvoie { actuel, historique, premier_jour, alertes } lu en base.
-// En cas de panne du fournisseur : on renvoie le dernier cours connu, avec
-// une alerte — jamais de valeur inventée.
+// Toute source en panne : on renvoie le dernier cours FIABLE connu (avec la date
+// de son relevé) et une alerte — jamais de valeur inventée. Une cotation figée
+// (plus de 4 jours) ou incohérente est refusée.
 //
 // Testé hors Deno par tests/or/edge.test.mjs (la logique est dans traiter()).
 
@@ -23,11 +24,18 @@ const ONCE_G = 31.1034768;          // une once troy en grammes
 const FOURNISSEUR = "goldapi";
 const SOURCE = "GoldAPI.io — cours spot XAU/EUR";
 const API = "https://www.goldapi.io/api";
-export const BUDGET_MOIS = 280;            // quota gratuit 300 → marge de 20
-const TTL_ACTUEL_MS = 3 * 3600_000;        // cours actuel : redemandé au plus toutes les 3 h (cache serveur partagé)
-const TTL_FORCE_MS = 3600_000;             // bouton « Actualiser » : au plus 1 appel par heure
-export const MAX_APPELS_JOUR = 9;          // 280 / 31 jours : le quota mensuel ne peut pas être épuisé avant la fin du mois
-const PAUSE_ECHEC_MS = 10 * 60_000;        // après un échec, pause de 10 min
+export const SQ_FOURNISSEUR = "swissquote";
+export const SQ_SOURCE = "Swissquote — cotation XAU/EUR (milieu achat/vente)";
+export const SQ_URL = "https://forex-data-feed.swissquote.com/public-quotes/bboquotes/instrument/XAU/EUR";
+export const BUDGET_MOIS = 280;            // quota gratuit GoldAPI 300 → marge de 20
+export const TTL_ACTUEL_MS = 15 * 60_000;  // cours actuel : redemandé au plus toutes les 15 min (cache serveur partagé)
+export const TTL_FORCE_MS = 60_000;        // bouton « Actualiser le cours » : au plus 1 appel par minute
+export const TTL_SECOURS_MS = 3600_000;    // GoldAPI (secours) : seulement si le dernier cours a plus d'1 h
+export const MAX_APPELS_JOUR = 9;          // GoldAPI : 280 / 31 jours, le quota mensuel ne peut pas être épuisé avant la fin du mois
+const PAUSE_ECHEC_MS = 10 * 60_000;        // GoldAPI : après un échec, pause de 10 min
+const PAUSE_ECHEC_SQ_MS = 2 * 60_000;      // Swissquote : après un échec, pause de 2 min
+export const COTATION_MAX_AGE_MS = 4 * 86400_000; // cotation plus vieille (marché fermé > 4 j) = flux figé, refusée
+const SAUT_MAX = 0.2;                      // écart > 20 % avec un cours relevé il y a moins de 3 jours = refusé
 const TRANCHE_J = 90;                      // limite du fournisseur par requête
 const MAX_TRANCHES_PASSE = 12;             // ≈ 3 ans de rattrapage par appel
 export const ATTENTE_VERROU_MS = 1500;     // un autre appel actualise : on patiente avant de lire
@@ -55,6 +63,30 @@ export function ajouterJours(jour: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 const estJour = (s: unknown) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(Date.parse(s));
+
+/* Réponse Swissquote : [{ ts, spreadProfilePrices:[{bid, ask}, …] }, …] (€ par once troy).
+   Cours = médiane des milieux achat/vente ; refusé si les cotations divergent (> 1 %),
+   si l'horodatage manque ou est dans le futur, ou si la valeur sort des bornes. */
+export function lireSwissquote(j: unknown, maintenant: number): { eur_g: number; cote_le: string } {
+  if (!Array.isArray(j) || !j.length) throw new Error("réponse Swissquote inattendue");
+  const milieux: number[] = [];
+  let ts = 0;
+  for (const p of j as Array<{ ts?: number; spreadProfilePrices?: Array<{ bid?: number; ask?: number }> }>) {
+    if (Number(p?.ts) > ts) ts = Number(p.ts);
+    for (const q of (Array.isArray(p?.spreadProfilePrices) ? p.spreadProfilePrices : [])) {
+      const b = Number(q?.bid), a = Number(q?.ask);
+      if (b > 0 && a >= b) milieux.push((a + b) / 2);
+    }
+  }
+  if (!milieux.length) throw new Error("réponse Swissquote sans cotation");
+  milieux.sort((x, y) => x - y);
+  if (milieux[milieux.length - 1] / milieux[0] - 1 > 0.01) throw new Error("cotations Swissquote incohérentes");
+  const parGramme = milieux[Math.floor(milieux.length / 2)] / ONCE_G;
+  if (!(parGramme > 10 && parGramme < 1000)) throw new Error("cours Swissquote hors bornes");
+  if (!(ts > 0) || ts > maintenant + 10 * 60_000) throw new Error("horodatage Swissquote invalide");
+  if (maintenant - ts > COTATION_MAX_AGE_MS) throw new Error("cotation Swissquote figée");
+  return { eur_g: parGramme, cote_le: new Date(ts).toISOString() };
+}
 
 export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintenant = Date.now()): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -97,15 +129,21 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       return json({ ...lu, alertes });
     }
     const etat = await rpc("zeste_or_cours_etat", { p_fournisseur: FOURNISSEUR });
-    const cle: string | undefined = env.GOLDAPI_KEY || (await rpc("zeste_or_cle_fournisseur", {}).catch(() => null)) || undefined;
+    const etatSq = await rpc("zeste_or_cours_etat", { p_fournisseur: SQ_FOURNISSEUR });
+    // clé GoldAPI lue seulement si le secours ou l'historique en a besoin
+    let cle: string | null | undefined = env.GOLDAPI_KEY || undefined;
+    const lireCle = async () => {
+      if (cle === undefined) cle = (await rpc("zeste_or_cle_fournisseur", {}).catch(() => null)) || null;
+      return cle;
+    };
     let appels = Number(etat?.appels_mois) || 0, appelsJour = Number(etat?.appels_jour) || 0;
     const meta = (etat?.meta || {}) as Record<string, string>;
     const echecRecent = etat?.dernier_echec && maintenant - Date.parse(etat.dernier_echec) < PAUSE_ECHEC_MS;
     const peutAppeler = () => !!cle && appels < BUDGET_MOIS && appelsJour < MAX_APPELS_JOUR && !echecRecent;
-    if (!cle) alertes.push("Clé du fournisseur de cours non configurée sur le serveur.");
-    else if (appels >= BUDGET_MOIS) alertes.push("Quota gratuit du mois atteint : dernier cours connu affiché.");
-    else if (appelsJour >= MAX_APPELS_JOUR) alertes.push("Limite d'actualisations du jour atteinte : dernier cours connu affiché.");
-    else if (echecRecent) alertes.push("Fournisseur de cours indisponible il y a peu : dernier cours connu affiché.");
+    const motifGoldApi = () => !cle ? "secours GoldAPI non configuré"
+      : appels >= BUDGET_MOIS ? "quota GoldAPI du mois atteint"
+      : appelsJour >= MAX_APPELS_JOUR ? "limite GoldAPI du jour atteinte"
+      : echecRecent ? "GoldAPI indisponible il y a peu" : "GoldAPI indisponible";
 
     const appelGoldApi = async (chemin: string) => {
       appels++; appelsJour++;
@@ -119,21 +157,54 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       return await r.json();
     };
 
-    // 2. Cours actuel
-    const age = etat?.actuel?.releve_le ? maintenant - Date.parse(etat.actuel.releve_le) : Infinity;
-    if ((age > TTL_ACTUEL_MS || (forcer && age > TTL_FORCE_MS)) && peutAppeler()) {
-      try {
-        const j = await appelGoldApi("/price/XAU/EUR");
-        const parGramme = Number(j?.price_per_unit?.gram) > 0 ? Number(j.price_per_unit.gram) : Number(j?.price) / ONCE_G;
-        if (!(parGramme > 0) || j?.currency !== "EUR") throw new Error("réponse GoldAPI inattendue");
-        const coteLe = Number(j.timestamp) > 0 ? new Date(Number(j.timestamp) * 1000).toISOString() : new Date(maintenant).toISOString();
-        await journal({ nature: "actuel", ok: true, actuel: { eur_g: parGramme, source: SOURCE, cote_le: coteLe } });
-      } catch (e) {
-        const msg = String((e as Error).message);
-        await journal({ nature: "actuel", ok: false, detail: msg }).catch(() => {});
-        const raison = /\(quota\)/.test(msg) ? "quota GoldAPI épuisé" : /clé refusée/.test(msg) ? "clé GoldAPI refusée" : "fournisseur indisponible";
-        alertes.push(etat?.actuel ? `Cours non actualisé (${raison}) : dernier cours connu affiché.` : `Cours indisponible (${raison}).`);
+    // 2. Cours actuel : Swissquote, puis GoldAPI en secours
+    const precedent = etat?.actuel || null;
+    const age = precedent?.releve_le ? maintenant - Date.parse(precedent.releve_le) : Infinity;
+    // garde-fou : un saut de plus de 20 % par rapport à un cours relevé il y a moins de 3 jours est refusé
+    const plausible = (eurG: number) => {
+      if (precedent && Number(precedent.eur_g) > 0 && age < 3 * 86400_000 && Math.abs(eurG / Number(precedent.eur_g) - 1) > SAUT_MAX) {
+        throw new Error(`écart anormal avec le dernier cours (${Number(precedent.eur_g).toFixed(2)} → ${eurG.toFixed(2)} €/g)`);
       }
+    };
+    if (age > TTL_ACTUEL_MS || (forcer && age > TTL_FORCE_MS)) {
+      const raisons: string[] = [];
+      let releve = false;
+      const echecSq = etatSq?.dernier_echec && maintenant - Date.parse(etatSq.dernier_echec) < PAUSE_ECHEC_SQ_MS;
+      if (echecSq) raisons.push("Swissquote indisponible il y a peu");
+      else {
+        try {
+          const r = await f(SQ_URL, { headers: { Accept: "application/json" } });
+          if (!r.ok) throw new Error(`Swissquote HTTP ${r.status}`);
+          const c = lireSwissquote(await r.json(), maintenant);
+          plausible(c.eur_g);
+          await journal({ fournisseur: SQ_FOURNISSEUR, nature: "actuel", ok: true, actuel: { eur_g: c.eur_g, source: SQ_SOURCE, cote_le: c.cote_le } });
+          releve = true;
+        } catch (e) {
+          await journal({ fournisseur: SQ_FOURNISSEUR, nature: "actuel", ok: false, detail: String((e as Error).message).slice(0, 200) }).catch(() => {});
+          raisons.push("Swissquote indisponible");
+        }
+      }
+      // secours GoldAPI : seulement si le dernier cours a plus d'1 h (quota gratuit limité)
+      if (!releve && age > TTL_SECOURS_MS) {
+        await lireCle();
+        if (!peutAppeler()) raisons.push(motifGoldApi());
+        else {
+          try {
+            const j = await appelGoldApi("/price/XAU/EUR");
+            const parGramme = Number(j?.price_per_unit?.gram) > 0 ? Number(j.price_per_unit.gram) : Number(j?.price) / ONCE_G;
+            if (!(parGramme > 0) || j?.currency !== "EUR") throw new Error("réponse GoldAPI inattendue");
+            plausible(parGramme);
+            const coteLe = Number(j.timestamp) > 0 ? new Date(Number(j.timestamp) * 1000).toISOString() : new Date(maintenant).toISOString();
+            await journal({ nature: "actuel", ok: true, actuel: { eur_g: parGramme, source: SOURCE, cote_le: coteLe } });
+            releve = true;
+          } catch (e) {
+            const msg = String((e as Error).message);
+            await journal({ nature: "actuel", ok: false, detail: msg }).catch(() => {});
+            raisons.push(/\(quota\)/.test(msg) ? "quota GoldAPI épuisé" : /clé refusée/.test(msg) ? "clé GoldAPI refusée" : "GoldAPI indisponible");
+          }
+        }
+      }
+      if (!releve) alertes.push(precedent ? `Cours non actualisé (${raisons.join(", ")}) : dernier cours connu affiché.` : `Cours indisponible (${raisons.join(", ")}).`);
     }
 
     // 3. Historique quotidien (prix GoldAPI = euros par once troy → converti en €/g)
@@ -146,6 +217,7 @@ export async function traiter(req: Request, env: Env, f: Fetch = fetch, maintena
       // plus ancien jour renvoyé (null si la tranche est vide)
       return jours.reduce((m: string | null, x: { jour: string }) => (!m || x.jour < m ? x.jour : m), null);
     };
+    if (avecHistorique) await lireCle();
     try {
       // 3a. vers aujourd'hui : au plus une fois par jour, et seulement si l'historique est demandé
       if (avecHistorique && meta.histo_verifie_le !== aujourdhui && peutAppeler()) {
