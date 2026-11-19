@@ -1,5 +1,5 @@
 /* Service Worker Zeste — hors-ligne + base pour notifications push */
-const CACHE = 'zeste-v3'; // v3 : prêts par personne, films fiabilisés, synchro protégée
+const CACHE = 'zeste-v4'; // v4 : Prêts et Or transférés dans l'appli VALORA (19/11/2026)
 const ASSETS = [
   './',
   './index.html',

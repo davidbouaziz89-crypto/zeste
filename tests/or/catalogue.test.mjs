@@ -12,7 +12,9 @@ import { nouvelleBase, creerUtilisateur, rpc, RACINE, DEJA_EN_PROD, A_APPLIQUER,
 const A = '55555555-5555-4555-8555-555555555555';
 const asA = { uid: A };
 // le bloc de calcul de l'écran, tel quel (même extraction que calculs.test.mjs)
-const html = readFileSync(path.join(RACINE, 'index.html'), 'utf8');
+// l'écran de l'onglet Or est dans l'appli VALORA depuis le 19/11/2026 (dépôt voisin ~/projects/valora) ;
+// le catalogue SQL et la fonction du cours restent dans ce dépôt (schéma zeste, déjà en production)
+const html = readFileSync(process.env.VALORA_INDEX || path.join(RACINE, '..', 'valora', 'index.html'), 'utf8');
 const bloc = html.split('// ==== OR-CALCUL-DEBUT')[1].split('// ==== OR-CALCUL-FIN ====')[0].replace(/^[^\n]*\n/, '');
 const O = vm.runInNewContext(bloc + ';({OR_TYPES, OR_TYPE, orPortefeuille, orGroupes, orChercher})', {});
 

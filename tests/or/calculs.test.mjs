@@ -8,7 +8,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const html = readFileSync(path.join(RACINE, 'index.html'), 'utf8');
+// l'écran de l'onglet Or est dans l'appli VALORA depuis le 19/11/2026 (dépôt voisin ~/projects/valora) ;
+// le catalogue SQL et la fonction du cours restent dans ce dépôt (schéma zeste, déjà en production)
+const html = readFileSync(process.env.VALORA_INDEX || path.join(RACINE, '..', 'valora', 'index.html'), 'utf8');
 const bloc = html.split('// ==== OR-CALCUL-DEBUT')[1].split('// ==== OR-CALCUL-FIN ====')[0].replace(/^[^\n]*\n/, '');
 const O = vm.runInNewContext(bloc + `;({OR_TYPES, OR_TYPE, orChercher, orCourantes, orGroupes, orNorm, orEurG, orC, orJ1, orEcart, orMoisAvant, orStatsLot, orLotStats, orPortefeuille,
   orSerie, orDebutPeriode, orLireEur, orLireNb, orEur, orPct})`, {});
