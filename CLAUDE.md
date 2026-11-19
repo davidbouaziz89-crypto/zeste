@@ -3,13 +3,15 @@
 Application web **PWA** ultra simple et colorée, pensée pour **iPhone** :
 tâches à faire, liste de courses, films à voir.
 
-⚠️ **Séparation du 19/11/2026 (branche `separation-valora`, pas encore publiée)** : les onglets **Prêts** et
+⚠️ **Séparation du 19/11/2026 — PUBLIÉE le 19/11/2026** (tag de retour : `zeste-avant-valora`) : les onglets **Prêts** et
 **Or** sont transférés dans l'appli **VALORA** (`~/projects/valora`, son propre `CLAUDE.md`). Zeste ne les
 affiche plus mais **garde les prêts dans sa sauvegarde** (`S.debts`, copie figée, jamais supprimée) ; les
 fonctions de calcul des prêts restent dans `index.html` car la synchro (conflits, copies de secours) les lit.
 Le **backend de l'Or reste dans ce dépôt et dans le schéma `zeste`** (`sql/zeste-or*.sql`, `zeste.or_*`,
 `supabase/functions/zeste-or-cours`) : il est utilisé par VALORA. **Ne jamais le supprimer** en « nettoyant Zeste ».
 Les tests `tests/or/calculs` et `catalogue` lisent l'écran Or dans `../valora/index.html` (`VALORA_INDEX`).
+**Prêts figés côté serveur** (`sql/zeste-prets-figes.sql`, en production) : `zeste_save_mine_v2` refuse tout
+enregistrement qui modifie `debts` — ne jamais retirer ce contrôle sans revenir aussi à l'ancien Zeste (retour : `-retour.sql`).
 Dépôt : `github.com/davidbouaziz89-crypto/zeste`, branche `main`.
 
 ⚠️ **Ce n'est pas un logiciel du portail de gestion.** C'est une app perso,
