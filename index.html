@@ -1263,10 +1263,10 @@ function showFilmPreview(meta, title){
     ${kindTag?`<div style="margin-top:2px">${kindTag}</div>`:''}
     <div class="pv-o">${esc(meta.overview||'Pas de résumé disponible.')}</div>
     ${prov}
-    ${meta.ytKey?`<button class="trailer-btn" onclick="openTrailer('${meta.ytKey}')">▶️ Bande-annonce</button>`:''}</div>`;
+    ${ytOk(meta.ytKey)?`<button class="trailer-btn" onclick="openTrailer('${meta.ytKey}')">▶️ Bande-annonce</button>`:''}</div>`;
 }
 function openTrailer(key){
-  if(!key) return;
+  if(!ytOk(key)) return;
   document.getElementById('trailerFrame').innerHTML = `<iframe src="https://www.youtube.com/embed/${key}?autoplay=1&playsinline=1&rel=0&modestbranding=1" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
   document.getElementById('trailerBg').classList.add('open');
   document.getElementById('trailerModal').classList.add('open');
@@ -1844,7 +1844,7 @@ function rowFilm(f){
     <div class="check" data-check>${chk()}</div>
     ${media}
     <div class="label">${esc(f.txt)}${sub}</div>
-    ${f.ytKey?`<button class="cal trailer-row" data-trailer="${f.ytKey}" title="Bande-annonce">▶️</button>`:''}
+    ${ytOk(f.ytKey)?`<button class="cal trailer-row" data-trailer="${f.ytKey}" title="Bande-annonce">▶️</button>`:''}
     <span class="drag" data-drag title="Réordonner">⠿</span>
   </div></div>`;
 }
@@ -2253,7 +2253,9 @@ function renderProgress(){
 
 /* ============ HELPERS ============ */
 function chk(){ return '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>'; }
-function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function esc(s){ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// identifiant de vidéo YouTube venu de TMDB : lettres, chiffres, - et _ uniquement (sinon on n'affiche pas de bande-annonce)
+function ytOk(k){ return typeof k==='string' && /^[A-Za-z0-9_-]{6,20}$/.test(k); }
 function emptyState(e,t,s){ return `<div class="empty"><div class="big">${e}</div><b>${t}</b>${s}</div>`; }
 function burst(node){
   const r = node.getBoundingClientRect();
